@@ -1,0 +1,18 @@
+{
+    "id": "deskthingapp",
+    "isAudioSource": false,
+    "isWebApp": true,
+    "isLocalApp": false,
+    "requires": [],
+    "label": "",
+    "version": "v0.8.0",
+    "description": "",
+    "author": "",
+    "platforms": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "homepage": "",
+    "repository": ""
+  }
