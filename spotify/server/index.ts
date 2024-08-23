@@ -1,61 +1,94 @@
-import { DeskThing as DK } from 'deskthing-server';
-const DeskThing = DK.getInstance();
-export { DeskThing } // Required export of this exact name for the server to connect
+import SpotifyHandler from './spotify'
+import { DeskThing as DK, IncomingData } from 'deskthing-server'
+const DeskThing = DK.getInstance()
+export { DeskThing }
+
+
+let spotify: SpotifyHandler
 
 const start = async () => {
-    let Data = await DeskThing.getData()
-    DeskThing.on('data', (newData) => {
-        // Syncs the data with the server
-        Data = newData
-        DeskThing.sendLog('New data received!' + Data)
-    })
+  spotify = new SpotifyHandler()
 
-    // Template Items
+  DeskThing.on('get', handleGet)
+  DeskThing.on('set', handleSet)
 
-    // This is how to add settings (implementation may vary)
-    if (!Data?.settings?.theme) {
-        DeskThing.addSettings({
-          "theme": { label: "Theme Choice", value: 'dark', options: [{ label: 'Dark Theme', value: 'dark' }, { label: 'Light Theme', value: 'light' }] },
-        })
-
-        // This will make Data.settings.theme.value equal whatever the user selects
-      }
-
-    // Getting data from the user (Ensure these match)
-    if (!Data?.user_input || !Data?.second_user_input) {
-        const requestScopes = {
-          'user_input': {
-            'value': '',
-            'label': 'Placeholder User Data',
-            'instructions': 'You can make the instructions whatever you want. You can also include HTML inline styling like <a href="https://deskthing.app/" target="_blank" style="color: lightblue;">Making Clickable Links</a>.',
-          },
-          'second_user_input': {
-            'value': 'Prefilled Data',
-            'label': 'Second Option',
-            'instructions': 'Scopes can include as many options as needed',
-          }
-        }
-    
-        DeskThing.getUserInput(requestScopes, async (data) => {
-          if (data.payload.user_input && data.payload.second_user_input) {
-            // You can either save the returned data to your data object or do something with it
-            DeskThing.saveData(data.payload)
-          } else {
-            DeskThing.sendError('Please fill out all the fields! Restart to try again')
-          }
-        })
-      } else {
-        DeskThing.sendLog('Data Exists!')
-        // This will be called is the data already exists in the server
-      }
-} 
-
-const stop = async () => {
-    // Function called when the server is stopped
+  DeskThing.on('callback-data', handleCallbackData)
 }
 
-// Main Entrypoint of the server
-DeskThing.on('start', start)
+const handleCallbackData = async (data: IncomingData) => {
+  if (data.payload == null) {
+    DeskThing.sendError('Unable to get access token')
+  } else {
+    await spotify.getAccessToken(data.payload)
+  }
+}
 
-// Main exit point of the server
-DeskThing.on('stop', stop)
+const handleGet = async (data: IncomingData) => {
+
+  if (data.type == null) {
+    DeskThing.sendError('No args provided!')
+    return
+  }
+  switch (data.request) {
+    case 'song':
+      await spotify.returnSongData()
+      break
+    case 'refresh':
+      await spotify.checkForRefresh()
+      break
+    default:
+      DeskThing.sendError(`Unknown request: ${data.request}`)
+      break
+    // Handle other types ?
+  }
+}
+const handleSet = async (data: IncomingData) => {
+
+  if (data == null) {
+    DeskThing.sendError('No args provided')
+    return
+  }
+  let response
+  switch (data.request) {
+    case 'next':
+      response = await spotify.next(data.payload)
+      break
+    case 'previous':
+      response = await spotify.previous()
+      break
+    case 'fast_forward':
+      response = await spotify.fastForward(data.payload)
+      break
+    case 'rewind':
+      response = await spotify.rewind(data.payload)
+      break
+    case 'play':
+      response = await spotify.play(data.payload)
+      break
+    case 'pause':
+    case 'stop':
+      response = await spotify.pause()
+      break
+    case 'seek':
+      response = await spotify.seek(data.payload)
+      break
+    case 'like':
+      response = await spotify.like(data.payload)
+      break
+    case 'volume':
+      response = await spotify.volume(data.payload)
+      break
+    case 'repeat':
+      response = await spotify.repeat(data.payload)
+      break
+    case 'shuffle':
+      response = await spotify.shuffle(data.payload)
+      break
+    case 'transfer':
+      response = await spotify.transfer()
+      break
+  }
+  DeskThing.sendLog(response)
+}
+
+DeskThing.on('start', start)
