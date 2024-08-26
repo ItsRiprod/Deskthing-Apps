@@ -31,6 +31,10 @@ export class SettingsStore {
     }
 
     getSettings(): Settings | null {
+        // this.deskthing.sendMessageToParent({app: 'utility', type: 'set', request: 'volume', payload: 100})
+        if (!this.currentSettings) {
+            this.deskthing.sendMessageToParent({app: 'client', type: 'get', request: 'settings'})
+        }
         return this.currentSettings
     }
 

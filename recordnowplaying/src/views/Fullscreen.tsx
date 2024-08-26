@@ -6,7 +6,7 @@ import PlayPause from '../assets/components/PlayPause'
 import Skip from '../assets/components/Skip'
 import Rewind from '../assets/components/Rewind'
 
-const Record: React.FC = () => {
+const Fullscreen: React.FC = () => {
     const musicStore = MusicStore.getInstance()
     const [songData, setSongData] = useState<SongData | null>(musicStore.getSong())
     const [thumbnail, setThumbnail] = useState<string>(songData?.thumbnail || '')
@@ -59,27 +59,31 @@ const Record: React.FC = () => {
     }, [thumbnail, musicStore])
 
     return (
-        <div style={{background:`${backgroundImage}`}} className="bg-slate-800 w-screen h-screen flex justify-center items-center">
-            <div className={`fixed left-1/4 -bottom-3/4 rounded-full w-[180vw] h-[180vw] ${isPlaying ? 'animate-spin-slow' : ''}`}>
-                <div style={{backgroundImage:`url(./vinyl.svg)`}} className="absolute border-black border- w-full h-full bg-cover bg-center bg-no-repeat " />
-                <div style={{backgroundImage:`url(${thumbnail})`}} className="absolute rounded-full left-1/4 top-1/4 border-black border-2 border- w-[50%] h-[50%] bg-cover bg-center bg-no-repeat " />
-            </div>
-            <div className="fixed top-7 left-7">
-                <h1 style={{color: 'var(--background-contrast)'}} className="text-4xl font-bold">
-                    {songData?.track_name}
-                </h1>
-                <p style={{color: 'var(--background-contrast)'}} className="text-2xl font-semibold font-mono">
-                    {songData?.artist}
-                </p>
-            </div>
-            <div className="fixed bottom-5 left-5">
-                <Rewind />
-                <PlayPause />
-                <Skip />
+        <div style={{background:`${backgroundImage}`}} className="bg-slate-800 w-screen h-screen overflow-hidden flex justify-center items-center">
+            <div style={{backgroundImage:`url(${thumbnail})`}} className="absolute blur-sm border-black border-2 border- w-[100%] h-[100%] bg-cover bg-center bg-no-repeat " />
+            <div className="fixed flex justify-center items-center">
+                <div className="index-0 flex justify-around w-screen">
+                    <div>
+                        <div style={{backgroundImage:`url(${thumbnail})`}} className="border-black border-2 border- w-[75vh] h-[75vh] bg-cover bg-center bg-no-repeat " />
+                    </div>
+                    <div className="flex flex-col justify-center items-center">
+                        <h1 style={{color: 'var(--background-contrast)'}} className="text-nowrap text-4xl font-bold">
+                            {songData?.track_name}
+                        </h1>
+                        <p style={{color: 'var(--background-contrast)'}} className="text-2xl font-semibold font-mono">
+                            {songData?.artist}
+                        </p>
+                        <div className="mt-5 flex">
+                            <Rewind />
+                            <PlayPause />
+                            <Skip />
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
     )
 }
 
-export default Record
+export default Fullscreen

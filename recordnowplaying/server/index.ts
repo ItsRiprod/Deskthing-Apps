@@ -15,7 +15,7 @@ const start = async () => {
     // This is how to add settings (implementation may vary)
     if (!Data?.settings?.view) {
         DeskThing.addSettings({
-          "view": { label: "Theme Choice", value: 'dark', options: [{ label: 'Dark Theme', value: 'dark' }, { label: 'Light Theme', value: 'light' }] },
+          "view": { label: "Record View", value: 'record', options: [{ label: 'Default Vinyl', value: 'record' }, { label: 'Fullscreen', value: 'fullscreen' }, { label: 'Record Center', value: 'recordcenter' }] }
         })
 
         // This will make Data.settings.theme.value equal whatever the user selects

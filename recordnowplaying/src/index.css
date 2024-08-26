@@ -1,6 +1,9 @@
 button {
   background: transparent
 }
+button:focus {
+  outline: none;
+}
 
 @tailwind base;
 @tailwind components;

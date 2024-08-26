@@ -1,4 +1,4 @@
-export const findAlbumArtColor = async (image: HTMLImageElement): Promise<string | null> => {
+export const findAlbumArtColor = async (image: HTMLImageElement): Promise<number[] | null> => {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
 
@@ -19,7 +19,7 @@ export const findAlbumArtColor = async (image: HTMLImageElement): Promise<string
 
     const colorCounts: { [color: string]: number } = {};
     let maxCount = 0;
-    let dominantColor = '';
+    let dominantColor: number[] = [];
 
     // Iterate through each pixel
     for (let i = 0; i < data.length; i += 4) {
@@ -32,24 +32,24 @@ export const findAlbumArtColor = async (image: HTMLImageElement): Promise<string
         if (alpha < 255) continue;
         if (r + g + b < 10) continue;
 
-        const color = `${r},${g},${b}`;
+        const colorKey = `${r},${g},${b}`;
 
         // Count the frequency of each color
-        if (colorCounts[color]) {
-            colorCounts[color]++;
+        if (colorCounts[colorKey]) {
+            colorCounts[colorKey]++;
         } else {
-            colorCounts[color] = 1;
+            colorCounts[colorKey] = 1;
         }
 
         // Keep track of the most common color
-        if (colorCounts[color] > maxCount) {
-            maxCount = colorCounts[color];
-            dominantColor = color;
+        if (colorCounts[colorKey] > maxCount) {
+            maxCount = colorCounts[colorKey];
+            dominantColor = [r, g, b];
         }
     }
 
-    if (dominantColor) {
-        return `rgb(${dominantColor})`;
+    if (dominantColor.length > 0) {
+        return dominantColor;
     }
 
     return null;

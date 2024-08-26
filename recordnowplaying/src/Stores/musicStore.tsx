@@ -34,6 +34,13 @@ export class MusicStore {
         return this.currentSong
     }
 
+    setPlay(state: boolean) {
+        if (this.currentSong) {
+            this.currentSong.is_playing = state
+            this.musicListeners.forEach(listener => listener(this.currentSong as SongData))
+        }
+    }
+
     on(listener: MusicListener): () => void {
         this.musicListeners.push(listener)
         return () => {

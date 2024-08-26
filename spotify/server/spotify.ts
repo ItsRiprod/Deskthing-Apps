@@ -56,6 +56,13 @@ type savedData = {
 
 type method = 'get' | 'put' | 'post' | 'delete'
 
+type Body = {
+  context_uri: string
+  offset?: {
+    uri: string
+  }
+  position_ms: number
+}
 
 class SpotifyHandler {
   public Data: savedData = {}
@@ -396,7 +403,7 @@ class SpotifyHandler {
 
   async play(context: {playlist: string, id: string, position: number}) {
     const url = `${this.BASE_URL}/play`;
-    let body = null;
+    let body: Body | null = null;
   
     if (context.playlist && context.id && context.position) {
       body = {
