@@ -1,0 +1,21 @@
+{
+  "id": "discord",
+  "isAudioSource": false,
+  "isScreenSaver": false,
+  "isWebApp": true,
+  "isLocalApp": false,
+  "requires": [
+    ""
+  ],
+  "label": "Discord App",
+  "version": "0.8.7",
+  "description": "The ultimate completely recoded discord app",
+  "author": "Riprod",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "homepage": "https://deskthing.app",
+  "repository": "https://github.com/ItsRiprod/deskthing-apps"
+}
