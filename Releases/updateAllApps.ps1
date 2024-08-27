@@ -43,7 +43,7 @@ foreach ($appDir in $appDirs) {
         Write-Output "Build completed for $projectPath"
 
         # Define the build path
-        $buildPath = Join-Path -Path $projectPath -ChildPath "builds"
+        $buildPath = Join-Path -Path $projectPath -ChildPath "dist"
         if (Test-Path $buildPath) {
             $appName = $appDir.Name
             $zipFileName = "$appName-app-v$version.zip"
