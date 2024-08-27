@@ -1,5 +1,5 @@
 
-/spotify/node_modules
-/image/node_modules
-/recordnowplaying/node_modules
-/discord/node_modules
+\node_modules
+\dist
+/Legacy/mediawincs
+/Legacy/CommunityApps

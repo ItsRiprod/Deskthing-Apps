@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "noImplicitAny": false, // Allow implicit any types
+    // Other compiler options...
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}

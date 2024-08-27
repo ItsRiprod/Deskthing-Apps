@@ -101,7 +101,7 @@ const start = async () => {
         }
         switch (data.request) {
             case 'image':
-                if (Data?.settings?.image_source.value !== 'unset') {
+                if (Data?.settings?.image_source.value !== 'unset' && Data?.settings?.image_source.value !== 'prompt') {
                     await sendImageToClient(Data?.settings?.image_source.value);
                 }
                 else {
