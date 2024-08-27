@@ -1,5 +1,8 @@
 
 \node_modules
 \dist
-/Legacy/mediawincs
 /Legacy/CommunityApps
+/Legacy/mediawincs/DeskThingMedia/.vs
+/Legacy/mediawincs/DeskThingMedia/obj
+/Legacy/mediawincs/DeskThingMediaCLI/.vs
+/Legacy/mediawincs/DeskThingMediaCLI/bin
