@@ -1,5 +1,5 @@
 {
-  "id": "recordplayer",
+  "id": "utility",
   "isAudioSource": false,
   "isScreenSaver": false,
   "isWebApp": true,
@@ -7,9 +7,9 @@
   "requires": [
     ""
   ],
-  "label": "Record",
-  "version": "0.8.3",
-  "description": "A simple UI alternative that shows a record player",
+  "label": "Utility",
+  "version": "0.8.8",
+  "description": "The primary utility app for DeskThing. Required for most uses",
   "author": "Riprod",
   "platforms": [
     "windows",
@@ -17,5 +17,5 @@
     "linux"
   ],
   "homepage": "https://deskthing.app",
-  "repository": "https://github.com/ItsRiprod/deskthing-apps"
+  "repository": "https://github.com/ItsRiprod/Deskthing-Apps/"
 }

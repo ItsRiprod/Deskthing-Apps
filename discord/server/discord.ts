@@ -1,6 +1,5 @@
-
-import { DeskThing } from './index';
 import { DiscordRequest, InstallGlobalCommands } from './discordUtils';
+import { DeskThing } from 'deskthing-server';
 
 interface VoiceState {
   channel_id: string | null;
@@ -14,6 +13,43 @@ interface VoiceState {
   self_video: boolean;
   suppress: boolean;
   request_to_speaknbn_timestamp: string | null;
+}
+
+class discord {
+  private client_id: string
+  private client_secret: string
+  private DeskThing: DeskThing
+
+  constructor() {
+    this.DeskThing = DeskThing.getInstance()
+    this.initiallizeData()
+    if (this.client_id && this.client_secret) {
+      
+    }
+    this.DeskThing.sendLog('Discord Initialized')
+  }
+
+  async initiallizeData() {
+    const data = await this.DeskThing.getData()
+    if (data) {
+      this.syncData(data as {[key: string]: string | undefined} | undefined)
+    }
+
+    this.DeskThing.on('data', this.syncData)
+    
+  }
+  
+  private async syncData(data: {[key: string]: string | undefined} | undefined) {
+    if (!data) return
+  
+    if (data.client_id) {
+      this.client_id = data.client_id
+    }
+    if (data.client_secret) {
+      this.client_secret = data.client_secret
+    }
+    
+  }
 }
 
 const DISCORD_APP_ID = process.env.DISCORD_APP_ID;

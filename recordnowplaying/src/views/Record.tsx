@@ -44,10 +44,10 @@ const Record: React.FC = () => {
                         console.log('Average color:', color)
 
                         const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-                        const contrastColor = luminance > 0.7 ? 'black' : 'white';
+                        const contrastColor = luminance > 0.7 ? 'rgb(35, 35, 35)' : 'white';
                         document.documentElement.style.setProperty('--background-contrast', contrastColor);
                     } else {
-                        const defaultColor = 'rgb(0,0,0)';
+                        const defaultColor = 'rgb(35,35,35)';
                         document.documentElement.style.setProperty('--background-color', defaultColor);
                         setBackgroundImage(defaultColor);
                         document.documentElement.style.setProperty('--background-contrast', 'white');

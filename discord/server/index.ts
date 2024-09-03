@@ -13,31 +13,37 @@ const start = async () => {
     // Template Items
 
     // This is how to add settings (implementation may vary)
-    if (!Data?.settings?.theme) {
+    if (!Data?.settings?.notifications || !Data?.settings?.activity ) {
         DeskThing.addSettings({
-          "theme": { label: "Theme Choice", value: 'dark', options: [{ label: 'Dark Theme', value: 'dark' }, { label: 'Light Theme', value: 'light' }] },
+          "notifications": { label: "Show Notifcations", value: 'both', options: [{ label: 'From DMs', value: 'dm' }, { label: 'From VC Chat', value: 'vc' }, { label: 'Both', value: 'both' }, { label: 'Disabled', value: 'neither' }] },
+          "activity": { label: "Set Activity", value: 'true', options: [{ label: 'Enabled', value: 'true' }, { label: 'Disabled', value: 'false' }] },
         })
 
         // This will make Data.settings.theme.value equal whatever the user selects
       }
 
     // Getting data from the user (Ensure these match)
-    if (!Data?.user_input || !Data?.second_user_input) {
+    if (!Data?.client_id || !Data?.client_secret) {
         const requestScopes = {
-          'user_input': {
+          'client_id': {
             'value': '',
-            'label': 'Placeholder User Data',
-            'instructions': 'You can make the instructions whatever you want. You can also include HTML inline styling like <a href="https://deskthing.app/" target="_blank" style="color: lightblue;">Making Clickable Links</a>.',
+            'label': 'Discord Client ID',
+            'instructions': 'You can get your Discord Client ID from the <a href="https://discord.com/developers/applications" target="_blank" style="color: lightblue;">Discord Application Dashboard</a>. You must create a new discord bot and then under OAuth2 find CLIENT ID - Copy and paste that into this field.',
           },
-          'second_user_input': {
-            'value': 'Prefilled Data',
-            'label': 'Second Option',
-            'instructions': 'Scopes can include as many options as needed',
+          'client_secret': {
+            'value': '',
+            'label': 'Discord Client Secret',
+            'instructions': 'You can get your Spotify Client Secret from the <a href="https://discord.com/developers/applications" target="_blank" style="color: lightblue;">Discord Application Dashboard</a>. You must create a new application and then under OAuth2 click "Reveal Secret" or "Reset Secret" and copy-paste that here in this field.',
+          },
+          'redirect_url': {
+            'label': 'Discord Redirect URI',
+            'value': 'http://localhost:8888/callback/discord',
+            'instructions': 'Set the Discord Redirect URI to http://localhost:8888/callback/discord and then click "Save".\n This ensures you can authenticate your account to this application',
           }
         }
     
         DeskThing.getUserInput(requestScopes, async (data) => {
-          if (data.payload.user_input && data.payload.second_user_input) {
+          if (data.payload.client_id && data.payload.client_secret) {
             // You can either save the returned data to your data object or do something with it
             DeskThing.saveData(data.payload)
           } else {

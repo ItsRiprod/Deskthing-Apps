@@ -1,7 +1,7 @@
 {
-  "name": "recordnowplaying",
+  "name": "utility",
   "private": true,
-  "version": "0.8.3",
+  "version": "0.8.8",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

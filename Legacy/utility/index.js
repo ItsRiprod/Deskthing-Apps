@@ -11,12 +11,12 @@ const main = async () => {
   if (!Data.settings.playback_location) {
     DeskThing.addSettings({
       playback_location: {
-        value: 'local',
+        value: 'na',
         label: 'Playback Location',
         options: [
           {
-            value: 'local',
-            label: 'Local'
+            value: 'na',
+            label: 'None'
           }
         ]
       },
