@@ -1,0 +1,21 @@
+{
+  "id": "weather",
+  "isAudioSource": false,
+  "isScreenSaver": false,
+  "isWebApp": true,
+  "isLocalApp": false,
+  "requires": [
+    ""
+  ],
+  "label": "Weather App",
+  "version": "0.8.8",
+  "description": "A simple weather app to display weather data",
+  "author": "Riprod",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "homepage": "https://deskthing.app",
+  "repository": ""
+}
