@@ -1,112 +1,160 @@
-import { DeskThing as DK } from 'deskthing-server';
+import { DeskThing as DK } from "deskthing-server";
 const DeskThing = DK.getInstance();
-import { totalmem, freemem, cpus } from 'os';
-export { DeskThing } // Required export of this exact name for the server to connect
+import { totalmem, freemem, cpus } from "os";
+export { DeskThing }; // Required export of this exact name for the server to connect
 
 const start = async () => {
-
   let prevIdleTime = 0;
   let prevTotalTime = 0;
 
+  // Function Declarations
+
+  /**
+   * @returns The percentage of memory usage between 0.0 and 1.0
+   */
   function getMemPercentage() {
     const totalMemory = totalmem();
     const usedMemory = totalMemory - freemem();
     const percentage = usedMemory / totalMemory;
     return percentage;
-}
-  function getCpuPercentage() {
+  }
+
+  /**
+   * Takes a snapshot of the current CPU times
+   */
+  function snapshotCpuTimes() {
     const CPUs = cpus();
     let idle = 0;
     let total = 0;
-  
+
     for (const cpu of CPUs) {
-        for (const type in cpu.times) {
-            total += cpu.times[type];
-        }
-        idle += cpu.times.idle;
+      for (const type in cpu.times) {
+        total += cpu.times[type];
+      }
+      idle += cpu.times.idle;
     }
+
+    return { idle, total };
+  }
   
-    // Calculate the difference in idle and total time since last call
-    const idleDifference = idle - prevIdleTime;
-    const totalDifference = total - prevTotalTime;
-  
-    // Calculate the percentage CPU usage
-    let percentageCpu = 100 - Math.ceil((100 * idleDifference) / totalDifference);
-  
-    // Update the previous idle and total times
-    prevIdleTime = idle;
-    prevTotalTime = total;
-  
-    percentageCpu /= 100;
+   /**
+   * @returns A promise that resolves to the percentage of CPU usage between 0.0 and 1.0 after a delay
+   */
+   async function getCpuPercentage() {
+    // Take an initial snapshot
+    const startTimes = snapshotCpuTimes();
+
+    // Wait for a small interval (e.g., 100ms)
+    await sleep(100);
+
+    // Take a second snapshot
+    const endTimes = snapshotCpuTimes();
+
+    // Calculate the difference in idle and total time
+    const idleDifference = endTimes.idle - startTimes.idle;
+    const totalDifference = endTimes.total - startTimes.total;
+
+    // Calculate CPU usage percentage
+    const percentageCpu = 1 - idleDifference / totalDifference;
+
     return percentageCpu;
   }
-  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-  const remove = DeskThing.addBackgroundTaskLoop(async () => {
-    const memUsage = await getMemPercentage()
-    const cpuUsage = await getCpuPercentage()
+  // Utility function for sleeping 
+  const sleep = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
 
-    DeskThing.sendDataToClient({type: 'system', payload: { memUsage, cpuUsage }})
 
-    await sleep(1000)
+
+  // Remove background task function
+  let removeBackgroundTask: (() => void) | null = null
+
+
+  /**
+   * Sets up a loop that sends data to the client every 100ms and pings the client to see if it is still connected
+   */
+  const setupLoop = async () => {
+    if (removeBackgroundTask) {
+      console.log('Removed existing background task');
+      removeBackgroundTask(); // remove any existing background task
+      removeBackgroundTask = null; // reset the reference to null
+    }
+
+    // Create a new background task
+    removeBackgroundTask = DeskThing.addBackgroundTaskLoop(async () => {
+      const memUsage = await getMemPercentage();
+      const cpuUsage = await getCpuPercentage();
+  
+      const code = Math.round((Math.random()) + 0.1 * 100);
+  
+      // Send the data to the client
+      DeskThing.sendDataToClient({
+        type: "system",
+        payload: { memUsage, cpuUsage, ping: code },
+      });
+
+      // Await for the client to ping back
+      const responsePromise = new Promise<boolean>((resolve) => {
+        
+        const removeListener = DeskThing.on("set", async (socketData) => {
+          if (socketData.request == "pong" && socketData.payload == code) {
+            console.log('Client responded with correct pong');
+            removeListener();
+            resolve(true);
+          }
+        });
+
+        // Setup a 5 second timeout to resolve with false if the client doesn't respond
+        setTimeout(() => {
+          removeListener()
+          resolve(false)
+        }, 5000)
+      });
+  
+  
+      // Start the race condition
+      const result = await responsePromise
+  
+
+
+      // Check the results
+      await sleep(1000); // Wait an additional second to not overload the client with data
+      if (result) {
+        console.log("Client response received");
+        return false; // Continue Loop
+      } else {
+        console.log("Client response timed out");
+        return true; // End Loop as client as presumably disconnected
+      }
+    });
+  }
+
+
+
+  // Listen for the initial setup request (pinged when the client connects)
+  const removeInitialSetup = DeskThing.on('set', async (socketData) => {
+    if (socketData.request == "subscribe") {
+      setupLoop();
+    }
   })
 
-  /*  
-  let Data = await DeskThing.getData()
-    DeskThing.on('data', (newData) => {
-        // Syncs the data with the server
-        Data = newData
-        DeskThing.sendLog('New data received!' + Data)
-    })
+  // Start the loop by default
+  setupLoop()
 
-    // Template Items
+  // Stop function to cleanup listeners and tasks
+  const stop = async () => {
 
-    // This is how to add settings (implementation may vary)
-    if (!Data?.settings?.theme) {
-        DeskThing.addSettings({
-          "theme": { label: "Theme Choice", value: 'dark', options: [{ label: 'Dark Theme', value: 'dark' }, { label: 'Light Theme', value: 'light' }] },
-        })
+    // Remove the background task
+    if (removeBackgroundTask) {
+      removeBackgroundTask();
+      removeBackgroundTask = null;
+    }
 
-        // This will make Data.settings.theme.value equal whatever the user selects
-      }
-
-    // Getting data from the user (Ensure these match)
-    if (!Data?.user_input || !Data?.second_user_input) {
-        const requestScopes = {
-          'user_input': {
-            'value': '',
-            'label': 'Placeholder User Data',
-            'instructions': 'You can make the instructions whatever you want. You can also include HTML inline styling like <a href="https://deskthing.app/" target="_blank" style="color: lightblue;">Making Clickable Links</a>.',
-          },
-          'second_user_input': {
-            'value': 'Prefilled Data',
-            'label': 'Second Option',
-            'instructions': 'Scopes can include as many options as needed',
-          }
-        }
-    
-        DeskThing.getUserInput(requestScopes, async (data) => {
-          if (data.payload.user_input && data.payload.second_user_input) {
-            // You can either save the returned data to your data object or do something with it
-            DeskThing.saveData(data.payload)
-          } else {
-            DeskThing.sendError('Please fill out all the fields! Restart to try again')
-          }
-        })
-      } else {
-        DeskThing.sendLog('Data Exists!')
-        // This will be called is the data already exists in the server
-      }
-
-      */
-     const stop = async () => {
-        remove()
-     }
-     DeskThing.on('stop', stop)
-} 
-
+    // Remove the initial setup listener
+    removeInitialSetup()
+  };
+  DeskThing.on("stop", stop);
+};
 
 // Main Entrypoint of the server
-DeskThing.on('start', start)
-
-// Main exit point of the server
+DeskThing.on("start", start);
