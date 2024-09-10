@@ -8,7 +8,7 @@
     ""
   ],
   "label": "Weather App",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "description": "A simple weather app to display weather data",
   "author": "Riprod",
   "platforms": [

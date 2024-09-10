@@ -5,7 +5,8 @@ import legacy from '@vitejs/plugin-legacy';
 // https://vitejs.dev/config/
 export default defineConfig({
   base: './',
-  plugins: [react(),
+  plugins: [
+    react(),
             legacy({
             targets: ['Chrome 69'], // Specify the browsers you want to support
         }),],

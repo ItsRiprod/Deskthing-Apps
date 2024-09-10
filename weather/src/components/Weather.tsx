@@ -45,7 +45,7 @@ const Weather = ({ weatherData }: WeatherProps) => {
   // Get temperature for the selected time
   const getTemperatureForSelectedTime = () => {
     if (!weatherData) return null;
-
+    
     return weatherData.hourly.temperature2m[selectedTimeIndex] || null;
   };
 
