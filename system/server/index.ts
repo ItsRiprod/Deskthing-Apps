@@ -1,63 +1,59 @@
 import { DeskThing as DK } from "deskthing-server";
 const DeskThing = DK.getInstance();
-import { totalmem, freemem, cpus } from "os";
+import si from "systeminformation";
 export { DeskThing }; // Required export of this exact name for the server to connect
 
 const start = async () => {
-  let prevIdleTime = 0;
-  let prevTotalTime = 0;
+  let Data = await DeskThing.getData()
+  DeskThing.on('data', (newData) => {
+      // Syncs the data with the server
+      Data = newData
+      DeskThing.sendLog('New data received!' + Data)
+  })
 
-  // Function Declarations
-
-  /**
-   * @returns The percentage of memory usage between 0.0 and 1.0
-   */
-  function getMemPercentage() {
-    const totalMemory = totalmem();
-    const usedMemory = totalMemory - freemem();
-    const percentage = usedMemory / totalMemory;
-    return percentage;
-  }
-
-  /**
-   * Takes a snapshot of the current CPU times
-   */
-  function snapshotCpuTimes() {
-    const CPUs = cpus();
-    let idle = 0;
-    let total = 0;
-
-    for (const cpu of CPUs) {
-      for (const type in cpu.times) {
-        total += cpu.times[type];
-      }
-      idle += cpu.times.idle;
-    }
-
-    return { idle, total };
+  if (!Data?.settings?.view) {
+    DeskThing.addSettings({
+      "view": { label: "System View", value: 'gpu', options: [{ label: 'Default View', value: 'default' }, { label: 'GPU Centered', value: 'gpu' }] }
+    });
   }
   
-   /**
-   * @returns A promise that resolves to the percentage of CPU usage between 0.0 and 1.0 after a delay
-   */
-   async function getCpuPercentage() {
-    // Take an initial snapshot
-    const startTimes = snapshotCpuTimes();
+  async function getAdditionalSystemStats() {
+    try {
+      const gpuData = await si.graphics();
+      const networkData = await si.networkStats();
+      const cpuData = await si.cpuTemperature();
+      const memoryData = await si.mem();
+      const processData = await si.processes();
+      const cpuLoad = (await si.currentLoad()).currentLoad;
 
-    // Wait for a small interval (e.g., 100ms)
-    await sleep(100);
+      const gpuTemp = gpuData.controllers[0].temperatureGpu;
+      const gpuUsage = gpuData.controllers[0].utilizationGpu;
+      const uploadSpeed = networkData[0].tx_sec;
+      const downloadSpeed = networkData[0].rx_sec;
+      const ping = networkData[0].ms;
+      const cpuTemp = cpuData.main;
+      const memTotal = memoryData.total;
+      const memUsage = memoryData.active;
+      const processCount = processData.all;
+      const activeProcesses = processData.running;
 
-    // Take a second snapshot
-    const endTimes = snapshotCpuTimes();
-
-    // Calculate the difference in idle and total time
-    const idleDifference = endTimes.idle - startTimes.idle;
-    const totalDifference = endTimes.total - startTimes.total;
-
-    // Calculate CPU usage percentage
-    const percentageCpu = 1 - idleDifference / totalDifference;
-
-    return percentageCpu;
+      return {
+        gpuTemp,
+        gpuUsage,
+        uploadSpeed,
+        downloadSpeed,
+        ping,
+        cpuTemp,
+        cpuLoad,
+        memTotal,
+        memUsage,
+        processCount,
+        activeProcesses,
+      };
+    } catch (error) {
+      DeskThing.sendLog(`Error fetching system stats: ${error.message}`);
+      return {};
+    }
   }
 
   // Utility function for sleeping 
@@ -82,15 +78,37 @@ const start = async () => {
 
     // Create a new background task
     removeBackgroundTask = DeskThing.addBackgroundTaskLoop(async () => {
-      const memUsage = await getMemPercentage();
-      const cpuUsage = await getCpuPercentage();
-  
+      const {
+        gpuTemp,
+        gpuUsage,
+        uploadSpeed,
+        downloadSpeed,
+        ping,
+        cpuTemp,
+        memTotal,
+        cpuLoad,
+        memUsage,
+        processCount,
+        activeProcesses,
+      } = await getAdditionalSystemStats();
       const code = Math.round((Math.random()) + 0.1 * 100);
   
       // Send the data to the client
       DeskThing.sendDataToClient({
         type: "system",
-        payload: { memUsage, cpuUsage, ping: code },
+        payload: {
+          cpuLoad,
+          memUsage,
+          cpuTemp,
+          gpuTemp,
+          gpuUsage,
+          uploadSpeed,
+          downloadSpeed,
+          ping: code,
+          pingTime: ping,
+          processCount,
+          activeProcesses,
+        },
       });
 
       // Await for the client to ping back

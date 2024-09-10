@@ -16,7 +16,8 @@
     "deskthing-client": "latest",
     "deskthing-server": "latest",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "systeminformation": "^5.23.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
