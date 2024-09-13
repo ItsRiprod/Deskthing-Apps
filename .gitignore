@@ -5,6 +5,9 @@
 /Legacy/mediawincs/DeskThingMedia/.vs
 /Legacy/mediawincs/DeskThingMedia/obj
 /Legacy/mediawincs/DeskThingMediaCLI/.vs
+/Legacy/mediawincs/DeskThingMediaCLI/obj
 /Legacy/mediawincs/DeskThingMediaCLI/bin
 /recordnowplaying/dist
 /Releases
+.vs/
+*.pdb
