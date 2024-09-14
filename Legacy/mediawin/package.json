@@ -1,6 +1,6 @@
 {
   "name": "mediawin",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "The DeskThing Media Windows App is a local audio control control source for the DeskThing",
   "type": "module",
   "main": "index.js",
