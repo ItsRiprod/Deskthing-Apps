@@ -1,7 +1,46 @@
 button {
-  background: transparent
+  background: transparent;
+  background-color: transparent;
+
+  border: none;
+}
+button:focus {
+  outline: none;
+  border: none;
+}
+button:active {
+  outline: none;
+  border: none;
 }
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+  font-family: 'Geist';
+  src: url(/fonts/GeistVF.ttf) format('truetype');
+  font-style: normal;
+  font-weight: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'HelveticaNeue';
+  src: url(/fonts/HelveticaNeue.ttf) format('truetype');
+  font-style: normal;
+  font-weight: lighter;
+  font-display: swap;
+}
+
+@keyframes scrollText {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-1 * var(--text-width)));
+  }
+}
+
+.animate-scroll-text {
+  animation: scrollText;
+}

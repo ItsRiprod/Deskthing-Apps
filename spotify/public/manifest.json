@@ -8,7 +8,7 @@
     "utility"
   ],
   "label": "Spotify App",
-  "version": "0.8.11",
+  "version": "0.9.0",
   "description": "The primary way to interact with spotify",
   "author": "Riprod",
   "platforms": [

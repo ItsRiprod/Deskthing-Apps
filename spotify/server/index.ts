@@ -36,6 +36,15 @@ const handleGet = async (data: IncomingData) => {
     case 'refresh':
       await spotify.checkForRefresh()
       break
+    case 'analysis':
+      await spotify.analysis()
+      break
+    case 'features':
+      await spotify.features()
+      break
+    case 'playlists': // Returns all playlists as array
+      await spotify.playlists()
+      break
     default:
       DeskThing.sendError(`Unknown request: ${data.request}`)
       break
@@ -86,6 +95,15 @@ const handleSet = async (data: IncomingData) => {
       break
     case 'transfer':
       response = await spotify.transfer()
+      break
+    case 'play_playlist': // Expects playlist index
+      response = await spotify.playPlaylist(data.payload)
+      break
+    case 'set_playlist': // Expects playlist index
+      response = await spotify.setPlaylist(data.payload)
+      break
+    case 'add_playlist': // Expects playlist index
+      response = await spotify.addToPlaylist(data.payload)
       break
   }
   DeskThing.sendLog(response)

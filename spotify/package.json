@@ -1,26 +1,27 @@
 {
   "name": "spotify",
   "private": true,
-  "version": "0.8.1",
+  "version": "0.9.0",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm run build-server",
-    "build-server": "tsc --project tsconfig.server.json",
+    "build-server": "esbuild server/index.ts --bundle --platform=node --outdir=dist/",
     "setup": "node setup.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
-    "axios": "^1.7.4",
-    "deskthing-client": "^0.7.6",
-    "deskthing-server": "^0.7.6",
+    "axios": "^1.7.7",
+    "deskthing-client": "latest",
+    "deskthing-server": "latest",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
+    "@types/node": "^22.6.1",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-legacy": "^5.4.2",
