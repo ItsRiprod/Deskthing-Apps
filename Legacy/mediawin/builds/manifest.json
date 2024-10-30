@@ -1,13 +1,19 @@
 {
-  "id": "local",
+  "id": "mediawin",
   "isAudioSource": true,
   "isWebApp": false,
   "isLocalApp": true,
   "requires": [
-    "utility"
   ],
   "label": "Windows Media App",
-  "version": "v0.8.1",
+  "version": "0.9.0",
+  "version_code": "9.0",
+  "compatible_server": [
+    "9"
+  ],
+  "compatible_client": [
+    "9"
+  ],
   "description": "The DeskThing Media Windows App is a local audio control control source for the DeskThing",
   "author": "Riprod",
   "platforms": [

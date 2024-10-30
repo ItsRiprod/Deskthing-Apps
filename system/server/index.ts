@@ -13,7 +13,7 @@ const start = async () => {
 
   if (!Data?.settings?.view) {
     DeskThing.addSettings({
-      "view": { label: "System View", value: 'gpu', options: [{ label: 'Default View', value: 'default' }, { label: 'GPU Centered', value: 'gpu' }] }
+      "view": { label: "System View", type:'select', description:'Choose the GUI you want', value: 'gpu', options: [{ label: 'Default View', value: 'default' }, { label: 'GPU Centered', value: 'gpu' }] }
     });
   }
   

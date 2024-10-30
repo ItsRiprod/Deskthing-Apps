@@ -1014,16 +1014,7 @@ var start = async () => {
       "change_source": {
         "value": "true",
         "label": "Switch Output on Select",
-        "options": [
-          {
-            "value": "true",
-            "label": "Switch"
-          },
-          {
-            "value": "false",
-            "label": "Dont Switch"
-          }
-        ]
+        "type": "boolean"
       }
     };
     DeskThing.addSettings(settings);

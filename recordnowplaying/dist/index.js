@@ -9175,7 +9175,7 @@ var require_form_data = __commonJS({
       if (typeof value == "number") {
         value = "" + value;
       }
-      if (util.isArray(value)) {
+      if (Array.isArray(value)) {
         this._error(new Error("Arrays are not supported."));
         return;
       }
@@ -9973,12 +9973,11 @@ var require_browser = __commonJS({
 var require_has_flag = __commonJS({
   "node_modules/has-flag/index.js"(exports2, module2) {
     "use strict";
-    module2.exports = (flag, argv) => {
-      argv = argv || process.argv;
+    module2.exports = (flag, argv = process.argv) => {
       const prefix = flag.startsWith("-") ? "" : flag.length === 1 ? "-" : "--";
-      const pos = argv.indexOf(prefix + flag);
-      const terminatorPos = argv.indexOf("--");
-      return pos !== -1 && (terminatorPos === -1 ? true : pos < terminatorPos);
+      const position = argv.indexOf(prefix + flag);
+      const terminatorPosition = argv.indexOf("--");
+      return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
     };
   }
 });
@@ -9988,16 +9987,23 @@ var require_supports_color = __commonJS({
   "node_modules/supports-color/index.js"(exports2, module2) {
     "use strict";
     var os = require("os");
+    var tty = require("tty");
     var hasFlag = require_has_flag();
-    var env = process.env;
+    var { env } = process;
     var forceColor;
-    if (hasFlag("no-color") || hasFlag("no-colors") || hasFlag("color=false")) {
-      forceColor = false;
+    if (hasFlag("no-color") || hasFlag("no-colors") || hasFlag("color=false") || hasFlag("color=never")) {
+      forceColor = 0;
     } else if (hasFlag("color") || hasFlag("colors") || hasFlag("color=true") || hasFlag("color=always")) {
-      forceColor = true;
+      forceColor = 1;
     }
     if ("FORCE_COLOR" in env) {
-      forceColor = env.FORCE_COLOR.length === 0 || parseInt(env.FORCE_COLOR, 10) !== 0;
+      if (env.FORCE_COLOR === "true") {
+        forceColor = 1;
+      } else if (env.FORCE_COLOR === "false") {
+        forceColor = 0;
+      } else {
+        forceColor = env.FORCE_COLOR.length === 0 ? 1 : Math.min(parseInt(env.FORCE_COLOR, 10), 3);
+      }
     }
     function translateLevel(level) {
       if (level === 0) {
@@ -10010,8 +10016,8 @@ var require_supports_color = __commonJS({
         has16m: level >= 3
       };
     }
-    function supportsColor(stream) {
-      if (forceColor === false) {
+    function supportsColor(haveStream, streamIsTTY) {
+      if (forceColor === 0) {
         return 0;
       }
       if (hasFlag("color=16m") || hasFlag("color=full") || hasFlag("color=truecolor")) {
@@ -10020,19 +10026,22 @@ var require_supports_color = __commonJS({
       if (hasFlag("color=256")) {
         return 2;
       }
-      if (stream && !stream.isTTY && forceColor !== true) {
+      if (haveStream && !streamIsTTY && forceColor === void 0) {
         return 0;
       }
-      const min = forceColor ? 1 : 0;
+      const min = forceColor || 0;
+      if (env.TERM === "dumb") {
+        return min;
+      }
       if (process.platform === "win32") {
         const osRelease = os.release().split(".");
-        if (Number(process.versions.node.split(".")[0]) >= 8 && Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
+        if (Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
           return Number(osRelease[2]) >= 14931 ? 3 : 2;
         }
         return 1;
       }
       if ("CI" in env) {
-        if (["TRAVIS", "CIRCLECI", "APPVEYOR", "GITLAB_CI"].some((sign) => sign in env) || env.CI_NAME === "codeship") {
+        if (["TRAVIS", "CIRCLECI", "APPVEYOR", "GITLAB_CI", "GITHUB_ACTIONS", "BUILDKITE"].some((sign) => sign in env) || env.CI_NAME === "codeship") {
           return 1;
         }
         return min;
@@ -10061,19 +10070,16 @@ var require_supports_color = __commonJS({
       if ("COLORTERM" in env) {
         return 1;
       }
-      if (env.TERM === "dumb") {
-        return min;
-      }
       return min;
     }
     function getSupportLevel(stream) {
-      const level = supportsColor(stream);
+      const level = supportsColor(stream, stream && stream.isTTY);
       return translateLevel(level);
     }
     module2.exports = {
       supportsColor: getSupportLevel,
-      stdout: getSupportLevel(process.stdout),
-      stderr: getSupportLevel(process.stderr)
+      stdout: translateLevel(supportsColor(true, tty.isatty(1))),
+      stderr: translateLevel(supportsColor(true, tty.isatty(2)))
     };
   }
 });
@@ -10293,9 +10299,17 @@ var require_follow_redirects = __commonJS({
     var Writable = require("stream").Writable;
     var assert = require("assert");
     var debug = require_debug();
+    (function detectUnsupportedEnvironment() {
+      var looksLikeNode = typeof process !== "undefined";
+      var looksLikeBrowser = typeof window !== "undefined" && typeof document !== "undefined";
+      var looksLikeV8 = isFunction(Error.captureStackTrace);
+      if (!looksLikeNode && (looksLikeBrowser || !looksLikeV8)) {
+        console.warn("The follow-redirects package should be excluded from browser builds.");
+      }
+    })();
     var useNativeURL = false;
     try {
-      assert(new URL2());
+      assert(new URL2(""));
     } catch (error) {
       useNativeURL = error.code === "ERR_INVALID_URL";
     }
@@ -10722,7 +10736,9 @@ var require_follow_redirects = __commonJS({
     }
     function createErrorType(code, message, baseClass) {
       function CustomError(properties) {
-        Error.captureStackTrace(this, this.constructor);
+        if (isFunction(Error.captureStackTrace)) {
+          Error.captureStackTrace(this, this.constructor);
+        }
         Object.assign(this, properties || {});
         this.code = code;
         this.message = this.cause ? message + ": " + this.cause.message : message;
@@ -11996,7 +12012,7 @@ var require_axios = __commonJS({
       }
       return requestedURL;
     }
-    var VERSION = "1.7.5";
+    var VERSION = "1.7.7";
     function parseProtocol(url2) {
       const match = /^([-+\w]{1,25})(:?\/\/|:)/.exec(url2);
       return match && match[1] || "";
@@ -12659,7 +12675,7 @@ var require_axios = __commonJS({
         if (config.socketPath) {
           options.socketPath = config.socketPath;
         } else {
-          options.hostname = parsed.hostname;
+          options.hostname = parsed.hostname.startsWith("[") ? parsed.hostname.slice(1, -1) : parsed.hostname;
           options.port = parsed.port;
           setProxy(options, config.proxy, protocol + "//" + parsed.hostname + (parsed.port ? ":" + parsed.port : "") + options.path);
         }
@@ -13168,36 +13184,37 @@ var require_axios = __commonJS({
       });
     };
     var composeSignals = (signals, timeout) => {
-      let controller = new AbortController();
-      let aborted;
-      const onabort = function(cancel) {
-        if (!aborted) {
-          aborted = true;
-          unsubscribe();
-          const err = cancel instanceof Error ? cancel : this.reason;
-          controller.abort(err instanceof AxiosError ? err : new CanceledError(err instanceof Error ? err.message : err));
-        }
-      };
-      let timer = timeout && setTimeout(() => {
-        onabort(new AxiosError(`timeout ${timeout} of ms exceeded`, AxiosError.ETIMEDOUT));
-      }, timeout);
-      const unsubscribe = () => {
-        if (signals) {
-          timer && clearTimeout(timer);
+      const { length } = signals = signals ? signals.filter(Boolean) : [];
+      if (timeout || length) {
+        let controller = new AbortController();
+        let aborted;
+        const onabort = function(reason) {
+          if (!aborted) {
+            aborted = true;
+            unsubscribe();
+            const err = reason instanceof Error ? reason : this.reason;
+            controller.abort(err instanceof AxiosError ? err : new CanceledError(err instanceof Error ? err.message : err));
+          }
+        };
+        let timer = timeout && setTimeout(() => {
           timer = null;
-          signals.forEach((signal2) => {
-            signal2 && (signal2.removeEventListener ? signal2.removeEventListener("abort", onabort) : signal2.unsubscribe(onabort));
-          });
-          signals = null;
-        }
-      };
-      signals.forEach((signal2) => signal2 && signal2.addEventListener && signal2.addEventListener("abort", onabort));
-      const { signal } = controller;
-      signal.unsubscribe = unsubscribe;
-      return [signal, () => {
-        timer && clearTimeout(timer);
-        timer = null;
-      }];
+          onabort(new AxiosError(`timeout ${timeout} of ms exceeded`, AxiosError.ETIMEDOUT));
+        }, timeout);
+        const unsubscribe = () => {
+          if (signals) {
+            timer && clearTimeout(timer);
+            timer = null;
+            signals.forEach((signal2) => {
+              signal2.unsubscribe ? signal2.unsubscribe(onabort) : signal2.removeEventListener("abort", onabort);
+            });
+            signals = null;
+          }
+        };
+        signals.forEach((signal2) => signal2.addEventListener("abort", onabort));
+        const { signal } = controller;
+        signal.unsubscribe = () => utils$1.asap(unsubscribe);
+        return signal;
+      }
     };
     var composeSignals$1 = composeSignals;
     var streamChunk = function* (chunk, chunkSize) {
@@ -13214,13 +13231,31 @@ var require_axios = __commonJS({
         pos = end;
       }
     };
-    var readBytes = async function* (iterable, chunkSize, encode2) {
-      for await (const chunk of iterable) {
-        yield* streamChunk(ArrayBuffer.isView(chunk) ? chunk : await encode2(String(chunk)), chunkSize);
+    var readBytes = async function* (iterable, chunkSize) {
+      for await (const chunk of readStream(iterable)) {
+        yield* streamChunk(chunk, chunkSize);
       }
     };
-    var trackStream = (stream2, chunkSize, onProgress, onFinish, encode2) => {
-      const iterator = readBytes(stream2, chunkSize, encode2);
+    var readStream = async function* (stream2) {
+      if (stream2[Symbol.asyncIterator]) {
+        yield* stream2;
+        return;
+      }
+      const reader = stream2.getReader();
+      try {
+        for (; ; ) {
+          const { done, value } = await reader.read();
+          if (done) {
+            break;
+          }
+          yield value;
+        }
+      } finally {
+        await reader.cancel();
+      }
+    };
+    var trackStream = (stream2, chunkSize, onProgress, onFinish) => {
+      const iterator = readBytes(stream2, chunkSize);
       let bytes = 0;
       let done;
       let _onFinish = (e) => {
@@ -13299,7 +13334,11 @@ var require_axios = __commonJS({
         return body.size;
       }
       if (utils$1.isSpecCompliantForm(body)) {
-        return (await new Request(body).arrayBuffer()).byteLength;
+        const _request = new Request(platform.origin, {
+          method: "POST",
+          body
+        });
+        return (await _request.arrayBuffer()).byteLength;
       }
       if (utils$1.isArrayBufferView(body) || utils$1.isArrayBuffer(body)) {
         return body.byteLength;
@@ -13331,14 +13370,11 @@ var require_axios = __commonJS({
         fetchOptions
       } = resolveConfig(config);
       responseType = responseType ? (responseType + "").toLowerCase() : "text";
-      let [composedSignal, stopTimeout] = signal || cancelToken || timeout ? composeSignals$1([signal, cancelToken], timeout) : [];
-      let finished, request;
-      const onFinish = () => {
-        !finished && setTimeout(() => {
-          composedSignal && composedSignal.unsubscribe();
-        });
-        finished = true;
-      };
+      let composedSignal = composeSignals$1([signal, cancelToken && cancelToken.toAbortSignal()], timeout);
+      let request;
+      const unsubscribe = composedSignal && composedSignal.unsubscribe && (() => {
+        composedSignal.unsubscribe();
+      });
       let requestContentLength;
       try {
         if (onUploadProgress && supportsRequestStream && method !== "get" && method !== "head" && (requestContentLength = await resolveBodyLength(headers, data)) !== 0) {
@@ -13356,7 +13392,7 @@ var require_axios = __commonJS({
               requestContentLength,
               progressEventReducer(asyncDecorator(onUploadProgress))
             );
-            data = trackStream(_request.body, DEFAULT_CHUNK_SIZE, onProgress, flush, encodeText);
+            data = trackStream(_request.body, DEFAULT_CHUNK_SIZE, onProgress, flush);
           }
         }
         if (!utils$1.isString(withCredentials)) {
@@ -13374,7 +13410,7 @@ var require_axios = __commonJS({
         });
         let response = await fetch(request);
         const isStreamResponse = supportsResponseStream && (responseType === "stream" || responseType === "response");
-        if (supportsResponseStream && (onDownloadProgress || isStreamResponse)) {
+        if (supportsResponseStream && (onDownloadProgress || isStreamResponse && unsubscribe)) {
           const options = {};
           ["status", "statusText", "headers"].forEach((prop) => {
             options[prop] = response[prop];
@@ -13387,15 +13423,14 @@ var require_axios = __commonJS({
           response = new Response(
             trackStream(response.body, DEFAULT_CHUNK_SIZE, onProgress, () => {
               flush && flush();
-              isStreamResponse && onFinish();
-            }, encodeText),
+              unsubscribe && unsubscribe();
+            }),
             options
           );
         }
         responseType = responseType || "text";
         let responseData = await resolvers[utils$1.findKey(resolvers, responseType) || "text"](response, config);
-        !isStreamResponse && onFinish();
-        stopTimeout && stopTimeout();
+        !isStreamResponse && unsubscribe && unsubscribe();
         return await new Promise((resolve, reject) => {
           settle(resolve, reject, {
             data: responseData,
@@ -13407,7 +13442,7 @@ var require_axios = __commonJS({
           });
         });
       } catch (err) {
-        onFinish();
+        unsubscribe && unsubscribe();
         if (err && err.name === "TypeError" && /fetch/i.test(err.message)) {
           throw Object.assign(
             new AxiosError("Network Error", AxiosError.ERR_NETWORK, config, request),
@@ -13803,6 +13838,15 @@ var require_axios = __commonJS({
           this._listeners.splice(index, 1);
         }
       }
+      toAbortSignal() {
+        const controller = new AbortController();
+        const abort = (err) => {
+          controller.abort(err);
+        };
+        this.subscribe(abort);
+        controller.signal.unsubscribe = () => this.unsubscribe(abort);
+        return controller.signal;
+      }
       /**
        * Returns an object that contains a new `CancelToken` and a function that, when called,
        * cancels the `CancelToken`.
@@ -13997,10 +14041,25 @@ var require_dist = __commonJS({
       return mod && mod.__esModule ? mod : { "default": mod };
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.DeskThing = void 0;
+    exports2.DeskThing = exports2.EventFlavor = void 0;
     var fs = __importStar(require("fs"));
     var path = __importStar(require("path"));
     var axios_1 = __importDefault(require_axios());
+    var EventFlavor;
+    (function(EventFlavor2) {
+      EventFlavor2[EventFlavor2["KeyUp"] = 0] = "KeyUp";
+      EventFlavor2[EventFlavor2["KeyDown"] = 1] = "KeyDown";
+      EventFlavor2[EventFlavor2["ScrollUp"] = 2] = "ScrollUp";
+      EventFlavor2[EventFlavor2["ScrollDown"] = 3] = "ScrollDown";
+      EventFlavor2[EventFlavor2["ScrollLeft"] = 4] = "ScrollLeft";
+      EventFlavor2[EventFlavor2["ScrollRight"] = 5] = "ScrollRight";
+      EventFlavor2[EventFlavor2["SwipeUp"] = 6] = "SwipeUp";
+      EventFlavor2[EventFlavor2["SwipeDown"] = 7] = "SwipeDown";
+      EventFlavor2[EventFlavor2["SwipeLeft"] = 8] = "SwipeLeft";
+      EventFlavor2[EventFlavor2["SwipeRight"] = 9] = "SwipeRight";
+      EventFlavor2[EventFlavor2["PressShort"] = 10] = "PressShort";
+      EventFlavor2[EventFlavor2["PressLong"] = 11] = "PressLong";
+    })(EventFlavor || (exports2.EventFlavor = EventFlavor = {}));
     var DeskThing2 = class _DeskThing {
       constructor() {
         this.Listeners = {};
@@ -14020,6 +14079,9 @@ var require_dist = __commonJS({
        *
        * @example
        * const deskThing = DeskThing.getInstance();
+       * deskthing.on('start', () => {
+       *   // Your code here
+       * });
        */
       static getInstance() {
         if (!this.instance) {
@@ -14066,14 +14128,25 @@ var require_dist = __commonJS({
         });
       }
       /**
-       * Registers an event listener for a specific incoming event.
+       * Registers an event listener for a specific incoming event. Events are either the "type" value of the incoming SocketData object or a special event like "start", "stop", or "data".
        *
-       * @param event - The event to listen for.
+       * @param event - The event type to listen for.
        * @param callback - The function to call when the event occurs.
        * @returns A function to remove the listener.
        *
        * @example
        * const removeListener = deskThing.on('data', (data) => console.log(data));
+       * removeListener(); // To remove the listener
+       * @example
+       * const removeListener = deskThing.on('start', () => console.log('App is starting));
+       * removeListener(); // To remove the listener
+       * @example
+       * // When {type: 'get'} is received from the server
+       * const removeListener = deskThing.on('get', (socketData) => console.log(socketData.payload));
+       * removeListener(); // To remove the listener
+       * @example
+       * // When a setting is updated. Passes the updated settings object
+       * const removeListener = deskThing.on('settings', (settings) => console.log(settings.some_setting.value));
        * removeListener(); // To remove the listener
        */
       on(event, callback) {
@@ -14090,7 +14163,9 @@ var require_dist = __commonJS({
        * @param callback - The listener function to remove.
        *
        * @example
-       * deskThing.off('data', dataListener);
+       * const dataListener = () => console.log('Data received');
+       * deskthing.on('data', dataListener);
+       * deskthing.off('data', dataListener);
        */
       off(event, callback) {
         if (!this.Listeners[event]) {
@@ -14100,7 +14175,7 @@ var require_dist = __commonJS({
       }
       /**
        * Registers a system event listener. This feature is somewhat limited but allows for detecting when there are new audiosources or button mappings registered to the server.
-       *
+       * Eg 'config' is emitted when the server has new button mappings or audio sources registered.
        * @param event - The system event to listen for.
        * @param listener - The function to call when the event occurs.
        * @returns A function to remove the listener.
@@ -14133,6 +14208,10 @@ var require_dist = __commonJS({
        *
        * @example
        * deskThing.once('data').then(data => console.log('Received data:', data));
+       * @example
+       * await deskThing.once('flagType');
+       * @example
+       * await deskThing.once('flagType', someFunction);
        */
       once(event, callback) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -14197,6 +14276,10 @@ var require_dist = __commonJS({
        *
        * @example
        * deskThing.send('message', 'Hello, Server!');
+       * @example
+       * deskThing.send('log', 'Hello, Server!');
+       * @example
+       * deskThing.send('data', {type: 'songData', payload: musicData });
        */
       send(event, payload, request) {
         this.sendData(event, payload, request);
@@ -14236,18 +14319,21 @@ var require_dist = __commonJS({
       }
       /**
        * Routes request to another app running on the server.
+       * Ensure that the app you are requesting data from is in your dependency array!
        *
        * @param appId - The ID of the target app.
        * @param data - The data to send to the target app.
        *
        * @example
        * deskThing.sendDataToOtherApp('utility', { type: 'set', request: 'next', payload: { id: '' } });
+       * @example
+       * deskThing.sendDataToOtherApp('spotify', { type: 'get', request: 'music' });
        */
       sendDataToOtherApp(appId, payload) {
         this.send("toApp", payload, appId);
       }
       /**
-       * Sends structured data to the client through the server. This will be received by the webapp client. "app" defaults to the current app.
+       * Sends structured data to the client through the server. This will be received by the webapp client. The "app" field defaults to the current app.
        *
        * @param data - The structured data to send to the client, including app, type, request, and data.
        *
@@ -14257,6 +14343,16 @@ var require_dist = __commonJS({
        *   type: 'set',
        *   request: 'next',
        *   data: { key: 'value' }
+       * });
+       * @example
+       * deskThing.sendDataToClient({
+       *   type: 'songData',
+       *   data: songData
+       * });
+       * @example
+       * deskThing.sendDataToClient({
+       *   type: 'callStatus',
+       *   data: callData
        * });
        */
       sendDataToClient(data) {
@@ -14338,6 +14434,9 @@ var require_dist = __commonJS({
        *
        * @example
        * deskThing.getConfig('myConfig');
+       * @example
+       * const someValue = await deskThing.getConfig('superSpecificConfig');
+       * console.log('Some value:', someValue);
        */
       getConfig(name) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -14348,7 +14447,6 @@ var require_dist = __commonJS({
               resolve(null);
               this.sendLog(`Failed to fetch config: ${name}`);
             }, 5e3))
-            // Adjust timeout as needed
           ]);
         });
       }
@@ -14384,14 +14482,15 @@ var require_dist = __commonJS({
        *
        * @param scopes - The scopes to request input for, defining the type and details of the input needed.
        * @param callback - The function to call with the input response once received.
-       *
+       * @deprecated This will be removed in future release and replaced with tasks.
        * @example
        * deskThing.getUserInput(
        *   {
        *     username: { instructions: 'Enter your username', label: 'Username' },
-       *     password: { instructions: 'Enter your password', label: 'Password' }
+       *     password: { instructions: 'Enter your password', label: 'Password' },
+       *     status: { instructions: 'Enter status', label: 'Status', value: 'active' }
        *   },
-       *   (response) => console.log('User input received:', response.username, response.password)
+       *   (response) => console.log('User input received:', response.username, response.password, response.status)
        * );
        */
       getUserInput(scopes, callback) {
@@ -14421,18 +14520,66 @@ var require_dist = __commonJS({
        *
        * @example
        * // Adding a boolean setting
-       * deskThing.addSetting('darkMode', 'Dark Mode', false, [
-       *   { label: 'On', value: true },
-       *   { label: 'Off', value: false }
-       * ])
-       *
+       * deskThing.addSettings({
+       *   darkMode: {
+       *     type: 'boolean',
+       *     label: 'Dark Mode',
+       *     value: false,
+       *     description: 'Enable dark mode theme'
+       *   }
+       * })
        * @example
-       * // Adding a string setting with multiple options
-       * deskThing.addSetting('theme', 'Theme', 'light', [
-       *   { label: 'Light', value: 'light' },
-       *   { label: 'Dark', value: 'dark' },
-       *   { label: 'System', value: 'system' }
-       * ])
+       * // Adding a select setting
+       * deskThing.addSettings({
+       *   theme: {
+       *     type: 'select',
+       *     label: 'Theme',
+       *     value: 'light',
+       *     description: 'Choose your theme',
+       *     options: [
+       *       { label: 'Light', value: 'light' },
+       *       { label: 'Dark', value: 'dark' },
+       *       { label: 'System', value: 'system' }
+       *     ]
+       *   }
+       * })
+       * @example
+       * // Adding a multiselect setting
+       * deskThing.addSettings({
+       *   notifications: {
+       *     type: 'multiselect',
+       *     label: 'Notifications',
+       *     value: ['email'],
+       *     description: 'Choose notification methods',
+       *     options: [
+       *       { label: 'Email', value: 'email' },
+       *       { label: 'SMS', value: 'sms' },
+       *       { label: 'Push', value: 'push' }
+       *     ]
+       *   }
+       * })
+       * @example
+       * // Adding a number setting
+       * deskThing.addSettings({
+       *   fontSize: {
+       *     type: 'number',
+       *     label: 'Font Size',
+       *     value: 16,
+       *     description: 'Set the font size in pixels',
+       *     min: 12,
+       *     max: 24
+       *   }
+       * })
+       * @example
+       * // Adding a string setting
+       * deskThing.addSettings({
+       *   username: {
+       *     type: 'string',
+       *     label: 'Username',
+       *     value: '',
+       *     description: 'Enter your username'
+       *   }
+       * })
        */
       addSettings(settings) {
         var _a;
@@ -14451,11 +14598,52 @@ var require_dist = __commonJS({
               console.warn(`Setting with label "${setting.label}" already exists. It will be overwritten.`);
               this.sendLog(`Setting with label "${setting.label}" already exists. It will be overwritten.`);
             }
-            this.data.settings[id] = {
-              value: setting.value,
-              label: setting.label,
-              options: setting.options
-            };
+            switch (setting.type) {
+              case "select":
+                this.data.settings[id] = {
+                  type: "select",
+                  value: setting.value,
+                  label: setting.label,
+                  description: setting.description || "",
+                  options: setting.options
+                };
+                break;
+              case "multiselect":
+                this.data.settings[id] = {
+                  type: "multiselect",
+                  value: setting.value,
+                  label: setting.label,
+                  description: setting.description || "",
+                  options: setting.options
+                };
+                break;
+              case "number":
+                this.data.settings[id] = {
+                  type: "number",
+                  value: setting.value,
+                  label: setting.label,
+                  min: setting.min,
+                  max: setting.max,
+                  description: setting.description || ""
+                };
+                break;
+              case "boolean":
+                this.data.settings[id] = {
+                  type: "boolean",
+                  value: setting.value,
+                  description: setting.description || "",
+                  label: setting.label
+                };
+                break;
+              case "string":
+                this.data.settings[id] = {
+                  type: "string",
+                  description: setting.description || "",
+                  value: setting.value,
+                  label: setting.label
+                };
+                break;
+            }
           });
           console.log("sending settings", this.data.settings);
           this.sendData("add", { settings: this.data.settings });
@@ -14468,42 +14656,112 @@ var require_dist = __commonJS({
       * @param id - The unique identifier for the action. This is what will be used when it is triggered
       * @param description - A description of the action.
       * @param flair - Optional flair for the action (default is an empty string).
+      *
+      * @example
+      * deskthing.addAction('Print Hello', 'printHello', 'Prints Hello to the console', '')
+      * deskthing.on('button', (data) => {
+      *      if (data.payload.id === 'printHello') {
+      *          console.log('Hello')
+      *      }
+      * })
       */
       registerAction(name, id, description, flair = "") {
         this.sendData("action", { name, id, description, flair }, "add");
       }
       /**
-      * Registers a new key with the specified identifier. This can be mapped to any action. Use a keycode to map a specific keybind.
-      * Possible keycodes can be found at https://www.toptal.com/developers/keycode and is listening for event.code
-      * The first number in the key will be passed to the action (e.g. customAction13 with action SwitchView will switch to the 13th view )
-      *
-      * @param id - The unique identifier for the key.
-      */
-      registerKey(id) {
-        this.sendData("button", { id }, "add");
+       * Registers a new action to the server. This can be mapped to any key on the deskthingserver UI.
+       *
+       * @param action - The action object to register.
+       * @throws {Error} If the action object is invalid.
+       * @example
+       * const action = {
+       *      name: 'Print Hello',
+       *      id: 'printHello',
+       *      description: 'Prints Hello to the console',
+       *      flair: ''
+       * }
+       * deskthing.addActionObject(action)
+       * deskthing.on('button', (data) => {
+       *      if (data.payload.id === 'printHello') {
+       *          console.log('Hello')
+       *      }
+       * })
+       */
+      registerActionObject(action) {
+        if (!action || typeof action !== "object") {
+          throw new Error("Invalid action object");
+        }
+        if (!action.id || typeof action.id !== "string") {
+          throw new Error("Action must have a valid id");
+        }
+        this.sendData("action", action, "add");
       }
       /**
-      * Removes an action with the specified identifier.
-      *
-      * @param id - The unique identifier of the action to be removed.
-      */
+       * Updates the flair of a specified action id. This can be used to update the image of the button. Flair is appended to the end of the action name and thus the end of the SVG path as well
+       * @param id action id
+       * @param flair the updated flair
+       * @example
+       * // Previously using like.svg
+       * deskthing.updateFlair('like', 'active')
+       * // Now using likeactive.svg
+       */
+      updateIcon(id, icon) {
+        this.sendData("action", { id, icon }, "update");
+      }
+      /**
+       * Registers a new key with the specified identifier. This can be mapped to any action. Use a keycode to map a specific keybind.
+       * Possible keycodes can be found at https://www.toptal.com/developers/keycode and is listening for event.code
+       *
+       * Keys can also be considered "digital" like buttons on the screen.
+       * The first number in the key will be passed to the action (e.g. customAction13 with action SwitchView will switch to the 13th view )
+       *
+       * @param id - The unique identifier for the key.
+       * @param description - Description for the key.
+       */
+      registerKey(id, description, flavors, version) {
+        this.sendData("button", { id, description, flavors, version }, "add");
+      }
+      /**
+       * Registers a new key with the specified identifier. This can be mapped to any action. Use a keycode to map a specific keybind.
+       * Possible keycodes can be found at https://www.toptal.com/developers/keycode and is listening for event.code
+       *
+       * Keys can also be considered "digital" like buttons on the screen.
+       * @param key - The key object to register.
+       */
+      registerKeyObject(key) {
+        if (!key || typeof key !== "object") {
+          throw new Error("Invalid key object");
+        }
+        if (!key.flavors || !Array.isArray(key.flavors) || key.flavors.length === 0) {
+          throw new Error("Key must have valid flavors");
+        }
+        if (typeof key.id !== "string") {
+          throw new Error("Key must have a valid id");
+        }
+        this.sendData("button", key, "add");
+      }
+      /**
+       * Removes an action with the specified identifier.
+       *
+       * @param id - The unique identifier of the action to be removed.
+       */
       removeAction(id) {
         this.sendData("action", { id }, "remove");
       }
       /**
-      * Removes a key with the specified identifier.
-      *
-      * @param id - The unique identifier of the key to be removed.
-      */
+       * Removes a key with the specified identifier.
+       *
+       * @param id - The unique identifier of the key to be removed.
+       */
       removeKey(id) {
         this.sendData("button", { id }, "remove");
       }
       /**
-      * Saves the provided data by merging it with the existing data and updating settings.
-      * Sends the updated data to the server and notifies listeners.
-      *
-      * @param data - The data to be saved and merged with existing data.
-      */
+       * Saves the provided data by merging it with the existing data and updating settings.
+       * Sends the updated data to the server and notifies listeners.
+       *
+       * @param data - The data to be saved and merged with existing data.
+       */
       saveData(data) {
         var _a;
         this.data = Object.assign(Object.assign(Object.assign({}, this.data), data), { settings: Object.assign(Object.assign({}, (_a = this.data) === null || _a === void 0 ? void 0 : _a.settings), data.settings) });
@@ -14557,27 +14815,50 @@ var require_dist = __commonJS({
         };
       }
       /**
-      * Adds a background task that will loop until either the task is cancelled or the task function returns false.
-      * This is useful for tasks that need to run periodically or continuously in the background.
-      *
-      * @param url - The url that points directly to the image
-      * @param type - The type of image to return (jpeg for static and gif for animated)
-      * @returns Promise string that has the base64 encoded image
-      *
-      * @example
-      * // Getting encoded spotify image data
-      * const encodedImage = deskThing.encodeImageFromUrl(https://i.scdn.co/image/ab67616d0000b273bd7401ecb7477f3f6cdda060, 'jpeg')
-      *
-      * deskThing.sendMessageToAllClients({app: 'client', type: 'song', payload: { thumbnail: encodedImage } })
-      */
+       * Encodes an image from a URL and returns a Promise that resolves to a base64 encoded string.
+       *
+       *
+       * @param url - The url that points directly to the image
+       * @param type - The type of image to return (jpeg for static and gif for animated)
+       * @param retries - The number of times to retry the request in case of failure. Defaults to 3.
+       * @returns Promise string that has the base64 encoded image
+       *
+       * @example
+       * // Getting encoded spotify image data
+       * const encodedImage = await deskThing.encodeImageFromUrl(https://i.scdn.co/image/ab67616d0000b273bd7401ecb7477f3f6cdda060, 'jpeg')
+       *
+       * deskThing.sendMessageToAllClients({app: 'client', type: 'song', payload: { thumbnail: encodedImage } })
+       */
       encodeImageFromUrl(url_1) {
-        return __awaiter(this, arguments, void 0, function* (url, type = "jpeg") {
+        return __awaiter(this, arguments, void 0, function* (url, type = "jpeg", retries = 3) {
           try {
             console.log(`Fetching ${type} data...`);
-            const response = yield axios_1.default.get(url, { responseType: "arraybuffer" });
-            const imgData = `data:image/${type};base64,${Buffer.from(response.data).toString("base64")}`;
-            console.log(`Sending ${type} data`);
-            return imgData;
+            const response = yield (0, axios_1.default)({
+              method: "get",
+              url,
+              responseType: "stream"
+            });
+            let data = [];
+            response.data.on("data", (chunk) => {
+              data.push(chunk);
+            });
+            return new Promise((resolve, reject) => {
+              response.data.on("end", () => {
+                const bufferData = Buffer.concat(data);
+                const imgData = `data:image/${type};base64,${bufferData.toString("base64")}`;
+                console.log(`Sending ${type} data`);
+                resolve(imgData);
+              });
+              response.data.on("error", (error) => {
+                console.error(`Error fetching ${type}:`, error);
+                if (retries > 0) {
+                  console.warn(`Retrying... (${retries} attempts left)`);
+                  resolve(this.encodeImageFromUrl(url, type, retries - 1));
+                } else {
+                  reject(error);
+                }
+              });
+            });
           } catch (error) {
             console.error(`Error fetching ${type}:`, error);
             throw error;
@@ -14592,7 +14873,7 @@ var require_dist = __commonJS({
        * This method is typically used internally to load configuration data.
        *
        * @example
-       * deskThing.loadManifest();
+       * const manifest = deskThing.loadManifest();
        */
       loadManifest() {
         const manifestPath = path.resolve(__dirname, "./manifest.json");
@@ -14604,21 +14885,25 @@ var require_dist = __commonJS({
         }
       }
       /**
-      * Returns the manifest in a Response structure
-      * If the manifest is not found or fails to load, it returns a 500 status code.
-      * It will attempt to read the manifest from file if the manifest does not exist in cache
-      *
-      * @example
-      * const manifest = deskThing.getManifest();
-      * console.log(manifest);
-      */
+       * Returns the manifest in a Response structure
+       * If the manifest is not found or fails to load, it returns a 500 status code.
+       * It will attempt to read the manifest from file if the manifest does not exist in cache
+       *
+       * !! This method is not intended for use in client code.
+       *
+       * @example
+       * const manifest = deskThing.getManifest();
+       * console.log(manifest);
+       */
       getManifest() {
         if (!this.manifest) {
           console.warn("Manifest Not Found - trying to load manually...");
           this.loadManifest();
           if (!this.manifest) {
             return {
-              data: { message: "Manifest not found or failed to load after 2nd attempt" },
+              data: {
+                message: "Manifest not found or failed to load after 2nd attempt"
+              },
               status: 500,
               statusText: "Internal Server Error",
               request: []
@@ -14633,6 +14918,12 @@ var require_dist = __commonJS({
           request: []
         };
       }
+      /**
+       * Starts the deskthing.
+       * !! This method is not intended for use in client code.
+       * @param param0
+       * @returns
+       */
       start(_a) {
         return __awaiter(this, arguments, void 0, function* ({ toServer, SysEvents }) {
           this.toServer = toServer;
@@ -14659,6 +14950,8 @@ var require_dist = __commonJS({
       }
       /**
        * Stops background tasks, clears data, notifies listeners, and returns a response. This is used by the server to kill the program. Emits 'stop' event.
+       *
+       * !! This method is not intended for use in client code.
        *
        * @returns A promise that resolves with a response object.
        *
@@ -14782,7 +15075,7 @@ var start = async () => {
   });
   if (!Data?.settings?.view) {
     DeskThing.addSettings({
-      "view": { label: "Record View", value: "record", options: [{ label: "Default Vinyl", value: "record" }, { label: "Fullscreen", value: "fullscreen" }, { label: "Record Center", value: "recordcenter" }] }
+      "view": { label: "Record View", value: "record", description: "Choose the view that you want to be displayed", type: "select", options: [{ label: "Default Vinyl", value: "record" }, { label: "Fullscreen", value: "fullscreen" }, { label: "Record Center", value: "recordcenter" }] }
     });
   }
 };

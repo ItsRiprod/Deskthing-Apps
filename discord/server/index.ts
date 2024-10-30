@@ -15,8 +15,8 @@ const start = async () => {
     // This is how to add settings (implementation may vary)
     if (!Data?.settings?.notifications || !Data?.settings?.activity ) {
         DeskThing.addSettings({
-          "notifications": { label: "Show Notifcations", value: 'both', options: [{ label: 'From DMs', value: 'dm' }, { label: 'From VC Chat', value: 'vc' }, { label: 'Both', value: 'both' }, { label: 'Disabled', value: 'neither' }] },
-          "activity": { label: "Set Activity", value: 'true', options: [{ label: 'Enabled', value: 'true' }, { label: 'Disabled', value: 'false' }] },
+          "notifications": { label: "Show Notifcations", type: 'select', value: 'both', options: [{ label: 'From DMs', value: 'dm' }, { label: 'From VC Chat', value: 'vc' }, { label: 'Both', value: 'both' }, { label: 'Disabled', value: 'neither' }] },
+          "activity": { label: "Set Activity", type: 'boolean', value: false },
         })
 
         // This will make Data.settings.theme.value equal whatever the user selects

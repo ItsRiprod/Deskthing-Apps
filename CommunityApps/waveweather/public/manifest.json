@@ -1,0 +1,21 @@
+{
+  "id": "weatherwaves",
+  "isAudioSource": false,
+  "isScreenSaver": false,
+  "isWebApp": true,
+  "isLocalApp": false,
+  "requires": [
+    ""
+  ],
+  "label": "Weather Waves",
+  "version": "0.8.9",
+  "description": "A redesigned weather and spotify at a glance. For best experience,assign your 2 of your top buttons to rewind/skip using the desktop app",
+  "author": "Dammit Jeff",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "homepage": "https://deskthing.app",
+  "repository": ""
+}

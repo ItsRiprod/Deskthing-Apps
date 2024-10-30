@@ -11,3 +11,5 @@
 /Releases
 .vs/
 *.pdb
+/Releases
+/testingproj

@@ -1,27 +1,8 @@
 import axios, { AxiosError, isAxiosError } from 'axios'
-import { Action, ActionCallback, SongData, DeskThing as DK, Settings } from 'deskthing-server'
+import { Action, ActionCallback, SongData, DeskThing as DK, AppSettings } from 'deskthing-server'
 
 export interface SpotifySongData extends SongData {
   isLiked: boolean
-}
-
-type settings = {
-  output_device: {
-    value: string
-    label: string
-    options: {
-      value: string
-      label: string
-    }[]
-  }
-  change_source: {
-    value: string
-    label: string
-    options: {
-      value: string
-      label: string
-    }[]
-  }
 }
 
 type playlist = {
@@ -35,7 +16,7 @@ type playlist = {
 }
 
 type savedData = {
-  settings?: settings | Settings
+  settings?: AppSettings
   client_id?: string
   client_secret?: string
   access_token?: string
@@ -60,7 +41,6 @@ class SpotifyHandler {
   public Data: savedData = {}
   private DeskThing: DK
   private BASE_URL = 'https://api.spotify.com/v1/me/player'
-  private currentSongId: string = ""
 
   constructor() {
     this.DeskThing = DK.getInstance()
@@ -126,14 +106,18 @@ class SpotifyHandler {
         name: 'Set Playlist',
         description: 'Sets the current playlist to the provided ID',
         id: 'set_playlist',
-        flair: '',
+        source: '',
+        version: '',
+        enabled: false
       }
       this.DeskThing.registerActionObject(playlistAction)
       const playPlaylistAction: Action = {
         name: 'Play Playlist',
         description: 'Sets the current playlist to the provided ID',
         id: 'play_playlist',
-        flair: '',
+        source: '',
+        version: '',
+        enabled: false
       }
       this.DeskThing.registerActionObject(playPlaylistAction)
     }
@@ -142,47 +126,27 @@ class SpotifyHandler {
       name: 'Like Song',
       description: 'Likes the current song. Only works for spotify',
       id: 'like_song',
-      flair: '',
+      source: '',
+      version: '',
+      enabled: false
     }
     this.DeskThing.registerActionObject(likeAction)
 
     if (!this.Data.settings?.change_source) {
-      const settings = {
-        "change_source": {
-          "value": 'true',
-          "label": "Switch Output on Select",
-          "options": [
-            {
-              "value": "true",
-              "label": "Switch"
-            },
-            {
-              "value": "false",
-              "label": "Dont Switch"
-            }
-          ]
+      const settings: AppSettings = {
+        change_source: {
+          type: "boolean",
+          value: true,
+          label: "Switch Output on Select",
         },
-        "analyzer": {
-          "value": "false",
-          "label": "Show Analyzer (high performance)",
-          "options": [
+        output_device: {
+          value: "default",
+          label: "Output Device",
+          type: "select",
+          options: [
             {
-              "value": "true",
-              "label": "Enabled"
-            },
-            {
-              "value": "false",
-              "label": "Disabled"
-            }
-          ]
-        },
-        "output_device": {
-          "value": "default",
-          "label": "Output Device",
-          "options": [
-            {
-              "value": "default",
-              "label": "Default"
+              value: "default",
+              label: "Default"
             }
           ]
         },
@@ -223,14 +187,13 @@ class SpotifyHandler {
       this.refreshAccessToken()
     }
   }
-
   async runAction(action: ActionCallback) {
     switch (action.id) {
       case 'set_playlist':
-        this.setPlaylist(action.value)
+        this.setPlaylist(action.value as number)
         break
       case 'play_playlist':
-        this.playPlaylist(action.value)
+        this.playPlaylist(action.value as number)
         break
       case 'like_song':
         this.likeSong()
@@ -532,13 +495,13 @@ class SpotifyHandler {
         this.DeskThing.sendLog('Disliking the current song')
         await this.makeRequest('delete', songURL, data)
         this.DeskThing.sendLog('Successfully unliked song: ' + song.item.name)
-        this.DeskThing.updateFlair('like_song', '')     
+        this.DeskThing.updateIcon('like_song', '')     
         return
       } else {
         this.DeskThing.sendLog('Liking the current song')
         await this.makeRequest('put', songURL, data)
         this.DeskThing.sendLog('Successfully liked song: ' + song.item.name)
-        this.DeskThing.updateFlair('like_song', 'liked')
+        this.DeskThing.updateIcon('like_song', 'liked')
       }
     } catch (error) {
       this.DeskThing.sendError('Failed to like song: ' + error)
@@ -647,7 +610,7 @@ async setPlaylist(playlistIndex: number) {
             this.DeskThing.sendLog('Liking the current song')
             await this.makeRequest('put', songURL, data)
             this.DeskThing.sendLog('Successfully liked song: ' + song.item.name)
-            this.DeskThing.updateFlair('like_song', 'liked')
+            this.DeskThing.updateIcon('like_song', 'liked')
         } catch (error) {
           this.DeskThing.sendError('Failed to like song: ' + error)
         }
@@ -887,7 +850,7 @@ async setPlaylist(playlistIndex: number) {
   async checkLiked(id: string): Promise<boolean> {
     try {
       const isLiked = await this.makeRequest('get', `https://api.spotify.com/v1/me/tracks/contains?ids=${id}`)
-      this.DeskThing.updateFlair('like_song', isLiked[0] == true ? 'liked' : '')
+      this.DeskThing.updateIcon('like_song', isLiked[0] == true ? 'liked' : '')
       return isLiked
     } catch (Ex) {
       this.DeskThing.sendError('Error checking if song is liked!' + Ex)

@@ -24,6 +24,8 @@ const start = async () => {
       temp_unit: {
         label: "Temperature Unit",
         value: "f",
+        type: 'select',
+        description: 'The current temperature unit',
         options: [
           { label: "Fahrenheit", value: "f" },
           { label: "Celsius", value: "c" },
@@ -32,12 +34,14 @@ const start = async () => {
       speed_unit: {
         label: "Wind Speed Unit",
         value: "mph",
+        type: 'select',
+        description: 'The current wind speed unit',
         options: [
           { label: "Miles Per Hour", value: "mph" },
           { label: "Kilometers Per Hour", value: "kmh" },
         ],
       },
-      view: { label: "Weather View", value: 'simple', options: [{ label: 'Graph View', value: 'graph' }, { label: 'Retro View', value: 'retro' }, { label: 'Simple View', value: 'simple' }] }
+      view: { label: "Weather View", type:'select', description:'The current type of view to display', value: 'simple', options: [{ label: 'Graph View', value: 'graph' }, { label: 'Retro View', value: 'retro' }, { label: 'Simple View', value: 'simple' }] }
     });
 
     DeskThing.addSettings({

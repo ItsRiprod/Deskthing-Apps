@@ -4,11 +4,16 @@
   "isScreenSaver": false,
   "isWebApp": true,
   "isLocalApp": false,
-  "requires": [
-    "utility"
-  ],
+  "requires": [],
   "label": "Spotify App",
   "version": "0.9.0",
+  "version_code": "9.0",
+  "compatible_server": [
+    "9"
+  ],
+  "compatible_client": [
+    "9"
+  ],
   "description": "The primary way to interact with spotify",
   "author": "Riprod",
   "platforms": [
