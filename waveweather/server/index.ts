@@ -24,6 +24,7 @@ const start = async () => {
       temp_unit: {
         label: "Temperature Unit",
         value: "f",
+        type: 'select',
         options: [
           { label: "Fahrenheit", value: "f" },
           { label: "Celsius", value: "c" },
@@ -32,6 +33,7 @@ const start = async () => {
       speed_unit: {
         label: "Wind Speed Unit",
         value: "mph",
+        type: 'select',
         options: [
           { label: "Miles Per Hour", value: "mph" },
           { label: "Kilometers Per Hour", value: "kmh" },

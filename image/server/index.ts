@@ -1,6 +1,6 @@
-import { DeskThing as DK } from 'deskthing-server';
-import fs from 'fs/promises';  // Import the fs module to read files
-import path from 'path';
+import { DeskThing as DK, AppSettings } from 'deskthing-server';
+import * as fs from 'fs/promises'; 
+import * as path from 'path';
 
 const DeskThing = DK.getInstance();
 export { DeskThing } // Required export of this exact name for the server to connect
@@ -12,28 +12,22 @@ const start = async () => {
     Data = newData
   })
 
-  if (!Data?.settings?.source) {
-    const settings = {
+  if (!Data?.settings?.image_source) {
+    const settings: AppSettings = {
       "image_source": {
         "value": 'prompt',
-        "label": "Image Source",
-        "options": [
-          {
-            "value": "unset",
-            "label": "Unset"
-          },
-          {
-            "value": "prompt",
-            "label": "Prompt for Another"
-          },
-        ]
+        "type": "string",
+        "label": "Image Source"
       },
     }
     DeskThing.addSettings(settings)
+  } else {
+    DeskThing.sendLog('Found image ' + Data.settings.image_source.value)
   }
 
   const sendImageToClient = async (imagePath: string) => {
     try {
+      await fs.access(imagePath);
       const imageData = await fs.readFile(imagePath);
       const base64Image = imageData.toString('base64');
       const mimeType = path.extname(imagePath).slice(1); // Get file extension to use as MIME type
@@ -46,54 +40,18 @@ const start = async () => {
     }
   };
 
-  // Getting data from the user (Ensure these match)
-  const promptForImage = async () => {
-    const requestScopes = {
-      'image_source': {
-        'value': 'C:/',
-        'label': 'Image Source',
-        'instructions': 'Input the absolute path to the image you want to display.',
-      }
-    };
-
-    DeskThing.getUserInput(requestScopes, async (data) => {
-      if (data.payload.image_source) {
-        const newImageSource = data.payload.image_source;
-
-        // Add the new image source to the settings options
-        if (!Data?.settings?.image_source.options.some(opt => opt.value === newImageSource)) {
-          Data?.settings?.image_source.options.push({
-            value: newImageSource,
-            label: `Image: ${path.basename(newImageSource)}`,
-          });
-        }
-
-        // Save the updated settings
-        DeskThing.saveData({ settings: Data?.settings });
-
-        // Send the new image to the client
-        await sendImageToClient(newImageSource);
-
-        // If still set to prompt, prompt again
-        if (Data?.settings?.image_source.value === 'prompt') {
-          promptForImage();
-        }
-      } else {
-        DeskThing.sendError('Please fill out all the fields! Restart to try again');
-      }
-    });
-  };
-
   if (Data?.settings?.image_source.value === 'prompt') {
-    await promptForImage();
+    DeskThing.sendError('No Image Found')
   } else if (Data?.settings?.image_source.value !== 'unset') {
+    DeskThing.sendLog('Sending Image ' + Data?.settings?.image_source.value + ' to client')
     await sendImageToClient(Data?.settings?.image_source.value as string);
   }
 
   DeskThing.on('settings', async (setting) => {
     if (setting.image_source.value === 'prompt') {
-      await promptForImage();
+      DeskThing.sendError('No Image Found')
     } else if (setting.image_source.value !== 'unset') {
+      DeskThing.sendLog('Sending Image ' + setting.image_source.value + ' to client')
       await sendImageToClient(setting.image_source.value as string);
     }
   })
