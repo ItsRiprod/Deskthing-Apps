@@ -3,8 +3,8 @@ param (
 )
 
 # Define the base directories
-$appExamplesPath = "C:\Users\legom\OneDrive\Desktop\Coding\Website-Development\deskthing-apps"
-$releasesPath = "C:\Users\legom\OneDrive\Desktop\Coding\Website-Development\deskthing-apps\releases"
+$appExamplesPath = "C:\Users\legom\OneDrive\Desktop\Coding\Website Development\Carthing Laptop\Deskthing-Apps\"
+$releasesPath = "C:\Users\legom\OneDrive\Desktop\Coding\Website Development\Carthing Laptop\Deskthing-Apps\Releases"
 
 # Ensure the destination directory exists
 if (-not (Test-Path $releasesPath)) {

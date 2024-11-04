@@ -35,7 +35,13 @@ const Simple = ({ weatherData }: WeatherProps) => {
     };
 
     // Request current song data when component mounts
-    deskThingClient.sendMessageToParent({ app: 'client', type: 'get', request: 'song' });
+
+    const fetchSong = () => {
+      deskThingClient.sendMessageToParent({ app: 'client', type: 'get', request: 'song' });
+    }
+
+    setTimeout(fetchSong, 1000);
+
 
     // Listen for updates to song data
     const unsubscribe = deskThingClient.on('music', handleMusic);

@@ -178,8 +178,8 @@ class WeatherService {
             console.log('Updating weather data to', data)
             this.speed_unit = data.settings.speed_unit.value as string || 'mph'
             this.temp_unit = data.settings.temp_unit.value as string || 'f'
-            this.longitude = data.longitude as string || '-74.023568'
-            this.latitude = data.latitude as string || '40.709764'
+            this.longitude = data.settings.longitude.value as string || '-74.023568'
+            this.latitude = data.settings.latitude.value as string || '40.709764'
     
             console.log('Updated weather data', this.speed_unit, this.temp_unit, this.longitude, this.latitude)
             this.updateWeather()

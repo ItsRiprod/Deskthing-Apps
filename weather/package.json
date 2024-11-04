@@ -1,11 +1,12 @@
 {
   "name": "weather",
   "private": true,
-  "version": "0.9.0",
+  "version": "0.9.1",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "dev": "vite",
+    "dev:host": "vite --host",
     "build": "vite build && npm run build-server",
     "build-server": "esbuild server/index.ts --bundle --platform=node --outdir=dist/",
     "setup": "node setup.js",
