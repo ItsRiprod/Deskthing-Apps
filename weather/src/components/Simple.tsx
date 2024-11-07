@@ -49,7 +49,7 @@ const Simple = ({ weatherData }: WeatherProps) => {
         <p>
         {Math.round(weatherData.daily.temperature2mMax[0]) + '° / ' + Math.round(weatherData.daily.temperature2mMin[0]) + '° '}
         Feels Like {Math.round(weatherData.current.apparentTemperature) + '°' + weatherData.tempUnit.toUpperCase()}
-        {' | ' + weatherData.daily.precipitationProbabilityMean[0] + '%'}
+        {' | ' + Math.trunc(weatherData.daily.precipitationProbabilityMean[0]*100) + '%'}
         </p>
       </div>
     </div>
