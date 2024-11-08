@@ -2,6 +2,7 @@
 
 This is where all of the apps developed for the DeskThing is located! If you want to make your own or are just browsing, these act as great reference points! 
 
+Every app here is the precompiled apps you download into DeskThing. The structure of each app is defined [here](https://github.com/itsriprod/deskthing-template)
 
 
 ## Making your own app
