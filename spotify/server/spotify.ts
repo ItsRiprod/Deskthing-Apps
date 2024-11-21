@@ -482,7 +482,6 @@ class SpotifyHandler {
       return
     }
     const songID = song.item.id
-    
     const isLiked = await this.checkLiked(song.id)
     const songURL = `https://api.spotify.com/v1/me/tracks?ids=${songID}`
     

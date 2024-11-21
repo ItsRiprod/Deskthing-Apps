@@ -39,14 +39,14 @@ export class MusicStore {
 
     async fetchInitialSong() {
         if (!this.currentSong) {
-          this.deskthing.sendMessageToParent({
+          this.deskthing.send({
             app: 'client',
             type: 'get',
             request: 'music',
           });
-          this.deskthing.sendMessageToParent({type: 'get', request: 'analysis'})
-          this.deskthing.sendMessageToParent({type: 'get', request: 'playlists'})
-          this.deskthing.sendMessageToParent({type: 'get', request: 'features'})
+          this.deskthing.send({type: 'get', request: 'analysis'})
+          this.deskthing.send({type: 'get', request: 'playlists'})
+          this.deskthing.send({type: 'get', request: 'features'})
         }
     }
 
@@ -83,8 +83,8 @@ export class MusicStore {
                 }
             }
             if (updateThumbnail) {
-                this.deskthing.sendMessageToParent({type: 'get', request: 'analysis'})
-                this.deskthing.sendMessageToParent({type: 'get', request: 'features'})
+                this.deskthing.send({type: 'get', request: 'analysis'})
+                this.deskthing.send({type: 'get', request: 'features'})
             }
             await Promise.all(this.musicListeners['music'].map(listener => listener(this.currentSong as SongData, this.backgroundColor)))
         }
@@ -104,14 +104,14 @@ export class MusicStore {
 
     getFeaturesData(): AudioFeaturesResponse | null {
         if (!this.featuresData) {
-            this.deskthing.sendMessageToParent({type: 'get', request: 'features'})
+            this.deskthing.send({type: 'get', request: 'features'})
         }
         return this.featuresData
     }
 
     getPlaylists(): Playlist[] {
         if (!this.playlists) {
-            this.deskthing.sendMessageToParent({type: 'get', request: 'playlists'})
+            this.deskthing.send({type: 'get', request: 'playlists'})
         }
         return this.playlists
     }
@@ -124,16 +124,16 @@ export class MusicStore {
     }
 
     playPlaylist(playlistIndex: number) {
-        this.deskthing.sendMessageToParent({type: 'set', request: 'play_playlist', payload: playlistIndex})
+        this.deskthing.send({type: 'set', request: 'play_playlist', payload: playlistIndex})
     }
 
     addToPlaylist(playlistIndex: number) {
-        this.deskthing.sendMessageToParent({type: 'set', request: 'add_playlist', payload: playlistIndex})
+        this.deskthing.send({type: 'set', request: 'add_playlist', payload: playlistIndex})
     }
     
     setPlaylist(playlistIndex: number) {
         console.log('setPlaylist', playlistIndex)
-        this.deskthing.sendMessageToParent({type: 'set', request: 'set_playlist', payload: playlistIndex})
+        this.deskthing.send({type: 'set', request: 'set_playlist', payload: playlistIndex})
     }
 
     on(type: ListenerType, listener: MusicListener): () => void {
