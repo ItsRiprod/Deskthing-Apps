@@ -4,7 +4,7 @@ import ProcessStore from '../stores/ProcessStore';
 import SimpleGraph from './Graph';
 
 const MEMUsage: React.FC = () => {
-  const [memUsage, setMemUsage] = useState(ProcessStore.memUsage);
+  const [memUsage, setMemUsage] = useState(ProcessStore.getProcessData.memUsage);
 
   useEffect(() => {
     const unsubscribe = ProcessStore.on((data) => {

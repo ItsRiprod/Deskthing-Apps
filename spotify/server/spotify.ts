@@ -108,7 +108,8 @@ class SpotifyHandler {
         id: 'set_playlist',
         source: '',
         version: '',
-        enabled: false
+        enabled: false,
+        version_code: 10
       }
       this.DeskThing.registerActionObject(playlistAction)
       const playPlaylistAction: Action = {
@@ -117,7 +118,8 @@ class SpotifyHandler {
         id: 'play_playlist',
         source: '',
         version: '',
-        enabled: false
+        enabled: false,
+        version_code: 10
       }
       this.DeskThing.registerActionObject(playPlaylistAction)
     }
@@ -128,7 +130,8 @@ class SpotifyHandler {
       id: 'like_song',
       source: '',
       version: '',
-      enabled: false
+      enabled: false,
+      version_code: 10
     }
     this.DeskThing.registerActionObject(likeAction)
 
@@ -961,14 +964,14 @@ async setPlaylist(playlistIndex: number) {
         }
 
         
-        const deviceExists = this.Data.settings && this.Data.settings.output_device.options.some(
+        const deviceExists = this.Data.settings && this.Data.settings.output_device.type == 'multiselect' && this.Data.settings.output_device.options.some(
           (option) => option.value === currentPlayback.device.id
         );
   
         if (!deviceExists) {
           // Update options with the new device
           this.DeskThing.sendLog(`Adding new device ${currentPlayback.device.name} to device list...`)
-          this.Data.settings && this.Data.settings.output_device.options.push({
+          this.Data.settings && this.Data.settings.output_device.type == 'multiselect' && this.Data.settings.output_device.options.push({
             value: currentPlayback.device.id,
             label: currentPlayback.device.name,
           });
@@ -1007,14 +1010,14 @@ async setPlaylist(playlistIndex: number) {
           isLiked: isLiked[0],
         }
 
-        const deviceExists = this.Data.settings && this.Data.settings.output_device.options.some(
+        const deviceExists = this.Data.settings && this.Data.settings.output_device.type == 'multiselect' && this.Data.settings.output_device.options.some(
           (option) => option.value === currentPlayback.device.id
         );
   
         if (!deviceExists) {
           // Update options with the new device
           this.DeskThing.sendLog(`Adding new device ${currentPlayback.device.name} to device list...`)
-          this.Data.settings && this.Data.settings.output_device.options.push({
+          this.Data.settings && this.Data.settings.output_device.type == 'multiselect' && this.Data.settings.output_device.options.push({
             value: currentPlayback.device.id,
             label: currentPlayback.device.name
           });

@@ -55,7 +55,7 @@ export class WeatherStore {
 
   constructor() {
     this.deskThing = DeskThing.getInstance();
-    this.deskThing.on('weatherwaves', (data: SocketData) => {
+    this.deskThing.on('weather_data', (data: SocketData) => {
       this.weatherData = data.payload as WeatherData;
       this.notifyListeners();
     });
@@ -87,12 +87,12 @@ export class WeatherStore {
     if (!this.weatherData) {
       this.getWeatherData()
     }
-    this.deskThing.sendMessageToParent({ app: 'client', type: 'log', payload: 'getting weatherData' });
+    this.deskThing.send({ app: 'client', type: 'log', payload: 'getting weatherData' });
     console.log('notifyListeners')
     this.listeners.forEach((listener) => listener(this.weatherData));
   }
   async requestWeatherData(): Promise<void> {
-    this.deskThing.sendMessageToParent({ type: 'get', request: 'weather_data'});
+    this.deskThing.send({ type: 'get', request: 'weather_data'});
   }
 
 

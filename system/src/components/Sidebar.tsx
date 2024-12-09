@@ -12,7 +12,7 @@ import ProcessStore, { ProcessData } from '../stores/ProcessStore';
 
     useEffect(() => {
         const onUsageUpdate = (data: ProcessData) => {
-            setCpuUsage(data.cpuUsage);
+            setCpuUsage(data.cpuLoad);
             setMemoryUsage(data.memUsage);
         };
         const removeListener = ProcessStore.on(onUsageUpdate);

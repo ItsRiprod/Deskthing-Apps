@@ -4,11 +4,11 @@ import ProcessStore from '../stores/ProcessStore';
 import SimpleGraph from './Graph';
 
 const CPUUsage: React.FC = () => {
-  const [cpuUsage, setCpuUsage] = useState(ProcessStore.cpuUsage);
+  const [cpuUsage, setCpuUsage] = useState(ProcessStore.getProcessData.cpuLoad);
 
   useEffect(() => {
     const unsubscribe = ProcessStore.on((data) => {
-      setCpuUsage(data.cpuUsage);
+      setCpuUsage(data.cpuLoad);
     });
 
     return () => {

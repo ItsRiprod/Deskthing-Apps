@@ -11,7 +11,7 @@ const Slider: React.FC<CardProps> = ({ title, value }) => {
   const backgroundColor = musicStore.getBackgroundColor()
 
   const barStyle: React.CSSProperties = {
-    background: `rgb(${backgroundColor.join(',')})`,
+    background: backgroundColor,
     width: `${value * 100}%`,
   }
 

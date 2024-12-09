@@ -8,13 +8,13 @@
     ""
   ],
   "label": "Weather App",
-  "version": "0.9.1",
-  "version_code": "9.1",
+  "version": "0.10.1",
+  "version_code": "10.1",
   "compatible_server": [
-    "9"
+    "10"
   ],
   "compatible_client": [
-    "9"
+    "10"
   ],
   "description": "A simple weather app to display weather data",
   "author": "Riprod",

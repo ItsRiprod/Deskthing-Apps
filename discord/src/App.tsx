@@ -18,8 +18,9 @@ const App: React.FC = () => {
     })
 
     return (
-        <div className="bg-slate-800 w-screen h-screen flex justify-center items-center">
-            <p className="font-bold text-5xl text-white">DeskThing App</p>
+        <div className="bg-slate-800 w-screen h-screen flex-col flex justify-center items-center">
+            <p className="font-bold text-5xl text-white">Discord App is under development</p>
+            <p className="font-bold text-center text-gray-500">Due to technical limitations of the client, the development of the discord app has been postponed. If you want to help spur on the development of DeskThing, head over to the Discord!</p>
         </div>
 
     )

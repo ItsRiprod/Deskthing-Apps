@@ -19,12 +19,19 @@ const App: React.FC = () => {
         deskthing.sendMessageToParent({type: 'get', request: 'image'})
     })
 
+    const handleRequestImage = async () => {
+        deskthing.send({type: 'get', request: 'image'})
+    }
+
     return (
         <div className="bg-slate-800 w-screen h-screen flex justify-center items-center">
             {imageData ? (
                 <img src={imageData} alt="Received from server" className="w-full h-full" />
             ) : (
-                <p className="font-bold text-5xl text-white">Image App</p>
+                <div>
+                    <p className="font-bold text-5xl text-white">Image App</p>
+                    <button onClick={handleRequestImage}>Request Image</button>
+                </div>
             )}
         </div>
 

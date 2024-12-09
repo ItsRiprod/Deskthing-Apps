@@ -1,4 +1,4 @@
-import { DeskThing as DK, SettingsType } from 'deskthing-server';
+import { DeskThing as DK, EventMode, SettingsType } from 'deskthing-server';
 // Doing this is required in order for the server to link with DeskThing
 const DeskThing = DK.getInstance();
 export { DeskThing }
@@ -38,6 +38,25 @@ const start = async () => {
         // This will make Data.settings.boolean.value equal whatever the user selects
       }
 
+
+    // Adding a button
+      DeskThing.registerKeyObject({
+        id: 'settingKey',
+        description: 'An example button to mess around with',
+        version: '0.10.0',
+        version_code: 10,
+        enabled: true,
+        modes: [EventMode.KeyDown, EventMode.PressShort],
+        source: 'settingstest'
+      })
+
+      DeskThing.registerActionObject({
+        id: 'settingAction',
+        description: 'An example button to mess around with',
+        version: '0.10.0',
+        version_code: 10,
+        enabled: true
+      })
 
     // (Depreciated - Will use a different system in the future)
     // Getting data from the user (Ensure these match)

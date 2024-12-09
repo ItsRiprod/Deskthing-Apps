@@ -505,7 +505,7 @@ export class WeatherStore {
 
   constructor() {
     this.deskThing = DeskThing.getInstance();
-    this.deskThing.on('weather', (data: SocketData) => {
+    this.deskThing.on('weather_data', (data: SocketData) => {
       this.weatherData = data.payload as WeatherData;
       this.notifyListeners();
     });

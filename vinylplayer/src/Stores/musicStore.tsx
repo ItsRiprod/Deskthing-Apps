@@ -23,8 +23,8 @@ export class MusicStore {
         return MusicStore.instance
     }
 
-    private handleMusic(data: SongData) {
-        this.currentSong = data
+    private handleMusic(data: SocketData) {
+        this.currentSong = data.payload as SongData
         if (this.currentSong != null) {
             this.musicListeners.forEach(listener => listener(this.currentSong as SongData))
         }
