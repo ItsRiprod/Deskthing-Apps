@@ -3,7 +3,7 @@ import { WeatherStore } from './stores'
 import { WeatherData } from './stores/weatherStore'
 import Weather from './components/Weather'
 import { SettingsStore } from './stores/settingsStore'
-import { Settings } from 'deskthing-client'
+import { AppSettings } from 'deskthing-client'
 import Retro from './components/Retro'
 import Simple from './components/Simple'
 
@@ -14,11 +14,11 @@ const App: React.FC = () => {
     const [currentView, setCurrentview] = useState('simple')
 
     useEffect(() => {
-        const onSettings = async (data: Settings) => {
+        const onSettings = async (data: AppSettings) => {
             console.log('Received data from the server!')
             console.log(data)
-            if (data.weather.view.value) {
-                const currentView = data.weather.view.value
+            if (data.view.value) {
+                const currentView = data.view.value
                 setCurrentview(currentView as string)
             }
         }
@@ -40,8 +40,8 @@ const App: React.FC = () => {
         const getSettings = async () => {
             const settings = settingsStore.getSettings()
             if (settings) {
-                if (settings.weather.view.value) {
-                    const currentView = settings.weather.view.value
+                if (settings.view.value) {
+                    const currentView = settings.view.value
                     setCurrentview(currentView as string)
                 }
             } else {
@@ -49,8 +49,8 @@ const App: React.FC = () => {
                 await new Promise((resolve) => setTimeout(resolve, 1000))
                 const settings = settingsStore.getSettings()
                 if (settings) {
-                    if (settings.weather.view.value) {
-                        const currentView = settings.weather.view.value
+                    if (settings.view.value) {
+                        const currentView = settings.view.value
                         setCurrentview(currentView as string)
     
                         }

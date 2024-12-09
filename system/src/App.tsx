@@ -1,47 +1,20 @@
 import React, { useEffect, useState } from 'react'
-import { SettingsStore } from './stores/settingsStore'
-import { Settings } from 'deskthing-client'
+import { AppSettings, DeskThing } from 'deskthing-client'
 import Default from './components/Default'
 import Cpu from './components/Cpu'
 
 const App: React.FC = () => {
-    const settingsStore = SettingsStore.getInstance()
-    const [currentView, setCurrentview] = useState('gpu')
+    const [currentView, setCurrentview] = useState('default')
 
     useEffect(() => {
-        const onSettings = async (data: Settings) => {
-            if (data.system.view.value) {
-                const currentView = data.system.view.value
+        const onSettings = async (data: AppSettings) => {
+            if (data.view.value) {
+                const currentView = data.view.value
                 setCurrentview(currentView as string)
             }
         }
         
-        const listener = settingsStore.on(onSettings)
-
-
-        // Get the settings initially (if available)
-        const getSettings = async () => {
-            const settings = settingsStore.getSettings()
-            if (settings) {
-                if (settings.system.view.value) {
-                    const currentView = settings.system.view.value
-                    setCurrentview(currentView as string)
-                }
-            } else {
-                console.log('Attempted to get settings too quick - none found')
-                await new Promise((resolve) => setTimeout(resolve, 1000))
-                const settings = settingsStore.getSettings()
-                if (settings) {
-                    if (settings.system.view.value) {
-                        const currentView = settings.system.view.value
-                        setCurrentview(currentView as string)
-    
-                        }
-                }
-            }
-        }
-
-        getSettings()
+        const listener = DeskThing.getInstance().on('settings', onSettings)
 
         return () => {
             listener()

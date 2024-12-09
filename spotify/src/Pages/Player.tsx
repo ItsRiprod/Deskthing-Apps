@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MusicStore } from '../Stores/musicStore';
-import { SongData } from 'deskthing-client/dist/types';
+import { SongData } from 'deskthing-client';
 import Loading from './Loading';
 import Playlists from './Playlists';
 import Stats from './Stats';
@@ -13,15 +13,15 @@ const Player: React.FC = () => {
   const [visibleComponent, setVisibleComponent] = useState<'stats' | 'playlist' | null>(null);
 
   useEffect(() => {
-    const updateSong = async (song?: SongData, backgroundColor?: number[]) => {
+    const updateSong = async (song?: SongData, backgroundColor?: string) => {
       if (song && backgroundColor) {
         setCurrentSong(song);
-        setBackgroundColor(backgroundColor ? `rgba(${backgroundColor.join(',')}, 0.5)` : '');
+        setBackgroundColor(song.color ? song.color.rgb : '');
       }
     };
 
     // Subscribe to song updates
-    const unsubscribe = musicStore.on('music', (a, b) => updateSong(a as SongData, b as number[]));
+    const unsubscribe = musicStore.on('music', (a, b) => updateSong(a as SongData, b as string));
     
     // Set the current song on component mount
     const song = musicStore.getSong();

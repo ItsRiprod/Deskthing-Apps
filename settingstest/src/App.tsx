@@ -13,7 +13,7 @@ const App: React.FC = () => {
         // This listener will listen for your app's ID and trigger the onAppData whenever it receives data from your server.
         // On the server, run DeskThing.sendDataToClient({type: 'someType', payload: {someData: 'someData'}}) 
         // Then here, the data passed will be {app: 'yourAppID', payload: {someData: 'someData'}, type: 'someType'}
-        const removeListener = deskthing.on('yourAppID', onAppData)
+        const removeListener = deskthing.on('settingstest', onAppData)
 
         return () => {
             removeListener()
@@ -22,7 +22,7 @@ const App: React.FC = () => {
 
     return (
         <div className="bg-slate-800 w-screen h-screen flex justify-center items-center">
-            <p className="font-bold text-5xl text-white">DeskThing App</p>
+            <p className="font-bold text-5xl text-white">Settings Test</p>
         </div>
 
     )

@@ -108,7 +108,8 @@ class SpotifyHandler {
         id: 'set_playlist',
         source: '',
         version: '',
-        enabled: false
+        enabled: false,
+        version_code: 10
       }
       this.DeskThing.registerActionObject(playlistAction)
       const playPlaylistAction: Action = {
@@ -117,7 +118,8 @@ class SpotifyHandler {
         id: 'play_playlist',
         source: '',
         version: '',
-        enabled: false
+        enabled: false,
+        version_code: 10
       }
       this.DeskThing.registerActionObject(playPlaylistAction)
     }
@@ -128,7 +130,8 @@ class SpotifyHandler {
       id: 'like_song',
       source: '',
       version: '',
-      enabled: false
+      enabled: false,
+      version_code: 10
     }
     this.DeskThing.registerActionObject(likeAction)
 
@@ -397,6 +400,7 @@ class SpotifyHandler {
 
         await this.handleError(error);
         if (error.response && error.response.status === 404) {
+          this.DeskThing.sendError('Error 404 reached! Not Found!');
           return;
         }
         if (error.response && error.response.status === 403) {
@@ -404,12 +408,12 @@ class SpotifyHandler {
           return;
         }
         await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait five seconds
-        if (attempt < 4) {
+        if (attempt < 2) {
           this.DeskThing.sendLog('Retrying! Attempt #' + attempt + ' ' + method + url + data);
           const retryResponse = await this.makeRequest(method, url, data, attempt + 1);
           return retryResponse !== undefined ? retryResponse : true;
         } else {
-          this.DeskThing.sendLog('Failed to make request after 8 attempts. Cancelling request.');
+          this.DeskThing.sendLog('Failed to make request after 2 attempts. Cancelling request.');
         }
       }
     } catch (error) {
@@ -482,7 +486,6 @@ class SpotifyHandler {
       return
     }
     const songID = song.item.id
-    
     const isLiked = await this.checkLiked(song.id)
     const songURL = `https://api.spotify.com/v1/me/tracks?ids=${songID}`
     
@@ -961,14 +964,14 @@ async setPlaylist(playlistIndex: number) {
         }
 
         
-        const deviceExists = this.Data.settings && this.Data.settings.output_device.options.some(
+        const deviceExists = this.Data.settings && this.Data.settings.output_device.type == 'multiselect' && this.Data.settings.output_device.options.some(
           (option) => option.value === currentPlayback.device.id
         );
   
         if (!deviceExists) {
           // Update options with the new device
           this.DeskThing.sendLog(`Adding new device ${currentPlayback.device.name} to device list...`)
-          this.Data.settings && this.Data.settings.output_device.options.push({
+          this.Data.settings && this.Data.settings.output_device.type == 'multiselect' && this.Data.settings.output_device.options.push({
             value: currentPlayback.device.id,
             label: currentPlayback.device.name,
           });
@@ -1007,14 +1010,14 @@ async setPlaylist(playlistIndex: number) {
           isLiked: isLiked[0],
         }
 
-        const deviceExists = this.Data.settings && this.Data.settings.output_device.options.some(
+        const deviceExists = this.Data.settings && this.Data.settings.output_device.type == 'multiselect' && this.Data.settings.output_device.options.some(
           (option) => option.value === currentPlayback.device.id
         );
   
         if (!deviceExists) {
           // Update options with the new device
           this.DeskThing.sendLog(`Adding new device ${currentPlayback.device.name} to device list...`)
-          this.Data.settings && this.Data.settings.output_device.options.push({
+          this.Data.settings && this.Data.settings.output_device.type == 'multiselect' && this.Data.settings.output_device.options.push({
             value: currentPlayback.device.id,
             label: currentPlayback.device.name
           });

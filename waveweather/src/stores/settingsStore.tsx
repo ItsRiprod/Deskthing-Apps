@@ -1,7 +1,6 @@
-import { DeskThing } from 'deskthing-client'
-import { Settings, SocketData } from 'deskthing-client/dist/types'
+import { AppSettings, DeskThing, SocketData } from 'deskthing-client'
 
-type SettingListener = (data: Settings) => Promise<void>
+type SettingListener = (data: AppSettings) => Promise<void>
 type TimeListener = (data: string) => Promise<void>
 
 export class SettingsStore {
@@ -10,14 +9,14 @@ export class SettingsStore {
     private listeners: ((data: SocketData) => void)[] = []
     private settingsListeners: SettingListener[] = []
     private timeListeners: TimeListener[] = []
-    private currentSettings: Settings | null = null
+    private currentSettings: AppSettings | null = null
     private time: string = "00:00 AM"
 
     constructor() {
         this.deskthing = DeskThing.getInstance()
         this.listeners.push(this.deskthing.on('settings', this.handleSetting.bind(this)))
         this.listeners.push(this.deskthing.on('time', this.handleClient.bind(this)))
-        this.deskthing.sendMessageToParent({app: 'server', type: 'get'})
+        this.deskthing.send({app: 'server', type: 'get'})
     }
 
     static getInstance(): SettingsStore {
@@ -27,29 +26,30 @@ export class SettingsStore {
         return SettingsStore.instance
     }
 
-    private handleSetting(data: Settings) {
-        this.currentSettings = data
+    private handleSetting(data: SocketData) {
+        const settings = data.payload as AppSettings
+        this.currentSettings = settings
         if (this.currentSettings != null) {
-            this.settingsListeners.forEach(listener => listener(this.currentSettings as Settings))
+            this.settingsListeners.forEach(listener => listener(this.currentSettings as AppSettings))
         }
     }
 
-    private handleClient(data: string) {
+    private handleClient(data: SocketData) {
         console.log('Received client data', data)
-        this.time = data
+        this.time = data.payload
         this.timeListeners.forEach(listener => listener(this.time))
     }
 
-    getSettings(): Settings | null {
+    getSettings(): AppSettings | null {
         // this.deskthing.sendMessageToParent({app: 'utility', type: 'set', request: 'volume', payload: 100})
         if (!this.currentSettings) {
-            this.deskthing.sendMessageToParent({app: 'client', type: 'get', request: 'settings'})
+            this.deskthing.send({app: 'client', type: 'get', request: 'settings'})
         }
         return this.currentSettings
     }
 
     getTime(): string {
-        this.deskthing.sendMessageToParent({app: 'server', type: 'get'})
+        this.deskthing.send({app: 'server', type: 'get'})
         return this.time
     }
 

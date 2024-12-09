@@ -9735,49 +9735,63 @@ var require_common = __commonJS({
         createDebug.namespaces = namespaces;
         createDebug.names = [];
         createDebug.skips = [];
-        let i;
-        const split = (typeof namespaces === "string" ? namespaces : "").split(/[\s,]+/);
-        const len = split.length;
-        for (i = 0; i < len; i++) {
-          if (!split[i]) {
-            continue;
-          }
-          namespaces = split[i].replace(/\*/g, ".*?");
-          if (namespaces[0] === "-") {
-            createDebug.skips.push(new RegExp("^" + namespaces.slice(1) + "$"));
+        const split = (typeof namespaces === "string" ? namespaces : "").trim().replace(" ", ",").split(",").filter(Boolean);
+        for (const ns of split) {
+          if (ns[0] === "-") {
+            createDebug.skips.push(ns.slice(1));
           } else {
-            createDebug.names.push(new RegExp("^" + namespaces + "$"));
+            createDebug.names.push(ns);
           }
         }
       }
+      function matchesTemplate(search, template) {
+        let searchIndex = 0;
+        let templateIndex = 0;
+        let starIndex = -1;
+        let matchIndex = 0;
+        while (searchIndex < search.length) {
+          if (templateIndex < template.length && (template[templateIndex] === search[searchIndex] || template[templateIndex] === "*")) {
+            if (template[templateIndex] === "*") {
+              starIndex = templateIndex;
+              matchIndex = searchIndex;
+              templateIndex++;
+            } else {
+              searchIndex++;
+              templateIndex++;
+            }
+          } else if (starIndex !== -1) {
+            templateIndex = starIndex + 1;
+            matchIndex++;
+            searchIndex = matchIndex;
+          } else {
+            return false;
+          }
+        }
+        while (templateIndex < template.length && template[templateIndex] === "*") {
+          templateIndex++;
+        }
+        return templateIndex === template.length;
+      }
       function disable() {
         const namespaces = [
-          ...createDebug.names.map(toNamespace),
-          ...createDebug.skips.map(toNamespace).map((namespace) => "-" + namespace)
+          ...createDebug.names,
+          ...createDebug.skips.map((namespace) => "-" + namespace)
         ].join(",");
         createDebug.enable("");
         return namespaces;
       }
       function enabled(name) {
-        if (name[name.length - 1] === "*") {
-          return true;
-        }
-        let i;
-        let len;
-        for (i = 0, len = createDebug.skips.length; i < len; i++) {
-          if (createDebug.skips[i].test(name)) {
+        for (const skip of createDebug.skips) {
+          if (matchesTemplate(name, skip)) {
             return false;
           }
         }
-        for (i = 0, len = createDebug.names.length; i < len; i++) {
-          if (createDebug.names[i].test(name)) {
+        for (const ns of createDebug.names) {
+          if (matchesTemplate(name, ns)) {
             return true;
           }
         }
         return false;
-      }
-      function toNamespace(regexp) {
-        return regexp.toString().substring(2, regexp.toString().length - 2).replace(/\.\*\?$/, "*");
       }
       function coerce(val) {
         if (val instanceof Error) {
@@ -10800,6 +10814,7 @@ var require_axios = __commonJS({
     }
     var FormData__default = /* @__PURE__ */ _interopDefaultLegacy(FormData$1);
     var url__default = /* @__PURE__ */ _interopDefaultLegacy(url);
+    var proxyFromEnv__default = /* @__PURE__ */ _interopDefaultLegacy(proxyFromEnv);
     var http__default = /* @__PURE__ */ _interopDefaultLegacy(http);
     var https__default = /* @__PURE__ */ _interopDefaultLegacy(https);
     var util__default = /* @__PURE__ */ _interopDefaultLegacy(util);
@@ -11407,6 +11422,11 @@ var require_axios = __commonJS({
         return url2;
       }
       const _encode = options && options.encode || encode;
+      if (utils$1.isFunction(options)) {
+        options = {
+          serialize: options
+        };
+      }
       const serializeFn = options && options.serialize;
       let serializedParams;
       if (serializeFn) {
@@ -11997,7 +12017,7 @@ var require_axios = __commonJS({
       }
       return requestedURL;
     }
-    var VERSION = "1.7.7";
+    var VERSION = "1.7.9";
     function parseProtocol(url2) {
       const match = /^([-+\w]{1,25})(:?\/\/|:)/.exec(url2);
       return match && match[1] || "";
@@ -12155,7 +12175,7 @@ var require_axios = __commonJS({
     };
     var readBlob$1 = readBlob;
     var BOUNDARY_ALPHABET = utils$1.ALPHABET.ALPHA_DIGIT + "-_";
-    var textEncoder = new util.TextEncoder();
+    var textEncoder = typeof TextEncoder === "function" ? new TextEncoder() : new util__default["default"].TextEncoder();
     var CRLF = "\r\n";
     var CRLF_BYTES = textEncoder.encode(CRLF);
     var CRLF_BYTES_COUNT = 2;
@@ -12390,7 +12410,7 @@ var require_axios = __commonJS({
     function setProxy(options, configProxy, location) {
       let proxy = configProxy;
       if (!proxy && proxy !== false) {
-        const proxyUrl = proxyFromEnv.getProxyForUrl(location);
+        const proxyUrl = proxyFromEnv__default["default"].getProxyForUrl(location);
         if (proxyUrl) {
           proxy = new URL(proxyUrl);
         }
@@ -12564,7 +12584,7 @@ var require_axios = __commonJS({
             } catch (e) {
             }
           }
-        } else if (utils$1.isBlob(data)) {
+        } else if (utils$1.isBlob(data) || utils$1.isFile(data)) {
           data.size && headers.setContentType(data.type || "application/octet-stream");
           headers.setContentLength(data.size || 0);
           data = stream__default["default"].Readable.from(readBlob$1(data));
@@ -12766,7 +12786,7 @@ var require_axios = __commonJS({
                 return;
               }
               const err = new AxiosError(
-                "maxContentLength size of " + config.maxContentLength + " exceeded",
+                "stream has been aborted",
                 AxiosError.ERR_BAD_RESPONSE,
                 config,
                 lastRequest
@@ -12859,45 +12879,13 @@ var require_axios = __commonJS({
         }
       });
     };
-    var isURLSameOrigin = platform.hasStandardBrowserEnv ? (
-      // Standard browser envs have full support of the APIs needed to test
-      // whether the request URL is of the same origin as current location.
-      function standardBrowserEnv() {
-        const msie = platform.navigator && /(msie|trident)/i.test(platform.navigator.userAgent);
-        const urlParsingNode = document.createElement("a");
-        let originURL;
-        function resolveURL(url2) {
-          let href = url2;
-          if (msie) {
-            urlParsingNode.setAttribute("href", href);
-            href = urlParsingNode.href;
-          }
-          urlParsingNode.setAttribute("href", href);
-          return {
-            href: urlParsingNode.href,
-            protocol: urlParsingNode.protocol ? urlParsingNode.protocol.replace(/:$/, "") : "",
-            host: urlParsingNode.host,
-            search: urlParsingNode.search ? urlParsingNode.search.replace(/^\?/, "") : "",
-            hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, "") : "",
-            hostname: urlParsingNode.hostname,
-            port: urlParsingNode.port,
-            pathname: urlParsingNode.pathname.charAt(0) === "/" ? urlParsingNode.pathname : "/" + urlParsingNode.pathname
-          };
-        }
-        originURL = resolveURL(window.location.href);
-        return function isURLSameOrigin2(requestURL) {
-          const parsed = utils$1.isString(requestURL) ? resolveURL(requestURL) : requestURL;
-          return parsed.protocol === originURL.protocol && parsed.host === originURL.host;
-        };
-      }()
-    ) : (
-      // Non standard browser envs (web workers, react-native) lack needed support.
-      /* @__PURE__ */ function nonStandardBrowserEnv() {
-        return function isURLSameOrigin2() {
-          return true;
-        };
-      }()
-    );
+    var isURLSameOrigin = platform.hasStandardBrowserEnv ? /* @__PURE__ */ ((origin2, isMSIE) => (url2) => {
+      url2 = new URL(url2, platform.origin);
+      return origin2.protocol === url2.protocol && origin2.host === url2.host && (isMSIE || origin2.port === url2.port);
+    })(
+      new URL(platform.origin),
+      platform.navigator && /(msie|trident)/i.test(platform.navigator.userAgent)
+    ) : () => true;
     var cookies = platform.hasStandardBrowserEnv ? (
       // Standard browser envs support document.cookie
       {
@@ -12933,7 +12921,7 @@ var require_axios = __commonJS({
     function mergeConfig(config1, config2) {
       config2 = config2 || {};
       const config = {};
-      function getMergedValue(target, source, caseless) {
+      function getMergedValue(target, source, prop, caseless) {
         if (utils$1.isPlainObject(target) && utils$1.isPlainObject(source)) {
           return utils$1.merge.call({ caseless }, target, source);
         } else if (utils$1.isPlainObject(source)) {
@@ -12943,11 +12931,11 @@ var require_axios = __commonJS({
         }
         return source;
       }
-      function mergeDeepProperties(a, b, caseless) {
+      function mergeDeepProperties(a, b, prop, caseless) {
         if (!utils$1.isUndefined(b)) {
-          return getMergedValue(a, b, caseless);
+          return getMergedValue(a, b, prop, caseless);
         } else if (!utils$1.isUndefined(a)) {
-          return getMergedValue(void 0, a, caseless);
+          return getMergedValue(void 0, a, prop, caseless);
         }
       }
       function valueFromConfig2(a, b) {
@@ -12998,7 +12986,7 @@ var require_axios = __commonJS({
         socketPath: defaultToConfig2,
         responseEncoding: defaultToConfig2,
         validateStatus: mergeDirectKeys,
-        headers: (a, b) => mergeDeepProperties(headersToObject(a), headersToObject(b), true)
+        headers: (a, b, prop) => mergeDeepProperties(headersToObject(a), headersToObject(b), prop, true)
       };
       utils$1.forEach(Object.keys(Object.assign({}, config1, config2)), function computeConfigValue(prop) {
         const merge2 = mergeMap[prop] || mergeDeepProperties;
@@ -13559,6 +13547,12 @@ var require_axios = __commonJS({
         return validator2 ? validator2(value, opt, opts) : true;
       };
     };
+    validators$1.spelling = function spelling(correctSpelling) {
+      return (value, opt) => {
+        console.warn(`${opt} is likely a misspelling of ${correctSpelling}`);
+        return true;
+      };
+    };
     function assertOptions(options, schema, allowUnknown) {
       if (typeof options !== "object") {
         throw new AxiosError("options must be an object", AxiosError.ERR_BAD_OPTION_VALUE);
@@ -13607,8 +13601,8 @@ var require_axios = __commonJS({
           return await this._request(configOrUrl, config);
         } catch (err) {
           if (err instanceof Error) {
-            let dummy;
-            Error.captureStackTrace ? Error.captureStackTrace(dummy = {}) : dummy = new Error();
+            let dummy = {};
+            Error.captureStackTrace ? Error.captureStackTrace(dummy) : dummy = new Error();
             const stack = dummy.stack ? dummy.stack.replace(/^.+\n/, "") : "";
             try {
               if (!err.stack) {
@@ -13650,6 +13644,10 @@ var require_axios = __commonJS({
             }, true);
           }
         }
+        validator.assertOptions(config, {
+          baseUrl: validators.spelling("baseURL"),
+          withXsrfToken: validators.spelling("withXSRFToken")
+        }, true);
         config.method = (config.method || this.defaults.method || "get").toLowerCase();
         let contextHeaders = headers && utils$1.merge(
           headers.common,
@@ -14015,10 +14013,18 @@ var require_dist = __commonJS({
       return mod && mod.__esModule ? mod : { "default": mod };
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.DeskThing = exports2.EventFlavor = void 0;
+    exports2.DeskThing = exports2.EventMode = exports2.EventFlavor = exports2.LOGGING_LEVELS = void 0;
     var fs2 = __importStar(require("fs"));
     var path2 = __importStar(require("path"));
     var axios_1 = __importDefault(require_axios());
+    var LOGGING_LEVELS;
+    (function(LOGGING_LEVELS2) {
+      LOGGING_LEVELS2["LOG"] = "log";
+      LOGGING_LEVELS2["DEBUG"] = "debug";
+      LOGGING_LEVELS2["WARN"] = "warn";
+      LOGGING_LEVELS2["ERROR"] = "error";
+      LOGGING_LEVELS2["FATAL"] = "fatal";
+    })(LOGGING_LEVELS || (exports2.LOGGING_LEVELS = LOGGING_LEVELS = {}));
     var EventFlavor;
     (function(EventFlavor2) {
       EventFlavor2[EventFlavor2["KeyUp"] = 0] = "KeyUp";
@@ -14034,6 +14040,21 @@ var require_dist = __commonJS({
       EventFlavor2[EventFlavor2["PressShort"] = 10] = "PressShort";
       EventFlavor2[EventFlavor2["PressLong"] = 11] = "PressLong";
     })(EventFlavor || (exports2.EventFlavor = EventFlavor = {}));
+    var EventMode;
+    (function(EventMode2) {
+      EventMode2[EventMode2["KeyUp"] = 0] = "KeyUp";
+      EventMode2[EventMode2["KeyDown"] = 1] = "KeyDown";
+      EventMode2[EventMode2["ScrollUp"] = 2] = "ScrollUp";
+      EventMode2[EventMode2["ScrollDown"] = 3] = "ScrollDown";
+      EventMode2[EventMode2["ScrollLeft"] = 4] = "ScrollLeft";
+      EventMode2[EventMode2["ScrollRight"] = 5] = "ScrollRight";
+      EventMode2[EventMode2["SwipeUp"] = 6] = "SwipeUp";
+      EventMode2[EventMode2["SwipeDown"] = 7] = "SwipeDown";
+      EventMode2[EventMode2["SwipeLeft"] = 8] = "SwipeLeft";
+      EventMode2[EventMode2["SwipeRight"] = 9] = "SwipeRight";
+      EventMode2[EventMode2["PressShort"] = 10] = "PressShort";
+      EventMode2[EventMode2["PressLong"] = 11] = "PressLong";
+    })(EventMode || (exports2.EventMode = EventMode = {}));
     var DeskThing2 = class _DeskThing {
       constructor() {
         this.Listeners = {};
@@ -14051,6 +14072,7 @@ var require_dist = __commonJS({
       /**
        * Singleton pattern: Ensures only one instance of DeskThing exists.
        *
+       * @since 0.8.0
        * @example
        * const deskThing = DeskThing.getInstance();
        * deskthing.on('start', () => {
@@ -14067,6 +14089,7 @@ var require_dist = __commonJS({
        * Initializes data if it is not already set on the server.
        * This method is run internally when there is no data retrieved from the server.
        *
+       * @since 0.8.0
        * @example
        * const deskThing = DeskThing.getInstance();
        * deskThing.start({ toServer, SysEvents });
@@ -14089,6 +14112,7 @@ var require_dist = __commonJS({
       /**
        * Notifies all listeners of a particular event.
        *
+       * @since 0.8.0
        * @example
        * deskThing.on('message', (msg) => console.log(msg));
        * deskThing.notifyListeners('message', 'Hello, World!');
@@ -14104,6 +14128,7 @@ var require_dist = __commonJS({
       /**
        * Registers an event listener for a specific incoming event. Events are either the "type" value of the incoming SocketData object or a special event like "start", "stop", or "data".
        *
+       * @since 0.8.0
        * @param event - The event type to listen for.
        * @param callback - The function to call when the event occurs.
        * @returns A function to remove the listener.
@@ -14133,6 +14158,7 @@ var require_dist = __commonJS({
       /**
        * Removes a specific event listener for a particular incoming event.
        *
+       * @since 0.8.0
        * @param event - The event for which to remove the listener.
        * @param callback - The listener function to remove.
        *
@@ -14150,6 +14176,8 @@ var require_dist = __commonJS({
       /**
        * Registers a system event listener. This feature is somewhat limited but allows for detecting when there are new audiosources or button mappings registered to the server.
        * Eg 'config' is emitted when the server has new button mappings or audio sources registered.
+       *
+       * @since 0.8.0
        * @param event - The system event to listen for.
        * @param listener - The function to call when the event occurs.
        * @returns A function to remove the listener.
@@ -14176,6 +14204,7 @@ var require_dist = __commonJS({
       /**
        * Registers a one-time listener for an incoming event. The listener will be automatically removed after the first occurrence of the event.
        *
+       * @since 0.8.0
        * @param event - The event to listen for.
        * @param callback - Optional callback function. If omitted, returns a promise.
        * @returns A promise that resolves with the event data if no callback is provided.
@@ -14209,6 +14238,7 @@ var require_dist = __commonJS({
       /**
        * Sends data to the server with a specified event type.
        *
+       * @since 0.8.0
        * @param event - The event type to send.
        * @param payload - The data to send.
        * @param request - Optional request string.
@@ -14231,6 +14261,7 @@ var require_dist = __commonJS({
       /**
        * Requests data from the server with optional scopes.
        *
+       * @since 0.8.0
        * @param request - The type of data to request ('data', 'config', or 'input').
        * @param scopes - Optional scopes to request specific data.
        *
@@ -14244,6 +14275,7 @@ var require_dist = __commonJS({
       /**
        * Public method to send data to the server.
        *
+       * @since 0.8.0
        * @param event - The event type to send.
        * @param payload - The data to send.
        * @param request - Optional request string.
@@ -14261,8 +14293,9 @@ var require_dist = __commonJS({
       /**
        * Sends a plain text message to the server. This will display as a gray notification on the DeskThingServer GUI
        *
+       * @since 0.8.0
        * @param message - The message to send to the server.
-       *
+       * @deprecated - Use sendLog or sendWarning instead
        * @example
        * deskThing.sendMessage('Hello, Server!');
        */
@@ -14272,24 +14305,57 @@ var require_dist = __commonJS({
       /**
        * Sends a log message to the server. This will be saved to the .logs file and be saved in the Logs on the DeskThingServer GUI
        *
-       * @param message - The log message to send.
-       *
+       * @param log - The log message to send.
+       * @since 0.8.0
        * @example
-       * deskThing.sendLog('This is a log message.');
+       * deskThing.sendLog('[spotify] Fetching data...');
        */
-      sendLog(message) {
-        this.send("log", message);
+      sendLog(log) {
+        this.send(LOGGING_LEVELS.LOG, log);
+      }
+      /**
+      * Sends a warning to the server. This will be saved to the .logs file and be saved in the Logs on the DeskThingServer GUI
+      *
+      * @param warning - The warning message to send.
+      * @since 0.9.3
+      * @example
+      * deskThing.sendWarning('[spotify] Ensure the API keys are set!');
+      */
+      sendWarning(warning) {
+        this.send(LOGGING_LEVELS.WARN, warning);
       }
       /**
        * Sends an error message to the server. This will show up as a red notification
        *
        * @param message - The error message to send.
-       *
+       * @since 0.8.0
        * @example
        * deskThing.sendError('An error occurred!');
        */
       sendError(message) {
-        this.send("error", message);
+        this.send(LOGGING_LEVELS.ERROR, message);
+      }
+      /**
+       * Sends a fatal error message to the server. This will show up as a critical red notification
+       *
+       * @param message - The fatal error message to send.
+       * @since 0.9.3
+       * @example
+       * deskThing.sendFatal('Critical system failure!');
+       */
+      sendFatal(message) {
+        this.send(LOGGING_LEVELS.FATAL, message);
+      }
+      /**
+       * Sends a debug message to the server. This will be saved to the .logs file and only visible in debug mode
+       *
+       * @param message - The debug message to send.
+       * @since 0.9.3
+       * @example
+       * deskThing.sendDebug('[spotify] Debug info: ' + debugData);
+       */
+      sendDebug(message) {
+        this.send(LOGGING_LEVELS.DEBUG, message);
       }
       /**
        * Routes request to another app running on the server.
@@ -14297,7 +14363,7 @@ var require_dist = __commonJS({
        *
        * @param appId - The ID of the target app.
        * @param data - The data to send to the target app.
-       *
+       * @since 0.8.0
        * @example
        * deskThing.sendDataToOtherApp('utility', { type: 'set', request: 'next', payload: { id: '' } });
        * @example
@@ -14554,13 +14620,71 @@ var require_dist = __commonJS({
        *     description: 'Enter your username'
        *   }
        * })
+       * @example
+       * // Adding a range setting
+       * deskThing.addSettings({
+       *   volume: {
+       *     type: 'range',
+       *     label: 'Volume',
+       *     value: 50,
+       *     description: 'Adjust the volume level',
+       *     min: 0,
+       *     max: 100,
+       *     step: 1
+       *   }
+       * })
+       * @example
+       * // Adding an order setting
+       * deskThing.addSettings({
+       *   displayOrder: {
+       *     type: 'order',
+       *     label: 'Display Order',
+       *     value: ['section1', 'section2', 'section3'],
+       *     description: 'Arrange the display order of sections',
+       *     options: [
+       *       { label: 'Section 1', value: 'section1' },
+       *       { label: 'Section 2', value: 'section2' },
+       *       { label: 'Section 3', value: 'section3' }
+       *     ]
+       *   }
+       * })
+       * @example
+       * // Adding a list setting
+       * deskThing.addSettings({
+       *   settingsList: {
+       *      label: "Settings List",
+       *      description: "Select multiple items from the list",
+       *      type: 'list',
+       *      value: ['item1', 'item2'],
+       *      options: [
+       *          { label: 'Item1', value: 'item1' },
+       *          { label: 'Item2', value: 'item2' },
+       *          { label: 'Item3', value: 'item3' },
+       *          { label: 'Item4', value: 'item4' }
+       *      ]
+       *    }
+       * })
+       * @example
+       * // Adding a color setting
+       * deskThing.addSettings({
+       *   settingsColor: {
+       *      label: "Settings Color",
+       *      description: "Prompt the user to select a color",
+       *      type: 'color',
+       *      value: '#1ed760'
+       *    }
+       * })
        */
       addSettings(settings) {
         var _a;
+        this.sendLog("Adding settings..." + settings.toString());
         if (!this.data) {
           this.data = { settings: {} };
         } else if (!this.data.settings) {
           this.data.settings = {};
+        }
+        if (!settings || typeof settings !== "object") {
+          throw new Error("Settings must be a valid object");
         }
         if ((_a = this.data) === null || _a === void 0 ? void 0 : _a.settings) {
           Object.keys(settings).forEach((id) => {
@@ -14568,12 +14692,18 @@ var require_dist = __commonJS({
             const setting = settings[id];
             if (!((_a2 = this.data) === null || _a2 === void 0 ? void 0 : _a2.settings))
               return;
+            if (!setting.type || !setting.label) {
+              throw new Error(`Setting ${id} must have a type and label`);
+            }
             if (this.data.settings[id]) {
               console.warn(`Setting with label "${setting.label}" already exists. It will be overwritten.`);
               this.sendLog(`Setting with label "${setting.label}" already exists. It will be overwritten.`);
             }
             switch (setting.type) {
               case "select":
+                if (!Array.isArray(setting.options)) {
+                  throw new Error(`Select setting ${id} must have options array`);
+                }
                 this.data.settings[id] = {
                   type: "select",
                   value: setting.value,
@@ -14583,6 +14713,9 @@ var require_dist = __commonJS({
                 };
                 break;
               case "multiselect":
+                if (!Array.isArray(setting.options)) {
+                  throw new Error(`Multiselect setting ${id} must have options array`);
+                }
                 this.data.settings[id] = {
                   type: "multiselect",
                   value: setting.value,
@@ -14592,6 +14725,9 @@ var require_dist = __commonJS({
                 };
                 break;
               case "number":
+                if (typeof setting.min !== "number" || typeof setting.max !== "number") {
+                  throw new Error(`Number setting ${id} must have min and max values`);
+                }
                 this.data.settings[id] = {
                   type: "number",
                   value: setting.value,
@@ -14602,6 +14738,9 @@ var require_dist = __commonJS({
                 };
                 break;
               case "boolean":
+                if (typeof setting.value !== "boolean") {
+                  throw new Error(`Boolean setting ${id} must have a boolean value`);
+                }
                 this.data.settings[id] = {
                   type: "boolean",
                   value: setting.value,
@@ -14610,6 +14749,9 @@ var require_dist = __commonJS({
                 };
                 break;
               case "string":
+                if (typeof setting.value !== "string") {
+                  throw new Error(`String setting ${id} must have a string value`);
+                }
                 this.data.settings[id] = {
                   type: "string",
                   description: setting.description || "",
@@ -14617,6 +14759,56 @@ var require_dist = __commonJS({
                   label: setting.label
                 };
                 break;
+              case "range":
+                if (typeof setting.min !== "number" || typeof setting.max !== "number") {
+                  throw new Error(`Range setting ${id} must have min and max values`);
+                }
+                this.data.settings[id] = {
+                  type: "range",
+                  value: setting.value,
+                  label: setting.label,
+                  min: setting.min,
+                  max: setting.max,
+                  step: setting.step || 1,
+                  description: setting.description || ""
+                };
+                break;
+              case "ranked":
+                if (!Array.isArray(setting.options) || !Array.isArray(setting.value)) {
+                  this.sendError(`Ranked setting ${id} must have options and value arrays`);
+                  throw new Error(`Ranked setting ${id} must have options and value arrays`);
+                }
+                this.data.settings[id] = {
+                  type: "ranked",
+                  value: setting.value,
+                  label: setting.label,
+                  description: setting.description || "",
+                  options: setting.options
+                };
+                break;
+              case "list":
+                if (!Array.isArray(setting.options)) {
+                  throw new Error(`List setting ${id} must have an options array`);
+                }
+                this.data.settings[id] = {
+                  type: "list",
+                  value: setting.value,
+                  label: setting.label,
+                  description: setting.description || "",
+                  options: setting.options || []
+                };
+                break;
+              case "color":
+                this.data.settings[id] = {
+                  type: "color",
+                  value: setting.value,
+                  label: setting.label,
+                  description: setting.description || ""
+                };
+                break;
+              default:
+                this.sendError(`Unknown setting type: ${setting} for setting ${id}.`);
+                throw new Error(`Unknown setting type: ${setting}`);
             }
           });
           console.log("sending settings", this.data.settings);
@@ -14692,8 +14884,8 @@ var require_dist = __commonJS({
        * @param id - The unique identifier for the key.
        * @param description - Description for the key.
        */
-      registerKey(id, description, flavors, version) {
-        this.sendData("button", { id, description, flavors, version }, "add");
+      registerKey(id, description, modes, version) {
+        this.sendData("button", { id, description, modes, version }, "add");
       }
       /**
        * Registers a new key with the specified identifier. This can be mapped to any action. Use a keycode to map a specific keybind.
@@ -14706,8 +14898,8 @@ var require_dist = __commonJS({
         if (!key || typeof key !== "object") {
           throw new Error("Invalid key object");
         }
-        if (!key.flavors || !Array.isArray(key.flavors) || key.flavors.length === 0) {
-          throw new Error("Key must have valid flavors");
+        if (!key.modes || !Array.isArray(key.modes) || key.modes.length === 0) {
+          throw new Error("Key must have valid modes");
         }
         if (typeof key.id !== "string") {
           throw new Error("Key must have a valid id");
@@ -14801,7 +14993,7 @@ var require_dist = __commonJS({
        * // Getting encoded spotify image data
        * const encodedImage = await deskThing.encodeImageFromUrl(https://i.scdn.co/image/ab67616d0000b273bd7401ecb7477f3f6cdda060, 'jpeg')
        *
-       * deskThing.sendMessageToAllClients({app: 'client', type: 'song', payload: { thumbnail: encodedImage } })
+       * deskThing.send({app: 'client', type: 'song', payload: { thumbnail: encodedImage } })
        */
       encodeImageFromUrl(url_1) {
         return __awaiter(this, arguments, void 0, function* (url, type = "jpeg", retries = 3) {

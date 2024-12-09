@@ -13,7 +13,7 @@ export class SettingsStore {
     constructor() {
         this.deskthing = DeskThing.getInstance()
         this.listeners.push(this.deskthing.on('settings', this.handleSetting.bind(this)))
-        this.deskthing.sendMessageToParent({app: 'client', type: 'get', request: 'settings'})
+        this.deskthing.send({app: 'client', type: 'get', request: 'settings'})
     }
 
     static getInstance(): SettingsStore {
@@ -31,9 +31,9 @@ export class SettingsStore {
     }
 
     getSettings(): Settings | null {
-        // this.deskthing.sendMessageToParent({app: 'utility', type: 'set', request: 'volume', payload: 100})
+        // this.deskthing.send({app: 'utility', type: 'set', request: 'volume', payload: 100})
         if (!this.currentSettings) {
-            this.deskthing.sendMessageToParent({app: 'client', type: 'get', request: 'settings'})
+            this.deskthing.send({app: 'client', type: 'get', request: 'settings'})
         }
         return this.currentSettings
     }

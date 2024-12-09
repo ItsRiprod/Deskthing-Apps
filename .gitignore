@@ -13,3 +13,4 @@
 *.pdb
 /Releases
 /testingproj
+/.extras

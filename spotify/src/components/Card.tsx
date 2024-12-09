@@ -11,7 +11,7 @@ const Card: React.FC<CardProps> = ({ title, value }) => {
   const backgroundColor = musicStore.getBackgroundColor()
 
   const cardStyle: React.CSSProperties = {
-    color: `rgb(${backgroundColor.join(',')})`,
+    color: backgroundColor,
   }
 
   return (
