@@ -56,7 +56,7 @@ class SpotifyHandler {
   async initializeData() {
     const data = await this.DeskThing.getData()
     if (data) {
-      this.Data = data 
+      this.Data = data
     }
 
     if (!this.Data.playlists) {
@@ -707,11 +707,6 @@ async setPlaylist(playlistIndex: number) {
     }
 
   async getCurrentPlayback() {
-    const url = `${this.BASE_URL}`
-    return this.makeRequest('get', url)
-  }
-
-  async getCurrentEpisode() {
     const url = `${this.BASE_URL}?additional_types=episode`
     return this.makeRequest('get', url)
   }
@@ -753,8 +748,7 @@ async setPlaylist(playlistIndex: number) {
   async play(context: {playlist: string, id: string, position: number}) {
     const url = `${this.BASE_URL}/play`;
     let body: Body | null = null;
-  
-    if (context.playlist && context.id && context.position) {
+    if (context && context.playlist && context.id && context.position) {
       body = {
         context_uri: context.playlist,
         offset: { uri: `spotify:track:${context.id}` },
@@ -864,7 +858,7 @@ async setPlaylist(playlistIndex: number) {
   async checkForRefresh() {
     console.log('Checking for refresh...')
     const currentPlayback = await this.getCurrentPlayback()
-
+    
     if (currentPlayback.currently_playing_type === 'track') {
 
       const isLiked = await this.checkLiked(currentPlayback.item.id)
@@ -892,6 +886,31 @@ async setPlaylist(playlistIndex: number) {
       }
 
       this.DeskThing.sendDataToClient({ app: 'client', type: 'song', payload: songData })
+    } else if (currentPlayback.currently_playing_type === 'episode') {
+      const songData = {
+        album: currentPlayback?.item.show.name,
+        artist: currentPlayback?.item.show.publisher,
+        playlist: currentPlayback?.context?.type || 'Not Found',
+        playlist_id: currentPlayback?.context?.uri || '123456',
+        track_name: currentPlayback?.item.name,
+        shuffle_state: currentPlayback?.shuffle_state,
+        repeat_state: currentPlayback?.repeat_state == 'context' ? 'all' : currentPlayback.repeat_state,
+        is_playing: currentPlayback?.is_playing,
+        can_fast_forward: !currentPlayback?.disallows?.seeking || true,
+        can_skip: !currentPlayback?.disallows?.skipping_next || true,
+        can_like: true,
+        can_change_volume: currentPlayback?.device?.supports_volume  || true,
+        can_set_output: !currentPlayback?.disallows?.transferring_playback  || true,
+        track_duration: currentPlayback?.item.duration_ms,
+        track_progress: currentPlayback?.progress_ms,
+        volume: currentPlayback?.device.volume_percent,
+        device: currentPlayback?.device.name,
+        device_id: currentPlayback?.device.id,
+        id: currentPlayback?.item.id,
+        isLiked: false
+      }
+
+      this.DeskThing.sendDataToClient({app: 'client', type: 'song', payload: songData})
     } else {
       this.DeskThing.sendLog('Unable to refresh... song not playing!')
     }
@@ -921,8 +940,8 @@ async setPlaylist(playlistIndex: number) {
             
           delay *= 1.3 // how long to increase the delay between attempts
           await new Promise((resolve) => setTimeout(resolve, delay))
-        } else if (currentPlayback.currently_playing_type === 'show') {
-          currentPlayback = await this.getCurrentEpisode()
+        } else if (currentPlayback.currently_playing_type === 'episode') {
+          currentPlayback = await this.getCurrentPlayback()
           this.DeskThing.sendLog('Playing a podcast!')
         } else {
           this.DeskThing.sendError('No song is playing or detected!')
@@ -938,7 +957,7 @@ async setPlaylist(playlistIndex: number) {
       let songData: Partial<SpotifySongData>
 
       const isLiked = await this.checkLiked(currentPlayback.item.id)
-      
+
       if (currentPlayback.currently_playing_type === 'track') {
         songData = {
           album: currentPlayback?.item.album?.name || 'Not Found',
@@ -985,7 +1004,7 @@ async setPlaylist(playlistIndex: number) {
 
         // Only update the thumbnail
         this.DeskThing.sendDataToClient({ app: 'client', type: 'song', payload: { thumbnail: encodedImage}  })
-      } else if (currentPlayback.currently_playing_type === 'show') {
+      } else if (currentPlayback.currently_playing_type === 'episode') {
         songData = {
           album: currentPlayback?.item.show.name,
           artist: currentPlayback?.item.show.publisher,
@@ -1006,7 +1025,6 @@ async setPlaylist(playlistIndex: number) {
           device: currentPlayback?.device.name,
           device_id: currentPlayback?.device.id,
           id: currentPlayback?.item.id,
-          thumbnail: null,
           isLiked: isLiked[0],
         }
 
@@ -1021,12 +1039,12 @@ async setPlaylist(playlistIndex: number) {
             value: currentPlayback.device.id,
             label: currentPlayback.device.name
           });
-
+          
           this.DeskThing.saveData({ settings: this.Data.settings})
         }
-
+        
         this.DeskThing.sendDataToClient({ app: 'client', type: 'song', payload: songData })
-        const imageUrl = currentPlayback.item.album.images[0].url
+        const imageUrl = currentPlayback.item.images[0].url
         const encodedImage = await this.DeskThing.encodeImageFromUrl(imageUrl, 'jpeg')
 
         // Only update the thumbnail
