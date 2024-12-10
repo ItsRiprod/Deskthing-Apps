@@ -14,7 +14,7 @@ const App: React.FC = () => {
                 }
             }
         }
-        deskthing.on('image', onAppData)
+        deskthing.on('imageData', onAppData)
 
         deskthing.sendMessageToParent({type: 'get', request: 'image'})
     })
