@@ -1,0 +1,11 @@
+export { default as IconX } from "./IconX";
+export { default as VolumeOff } from "./VolumeOff";
+export { default as IconVolume } from "./IconVolume";
+export { default as IconUserCircle } from "./IconUserCircle";
+export { default as IconCallDiscord } from "./IconCallDiscord";
+export { default as IconDeafenedDiscord } from "./IconDeafenedDiscord";
+export { default as IconDeafenedOffDiscord } from "./IconDeafenedOffDiscord";
+export { default as IconMicDiscord } from "./IconMicDiscord";
+export { default as IconMicOffDiscord } from "./IconMicOffDiscord";
+export { default as IconVolumeUp } from "./IconVolumeUp";
+export { default as IconVolumeDown } from "./IconVolumeDown";

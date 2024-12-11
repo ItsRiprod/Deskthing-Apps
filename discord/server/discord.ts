@@ -1,5 +1,5 @@
-import { DiscordRequest, InstallGlobalCommands } from './discordUtils';
-import { DeskThing } from 'deskthing-server';
+import { DiscordRequest, InstallGlobalCommands } from "./discordUtils";
+import { DeskThing } from "deskthing-server";
 
 interface VoiceState {
   channel_id: string | null;
@@ -16,39 +16,38 @@ interface VoiceState {
 }
 
 class discord {
-  private client_id: string
-  private client_secret: string
-  private DeskThing: DeskThing
+  private client_id: string;
+  private client_secret: string;
+  private DeskThing: DeskThing;
 
   constructor() {
-    this.DeskThing = DeskThing.getInstance()
-    this.initiallizeData()
+    this.DeskThing = DeskThing.getInstance();
+    this.initiallizeData();
     if (this.client_id && this.client_secret) {
-      
     }
-    this.DeskThing.sendLog('Discord Initialized')
+    this.DeskThing.sendLog("Discord Initialized");
   }
 
   async initiallizeData() {
-    const data = await this.DeskThing.getData()
+    const data = await this.DeskThing.getData();
     if (data) {
-      this.syncData(data as {[key: string]: string | undefined} | undefined)
+      this.syncData(data as { [key: string]: string | undefined } | undefined);
     }
 
-    this.DeskThing.on('data', this.syncData)
-    
+    this.DeskThing.on("data", this.syncData);
   }
-  
-  private async syncData(data: {[key: string]: string | undefined} | undefined) {
-    if (!data) return
-  
+
+  private async syncData(
+    data: { [key: string]: string | undefined } | undefined
+  ) {
+    if (!data) return;
+
     if (data.client_id) {
-      this.client_id = data.client_id
+      this.client_id = data.client_id;
     }
     if (data.client_secret) {
-      this.client_secret = data.client_secret
+      this.client_secret = data.client_secret;
     }
-    
   }
 }
 
@@ -56,28 +55,40 @@ const DISCORD_APP_ID = process.env.DISCORD_APP_ID;
 
 async function getGuildVoiceStates(guildId: string): Promise<VoiceState[]> {
   try {
-    const response = await DiscordRequest(`guilds/${guildId}/voice-states`, { method: 'GET' });
+    const response = await DiscordRequest(`guilds/${guildId}/voice-states`, {
+      method: "GET",
+    });
     return await response.json();
   } catch (error) {
-    console.error('Error fetching guild voice states:', error);
+    console.error("Error fetching guild voice states:", error);
     return [];
   }
 }
 
-async function getCurrentUserVoiceState(guildId: string): Promise<VoiceState | null> {
+async function getCurrentUserVoiceState(
+  guildId: string
+): Promise<VoiceState | null> {
   try {
-    const response = await DiscordRequest(`guilds/${guildId}/voice-states/@me`, { method: 'GET' });
+    const response = await DiscordRequest(
+      `guilds/${guildId}/voice-states/@me`,
+      { method: "GET" }
+    );
     return await response.json();
   } catch (error) {
-    console.error('Error fetching current user voice state:', error);
+    console.error("Error fetching current user voice state:", error);
     return null;
   }
 }
 
-async function modifyCurrentUserVoiceState(guildId: string, channelId: string, suppress?: boolean, requestToSpeakTimestamp?: string): Promise<void> {
+async function modifyCurrentUserVoiceState(
+  guildId: string,
+  channelId: string,
+  suppress?: boolean,
+  requestToSpeakTimestamp?: string
+): Promise<void> {
   try {
     await DiscordRequest(`guilds/${guildId}/voice-states/@me`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: {
         channel_id: channelId,
         suppress,
@@ -85,32 +96,32 @@ async function modifyCurrentUserVoiceState(guildId: string, channelId: string, s
       },
     });
   } catch (error) {
-    console.error('Error modifying current user voice state:', error);
+    console.error("Error modifying current user voice state:", error);
   }
 }
 
 const commands = [
   {
-    name: 'voice_state',
-    description: 'Get current voice state',
+    name: "voice_state",
+    description: "Get current voice state",
     type: 1,
   },
 ];
 
-DeskThing.on('start', async () => {
+this.DeskThing.on("start", async () => {
   await InstallGlobalCommands(DISCORD_APP_ID, commands);
 
-  DeskThing.on('interactionCreate', async (interaction) => {
-    if (interaction.type === 2 && interaction.data.name === 'voice_state') {
+  DeskThing.on("interactionCreate", async (interaction) => {
+    if (interaction.type === 2 && interaction.data.name === "voice_state") {
       const guildId = interaction.guild_id;
       if (!guildId) {
-        await interaction.reply('This command can only be used in a server.');
+        await interaction.reply("This command can only be used in a server.");
         return;
       }
 
       const currentUserVoiceState = await getCurrentUserVoiceState(guildId);
       if (!currentUserVoiceState) {
-        await interaction.reply('Unable to fetch your current voice state.');
+        await interaction.reply("Unable to fetch your current voice state.");
         return;
       }
 
@@ -119,20 +130,24 @@ DeskThing.on('start', async () => {
 
       // Send the voice state to the client
       await interaction.reply({
-        content: 'Your current voice state:',
-        embeds: [{
-          title: 'Voice State',
-          fields: Object.entries(currentUserVoiceState).map(([key, value]) => ({
-            name: key,
-            value: String(value),
-            inline: true,
-          })),
-        }],
+        content: "Your current voice state:",
+        embeds: [
+          {
+            title: "Voice State",
+            fields: Object.entries(currentUserVoiceState).map(
+              ([key, value]) => ({
+                name: key,
+                value: String(value),
+                inline: true,
+              })
+            ),
+          },
+        ],
       });
     }
   });
 });
 
-DeskThing.on('stop', async () => {
+DeskThing.on("stop", async () => {
   // Cleanup code if needed
 });

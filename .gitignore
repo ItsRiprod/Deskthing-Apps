@@ -14,3 +14,9 @@
 /Releases
 /testingproj
 /.extras
+
+
+# Discord app local development stuff
+.env*
+
+# Legacy Discord app ref stuff
