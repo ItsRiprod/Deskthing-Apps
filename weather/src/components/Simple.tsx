@@ -31,7 +31,7 @@ const Simple = ({ weatherData }: WeatherProps) => {
       <div className="flex justify-between w-full items-center">
         <div>
           <p>
-          {Math.round(weatherData.current.apparentTemperature) + '°' + weatherData.tempUnit.toUpperCase()}
+          {Math.round(weatherData.current.temperature2m) + '°' + weatherData.tempUnit.toUpperCase()}
           </p>
           <p className="text-2xl sm:text-6xl xl:text-8xl">
             {time}
@@ -49,7 +49,7 @@ const Simple = ({ weatherData }: WeatherProps) => {
         <p>
         {Math.round(weatherData.daily.temperature2mMax[0]) + '° / ' + Math.round(weatherData.daily.temperature2mMin[0]) + '° '}
         Feels Like {Math.round(weatherData.current.apparentTemperature) + '°' + weatherData.tempUnit.toUpperCase()}
-        {' | ' + Math.trunc(weatherData.daily.precipitationProbabilityMean[0]*100) + '%'}
+        {' | ' + Math.trunc(weatherData.daily.precipitationProbabilityMean[0]) + '%'}
         </p>
       </div>
     </div>
