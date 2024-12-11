@@ -6,7 +6,7 @@ import RecordCenter from './views/RecordCenter'
 import { AppSettings, DeskThing, SocketData } from 'deskthing-client'
 
 const App: React.FC = () => {
-    const [currentView, setCurrentview] = useState('record')
+    const [currentView, setCurrentview] = useState('fullscreen')
     const deskthing = DeskThing.getInstance()
 
     useEffect(() => {

@@ -30,16 +30,16 @@ const Record: React.FC = () => {
 
 
     return (
-        <div style={{background:`${songData ? songData.color?.rgba : 'rgb(0, 0, 0)'}`}} className="bg-slate-800 w-screen h-screen flex justify-center items-center">
+        <div style={{background:`${songData ? songData.color?.rgba : 'rgb(0, 0, 0)'}`}} className={`${songData && songData.color?.isDark ? 'text-white' : 'text-black'} bg-slate-800 w-screen h-screen flex justify-center items-center`}>
             <div className={`fixed left-1/4 -bottom-3/4 rounded-full w-[180vw] h-[180vw] ${isPlaying ? 'animate-spin-slow' : ''}`}>
-                <div style={{backgroundImage:`url(./vinyl.svg)`}} className="absolute border-black border- w-full h-full bg-cover bg-center bg-no-repeat " />
+                <div style={{backgroundImage:`url('./vinyl.svg')`}} className={`absolute border-black border- w-full h-full bg-cover bg-center bg-no-repeat mix-blend-screen`} />
                 <div style={{backgroundImage:`url(${thumbnail})`}} className="absolute rounded-full left-1/4 top-1/4 border-black border-2 border- w-[50%] h-[50%] bg-cover bg-center bg-no-repeat " />
             </div>
             <div className="fixed top-7 left-7">
-                <h1 style={{color: 'var(--background-contrast)'}} className="text-4xl font-bold">
+                <h1 className="text-white text-4xl font-bold drop-shadow-lg">
                     {songData?.track_name}
                 </h1>
-                <p style={{color: 'var(--background-contrast)'}} className="text-2xl font-semibold font-mono">
+                <p className="text-white text-2xl font-semibold font-mono drop-shadow-lg">
                     {songData?.artist}
                 </p>
             </div>
@@ -52,5 +52,9 @@ const Record: React.FC = () => {
 
     )
 }
-
 export default Record
+
+/* 
+In public/vinyl.svg:
+Change the fill="currentColor" in path id="path2985" to fill="#FFFFFF"
+*/

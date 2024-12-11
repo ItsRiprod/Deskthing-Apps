@@ -1,19 +1,49 @@
-import { DeskThing } from 'deskthing-client'
-import { SongData, SocketData } from 'deskthing-client/dist/types'
+import { DeskThing, SongData, SocketData } from 'deskthing-client'
 
 type MusicListener = (data: SongData) => Promise<void>
 
+const sampleSongData: SongData = {
+    album: "Loading Album",
+    artist: "Loading Artist",
+    track_duration: 180,
+    id: "sample-id",
+    is_playing: false,
+    playlist: "Sample Playlist",
+    playlist_id: "sample-playlist-id",
+    track_progress: 0,
+    track_name: "Loading Track...",
+    volume: 1,
+    thumbnail: "https://i.scdn.co/image/ab67616d0000485109d8b71a33c39ffc81bc738f",
+    repeat_state: 'track',
+    shuffle_state: false,
+    isLiked: false,
+    can_fast_forward: true,
+    can_skip: true,
+    can_like: true,
+    can_change_volume: true,
+    can_set_output: true,
+    device: "Sample Device",
+    device_id: "sample-device-id",
+    color: {
+        value: [40, 40, 40, 1],
+        rgb: "rgb(40,40,40)",
+        rgba: "rgba(40,40,40,1)",
+        hex: "#282828",
+        hexa: "#282828FF",
+        isDark: true,
+        isLight: false
+    }}
 export class MusicStore {
     private static instance: MusicStore
     private deskthing: DeskThing
     private listeners: ((data: SocketData) => void)[] = []
     private musicListeners: MusicListener[] = []
-    private currentSong: SongData | null = null
+    private currentSong: SongData = sampleSongData
 
     constructor() {
         this.deskthing = DeskThing.getInstance()
         this.listeners.push(this.deskthing.on('music', this.handleMusic.bind(this)))
-        this.deskthing.sendMessageToParent({app: 'client', type: 'get', request: 'song'})
+        this.deskthing.send({app: 'client', type: 'get', request: 'song'})
     }
 
     static getInstance(): MusicStore {

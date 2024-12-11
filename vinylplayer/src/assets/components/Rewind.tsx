@@ -15,7 +15,7 @@ const Rewind: React.FC = () => {
 
   return (
     <button onClick={togglePlayPause} className="p-4">
-      <RewindIcon style={{color: 'var(--background-contrast)'}} iconSize={56} />
+      <RewindIcon iconSize={56} />
     </button>
   )
 }

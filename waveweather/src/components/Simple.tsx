@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { WeatherData } from "../stores/weatherStore";
 import { SettingsStore } from "../stores/settingsStore";
-import { DeskThing } from 'deskthing-client';  // Import DeskThing client for Spotify data
+import { DeskThing, SocketData } from 'deskthing-client';  // Import DeskThing client for Spotify data
 import { IconPinwheel } from "../assets/Icons";
 
 interface WeatherProps {
@@ -27,7 +27,8 @@ const Simple = ({ weatherData }: WeatherProps) => {
     };
 
     // Function to handle music updates (e.g., new song data)
-    const handleMusic = (data: any) => {
+    const handleMusic = (socketData: SocketData) => {
+      const data = socketData.payload
       console.log('Music Data Received:', data);
       if (data?.thumbnail) {
         setThumbnail(data.thumbnail); // Set the thumbnail URL with real data when available
@@ -36,8 +37,9 @@ const Simple = ({ weatherData }: WeatherProps) => {
 
     // Request current song data when component mounts
 
-    const fetchSong = () => {
-      deskThingClient.send({ app: 'client', type: 'get', request: 'song' });
+    const fetchSong = async () => {
+      const musicData = await deskThingClient.getMusic()
+      musicData && setThumbnail(musicData.thumbnail);
     }
 
     setTimeout(fetchSong, 1000);
