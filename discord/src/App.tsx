@@ -1,19 +1,19 @@
 import React, { useEffect } from "react";
 import { DeskThing } from "deskthing-client";
 import { SocketData } from "deskthing-client/dist/types";
-import { Call } from "./components/Call";
-import Controls from "./components/Controls";
-import ErrorBoundary from "./components/ErrorBoundary";
+import { Call } from "./assets/components/Call";
+import Controls from "./assets/components/Controls";
+import ErrorBoundary from "./assets/components/ErrorBoundary";
 
 const App: React.FC = () => {
-  const deskthing = DeskThing.getInstance();
+  const DeskThingClient = DeskThing.getInstance();
 
   useEffect(() => {
     const onAppData = async (data: SocketData) => {
       console.log("Received data from the server!");
       console.log(data);
     };
-    const removeListener = deskthing.on("discord", onAppData);
+    const removeListener = DeskThingClient.on("get", onAppData);
 
     return () => {
       removeListener();

@@ -1,8 +1,8 @@
-import React from 'react'
-import { IconX } from './icons'
+import React from "react";
+import { IconX } from "../icons";
 
 interface LoadingProps {
-  message?: string
+  message?: string;
 }
 
 const Loading: React.FC<LoadingProps> = ({ message }) => {
@@ -11,7 +11,7 @@ const Loading: React.FC<LoadingProps> = ({ message }) => {
       {IconX && <IconX iconSize={256} />}
       {message && <p className="text-lg text-center logo">{message}</p>}
     </div>
-  )
-}
+  );
+};
 
-export default Loading
+export default Loading;

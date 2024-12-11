@@ -46,7 +46,7 @@ type notificationData ={
 
 
 class DiscordHandler {
-  private DeskThing: DeskThing
+  private DeskThingServer: DeskThing
   private rpc: RPC.Client = new RPC.Client({ transport: 'ipc' });
   private subscriptions: subscriptions = { voice: {} };
   private startTimestamp: Date | null;
@@ -58,7 +58,7 @@ class DiscordHandler {
   private token: string | undefined = undefined;
 
   constructor(DeskThing: DeskThing) {
-    this.DeskThing = DeskThing
+    this.DeskThingServer = DeskThing
     this.subscriptions = { voice: {} };
     this.startTimestamp = null;
     this.connectedUsers = []; 
@@ -77,7 +77,7 @@ class DiscordHandler {
   async registerRPC() {
     try {
       await this.sendLog('Registering RPC and logging in...');
-      const data = await this.DeskThing.getData();
+      const data = await this.DeskThingServer.getData();
       if (data) {
         this.client_id = data.client_id as string;
         this.client_secret = data.client_secret as string;
@@ -85,7 +85,7 @@ class DiscordHandler {
       }
 
       if (!this.client_id || !this.client_secret) {
-        this.DeskThing.sendError('Missing client ID or secret');
+        this.DeskThingServer.sendError('Missing client ID or secret');
         throw new Error('Missing client ID or secret');
       }
 
@@ -96,7 +96,7 @@ class DiscordHandler {
       await this.login();
 
     } catch (exception) {
-      await this.DeskThing.sendError(`RPC: Error registering RPC client: ${exception}`);
+      await this.DeskThingServer.sendError(`RPC: Error registering RPC client: ${exception}`);
     }
   }
 
@@ -111,7 +111,7 @@ class DiscordHandler {
       if (!this.token) {
         // @ts-ignore it is there just not in their types for some reason
         this.token = await this.rpc.authorize({ scopes: this.scopes, clientSecret: this.client_secret, redirectUri: this.redirect_url })
-        await this.DeskThing.saveData({ token: this.token })
+        await this.DeskThingServer.saveData({ token: this.token })
       }
       await this.rpc.login({
         scopes: this.scopes,
@@ -132,9 +132,9 @@ class DiscordHandler {
 
       this.rpc.on('ready', async () => {
         this.sendLog('RPC ready! Setting activity and subscribing to events');
-        const setActivity = (await this.DeskThing.getData())?.settings?.activity?.value
+        const setActivity = (await this.DeskThingServer.getData())?.settings?.activity?.value
         if (setActivity) {
-          const cancelTask = this.DeskThing.addBackgroundTaskLoop(async () => {
+          const cancelTask = this.DeskThingServer.addBackgroundTaskLoop(async () => {
             this.rpc.clearActivity()
             await this.setActivity();
             await new Promise(resolve => setTimeout(resolve, 1000))
@@ -221,7 +221,7 @@ class DiscordHandler {
         // Encode the image and update the user profile
         this.connectedUsers[existingUserIndex] = {
           ...this.connectedUsers[existingUserIndex],
-          profile: await this.DeskThing.encodeImageFromUrl(`https://cdn.discordapp.com/avatars/${userId}/${userAvatar}.png`)
+          profile: await this.DeskThingServer.encodeImageFromUrl(`https://cdn.discordapp.com/avatars/${userId}/${userAvatar}.png`)
         };
       }
       if (sendData) {
@@ -288,8 +288,8 @@ class DiscordHandler {
 
   async handleVoiceConnectionStatus(args: discordData) {
     if (args.state === 'CONNECTING') {
-      if ((await this.DeskThing.getData())?.settings?.auto_switch_view?.value) {
-        this.DeskThing.sendDataToClient({
+      if ((await this.DeskThingServer.getData())?.settings?.auto_switch_view?.value) {
+        this.DeskThingServer.sendDataToClient({
           app: 'client',
           type: 'set',
           request: 'view',
@@ -355,15 +355,15 @@ class DiscordHandler {
   }
 
   async sendLog(message: string) {
-    this.DeskThing.sendLog(message);
+    this.DeskThingServer.sendLog(message);
   }
 
   async sendError(message: string) {
-    this.DeskThing.sendError(message); 
+    this.DeskThingServer.sendError(message); 
   }
 
   async sendDataToClients(payload: userData[] | notificationData | undefined, request: string = '') {
-    this.DeskThing.sendDataToClient({type: 'data', request: request, payload: payload}); 
+    this.DeskThingServer.sendDataToClient({type: 'data', request: request, payload: payload}); 
   }
 
   async setVoiceSetting(data: any) {

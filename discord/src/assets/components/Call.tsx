@@ -1,12 +1,12 @@
 import { DeskThing } from "deskthing-client";
 import Controls from "./Controls";
-import discordStore, { userData } from "../stores/discordStore";
+import discordStore, { userData } from "../../Stores/discordStore";
 import { useEffect, useState } from "react";
 import {
   IconDeafenedDiscord,
   IconMicOffDiscord,
   IconUserCircle,
-} from "./icons";
+} from "../icons";
 
 export const Call = () => {
   const [callData, setCallData] = useState<userData[]>(

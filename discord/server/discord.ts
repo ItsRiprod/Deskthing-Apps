@@ -18,23 +18,23 @@ interface VoiceState {
 class discord {
   private client_id: string;
   private client_secret: string;
-  private DeskThing: DeskThing;
+  private DeskThingServer: DeskThing;
 
   constructor() {
-    this.DeskThing = DeskThing.getInstance();
+    this.DeskThingServer = DeskThing.getInstance();
     this.initiallizeData();
     if (this.client_id && this.client_secret) {
     }
-    this.DeskThing.sendLog("Discord Initialized");
+    this.DeskThingServer.sendLog("Discord Initialized");
   }
 
   async initiallizeData() {
-    const data = await this.DeskThing.getData();
+    const data = await this.DeskThingServer.getData();
     if (data) {
       this.syncData(data as { [key: string]: string | undefined } | undefined);
     }
 
-    this.DeskThing.on("data", this.syncData);
+    this.DeskThingServer.on("data", this.syncData);
   }
 
   private async syncData(

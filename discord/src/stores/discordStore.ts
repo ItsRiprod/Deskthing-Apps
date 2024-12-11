@@ -16,7 +16,7 @@ export interface userData {
 type EventUpdateCallbacks = (data: userData[]) => void;
 
 class DiscordStore {
-  private DeskThing: DeskThing;
+  private DeskThingClient: DeskThing;
   private static instance: DiscordStore;
   private listeners: (() => void)[] = [];
 
@@ -25,9 +25,9 @@ class DiscordStore {
   //private notificationStack: userData[] = [] // Will be used later for notifications
 
   private constructor() {
-    this.DeskThing = DeskThing.getInstance();
+    this.DeskThingClient = DeskThing.getInstance();
     this.listeners.push(
-      this.DeskThing.on("discord", this.handleDiscordData.bind(this))
+      this.DeskThingClient.on("get", this.handleDiscordData.bind(this))
     );
   }
 
@@ -100,7 +100,7 @@ class DiscordStore {
   }
 
   requestCallData(): void {
-    this.DeskThing.send({ type: "get", request: "call" });
+    this.DeskThingClient.send({ app: "discord", type: "get", request: "call" });
   }
 
   cleanup() {
