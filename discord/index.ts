@@ -89,7 +89,7 @@ const main = async () => {
   DeskThingServer.on("set", handleSet);
   DeskThingServer.on("get", handleGet);
 
-  console.log("Finished starting discord v0.8.0");
+  console.log("Finished starting discord v0.10.0");
 };
 
 const handleSet = (data: SocketData) => {

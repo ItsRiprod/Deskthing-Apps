@@ -19,4 +19,5 @@
 # Discord app local development stuff
 .env*
 
-# Legacy Discord app ref stuff
+# Do not push distro_zip results or any zip
+*.zip
