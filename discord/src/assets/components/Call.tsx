@@ -18,6 +18,7 @@ export const Call = () => {
     const handleCallDataUpdate = (data: userData[]) => {
       setCallData(data);
     };
+    console.log("Set new call user data");
 
     const unsubscribe =
       discordStore.subscribeToCallDataUpdate(handleCallDataUpdate);
@@ -76,7 +77,7 @@ export const Call = () => {
           </div>
         ))}
       </div>
-      <Controls />
+      {/* <Controls /> */}
     </div>
   );
 };

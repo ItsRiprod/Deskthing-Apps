@@ -13,6 +13,8 @@ export interface userData {
   profile?: string | undefined;
 }
 
+export interface notificationData {}
+
 type EventUpdateCallbacks = (data: userData[]) => void;
 
 class DiscordStore {
@@ -21,14 +23,12 @@ class DiscordStore {
   private listeners: (() => void)[] = [];
 
   private appUpdateCallbacks: EventUpdateCallbacks[] = [];
-  private callData: userData[] = [];
+  private activeCallMemberData: userData[] = [];
   //private notificationStack: userData[] = [] // Will be used later for notifications
 
   private constructor() {
     this.DeskThingClient = DeskThing.getInstance();
-    this.listeners.push(
-      this.DeskThingClient.on("get", this.handleDiscordData.bind(this))
-    );
+    this.listeners.push(this.DeskThingClient.on("get", this.handleDiscordData));
   }
 
   static getInstance(): DiscordStore {
@@ -38,9 +38,11 @@ class DiscordStore {
     return DiscordStore.instance;
   }
 
-  // Notify all registered callbacks of the song data update
+  // Notify all registered callbacks of the discord data update
   private notifyDataUpdates() {
-    this.appUpdateCallbacks.forEach((callback) => callback(this.callData));
+    this.appUpdateCallbacks.forEach((callback) =>
+      callback(this.activeCallMemberData)
+    );
   }
 
   subscribeToCallDataUpdate(callback: EventUpdateCallbacks) {
@@ -52,15 +54,16 @@ class DiscordStore {
     };
   }
 
-  async handleDiscordData(data: SocketData): Promise<void> {
+  handleDiscordData(data: SocketData) {
+    console.log("Handling discord data");
     if (data.type == "data") {
       switch (data.request) {
         case "join":
-          this.callData = [];
+          this.activeCallMemberData = [];
           this.requestCallData();
           break;
         case "leave":
-          this.callData = [];
+          this.activeCallMemberData = [];
           break;
         case "disconnect":
           this.requestCallData();
@@ -72,31 +75,36 @@ class DiscordStore {
           if (data.payload) this.updateCallData(data.payload[0]);
           break;
         case "call":
-          this.callData = data.payload as userData[];
+          this.activeCallMemberData = data.payload as userData[];
           break;
         default:
           break;
       }
+
+      console.log("Recieved new discord data");
     }
 
     this.notifyDataUpdates();
   }
 
   async updateCallData(newData: userData) {
-    this.callData = this.callData.map((user) =>
+    this.activeCallMemberData = this.activeCallMemberData.map((user) =>
       user.id === newData.id ? { ...user, ...newData } : user
     );
 
     // If the user ID is not present in the array, add the new user
-    if (!this.callData.some((user) => user.id === newData.id) && newData.id) {
-      this.callData = [newData, ...this.callData];
+    if (
+      !this.activeCallMemberData.some((user) => user.id === newData.id) &&
+      newData.id
+    ) {
+      this.activeCallMemberData = [newData, ...this.activeCallMemberData];
     }
 
     this.notifyDataUpdates();
   }
 
   getCallData(): userData[] {
-    return this.callData;
+    return this.activeCallMemberData;
   }
 
   requestCallData(): void {

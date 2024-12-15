@@ -1,39 +1,44 @@
-import { DeskThing as DK } from "deskthing-server";
+import DiscordHandler from "./discord";
+import { DeskThing as DK, SocketData } from "deskthing-server";
 const DeskThingServer = DK.getInstance();
-export { DeskThingServer as DeskThing }; // Required export of this exact name for the server to connect
+export { DeskThingServer as DeskThing };
 
-const start = async () => {
-  let Data = await DeskThingServer.getData();
+let discord: DiscordHandler;
+
+const main = async () => {
+  // Set Data object and ensure it is up-to-date
+  let data = await DeskThingServer.getData();
   DeskThingServer.on("data", (newData) => {
-    // Syncs the data with the server
-    Data = newData;
-    DeskThingServer.sendLog("New data received!" + Data);
+    data = newData;
+    DeskThingServer.sendLog("Data object has been updated");
   });
 
-  // Template Items
-
-  // This is how to add settings (implementation may vary)
-  if (!Data?.settings?.notifications || !Data?.settings?.activity) {
+  // Initialize settings
+  if (
+    !data?.settings?.auto_switch_view ||
+    !data.settings?.notifications ||
+    !data.settings?.activity
+  ) {
     DeskThingServer.addSettings({
-      notifications: {
-        label: "Show Notifcations",
-        type: "select",
-        value: "both",
-        options: [
-          { label: "From DMs", value: "dm" },
-          { label: "From VC Chat", value: "vc" },
-          { label: "Both", value: "both" },
-          { label: "Disabled", value: "neither" },
-        ],
+      auto_switch_view: {
+        label: "Auto Switch View",
+        type: "boolean",
+        value: true,
       },
-      activity: { label: "Set Activity", type: "boolean", value: false },
+      notifications: {
+        label: "Show Notifications",
+        type: "boolean",
+        value: true,
+      },
+      activity: {
+        label: "Display Activity",
+        type: "boolean",
+        value: true,
+      },
     });
-
-    // This will make Data.settings.theme.value equal whatever the user selects
   }
-
-  // Getting data from the user (Ensure these match)
-  if (!Data?.client_id || !Data?.client_secret) {
+  // Check if data exists
+  if (!data?.client_id || !data?.client_secret) {
     const requestScopes = {
       client_id: {
         value: "",
@@ -56,27 +61,72 @@ const start = async () => {
     };
 
     DeskThingServer.getUserInput(requestScopes, async (data) => {
+      console.log("Data Response", data.payload);
       if (data.payload.client_id && data.payload.client_secret) {
-        // You can either save the returned data to your data object or do something with it
         DeskThingServer.saveData(data.payload);
+        discord = new DiscordHandler(DeskThingServer);
+        await discord.registerRPC();
       } else {
         DeskThingServer.sendError(
-          "Please fill out all the fields! Restart to try again"
+          "Please fill out all the fields! Restart Discord to try again"
         );
       }
     });
   } else {
     DeskThingServer.sendLog("Data Exists!");
-    // This will be called is the data already exists in the server
+    discord = new DiscordHandler(DeskThingServer);
+    await discord.registerRPC();
+  }
+
+  DeskThingServer.on("set", handleSet);
+  DeskThingServer.on("get", handleGet);
+
+  console.log("Finished starting discord v0.10.0");
+};
+
+const handleSet = (data: SocketData) => {
+  if (data == null) {
+    DeskThingServer.sendError("Data not included in get request to server");
+    return;
+  }
+  switch (data.request) {
+    case "call":
+      discord.leaveCall();
+      break;
+    case "mic":
+      discord.setVoiceSetting({ mute: data.payload || false });
+      break;
+    case "deafened":
+      discord.setVoiceSetting({ deaf: data.payload || false });
+      break;
+    default:
+      DeskThingServer.sendError(
+        "Set not implemented yet! Received: " + data.payload
+      );
+      break;
   }
 };
 
-const stop = async () => {
-  // Function called when the server is stopped
+const handleGet = (data: SocketData) => {
+  if (data == null) {
+    DeskThingServer.sendError("Data not included in get request to server");
+    return;
+  }
+  if (data.request === "call") {
+    if (discord && discord.connectedUsers.length > 0) {
+      discord.sendDataToClients(discord.connectedUsers, "call");
+    }
+  }
+
+  DeskThingServer.sendError("Get not implemented yet! Received: " + data);
 };
 
-// Main Entrypoint of the server
-DeskThingServer.on("start", start);
+// Start the DeskThing
+DeskThingServer.on("start", main);
 
-// Main exit point of the server
-DeskThingServer.on("stop", stop);
+DeskThingServer.on("stop", () => {
+  console.log("Stopping DeskThing");
+  if (discord) {
+    discord.unsubscribe();
+  }
+});
