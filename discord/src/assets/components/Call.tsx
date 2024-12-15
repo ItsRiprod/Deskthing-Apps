@@ -77,7 +77,7 @@ export const Call = () => {
           </div>
         ))}
       </div>
-      {/* <Controls /> */}
+      <Controls />
     </div>
   );
 };
