@@ -7,6 +7,7 @@ import {
   IconMicOffDiscord,
   IconUserCircle,
 } from "../icons";
+import ChannelBanner from "./ChannelBanner";
 
 export const Call = () => {
   const [callData, setCallData] = useState<userData[]>(
@@ -35,6 +36,9 @@ export const Call = () => {
   return (
     <div className="flex flex-col w-screen h-screen">
       <div className="flex flex-col flex-wrap h-screen justify-around items-center p-4">
+        <div>
+          <ChannelBanner />
+        </div>
         {callData.map((participant) => (
           <div className={`flex flex-col items-center m-3`}>
             {participant.profile ? (
