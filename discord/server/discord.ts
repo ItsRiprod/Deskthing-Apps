@@ -53,19 +53,15 @@ class DiscordHandler {
   private client_secret: string | undefined = undefined;
   private token: string | undefined = undefined;
   connectedUsers: userData[];
-  clientUser: userData;
 
   constructor(DeskThing: DeskThing) {
     this.DeskThingServer = DeskThing;
+    // Initialize properties
     this.subscriptions = { voice: {} };
     this.startTimestamp = null;
     this.connectedUsers = [];
     this.redirect_url = "http://localhost:8888/callback/discord";
-    //this.scopes = [
-    //  'rpc', 'messages.read', 'rpc.video.write', 'rpc.voice.read',
-    //  'rpc.activities.write', 'rpc.voice.write', 'rpc.screenshare.read',
-    //  'rpc.notifications.read', 'rpc.video.read', 'rpc.screenshare.write'
-    //];
+    // Define the scopes required for Discord RPC
     this.scopes = [
       "rpc",
       "rpc.voice.read",
@@ -74,6 +70,7 @@ class DiscordHandler {
     ];
   }
 
+  // Register the RPC client and login
   async registerRPC() {
     try {
       this.DeskThingServer.sendLog(
@@ -104,6 +101,7 @@ class DiscordHandler {
     }
   }
 
+  // Login to Discord RPC
   async login() {
     try {
       if (!this.client_id || !this.client_secret) return;
@@ -111,7 +109,8 @@ class DiscordHandler {
       await this.rpc.connect(this.client_id);
 
       if (!this.token) {
-        // @ts-ignore it is there just not in their types for some reason
+        // Authorize and get the access token
+        // @ts-ignore - The 'authorize' method may not be in the type definitions
         this.token = await this.rpc.authorize({
           scopes: this.scopes,
           clientSecret: this.client_secret,
@@ -119,6 +118,7 @@ class DiscordHandler {
         });
         this.DeskThingServer.saveData({ token: this.token });
       }
+
       await this.rpc.login({
         scopes: this.scopes,
         clientId: this.client_id,
@@ -126,12 +126,14 @@ class DiscordHandler {
         redirectUri: this.redirect_url,
         accessToken: this.token,
       });
+
       this.DeskThingServer.sendLog("RPC: @login Auth Successful");
     } catch (exception) {
       this.DeskThingServer.sendError(`Discord RPC Error: ${exception}`);
     }
   }
 
+  // Initialize RPC event handlers and subscriptions
   async initializeRpc() {
     this.DeskThingServer.sendLog("RPC Initializing...");
     try {
@@ -146,8 +148,8 @@ class DiscordHandler {
             async () => {
               this.rpc.clearActivity();
               await this.setActivity();
-              // await new Promise((resolve) => setTimeout(resolve, 1000));
               this.DeskThingServer.sendLog("Activity was set...");
+              await new Promise((resolve) => setTimeout(resolve, 30000));
             }
           );
         } else {
@@ -156,10 +158,12 @@ class DiscordHandler {
         this.setSubscribe();
       });
 
+      // Handle voice channel selection events
       this.rpc.on("VOICE_CHANNEL_SELECT", async (args) => {
         await this.handleVoiceChannelSelect(args.channel_id);
       });
 
+      // Handle voice state changes
       this.rpc.on("VOICE_STATE_CREATE", async (args) => {
         await this.handleVoiceStateCreate(args);
       });
@@ -185,7 +189,7 @@ class DiscordHandler {
       });
 
       this.rpc.on("error", (error) => {
-        console.error("RPC Error:", error.message);
+        this.DeskThingServer.sendError(`RPC Error: ${error.message}`);
       });
 
       this.rpc.on("disconnected", async (closeEvent) => {
@@ -204,19 +208,24 @@ class DiscordHandler {
     }
   }
 
+  // Handle when a voice channel is selected
   async handleVoiceChannelSelect(channelId: string) {
     if (channelId) {
+      // Unsubscribe from previous voice channel events if any
       if (this.subscriptions.voice[channelId]) {
         this.subscriptions.voice[channelId].forEach((sub) => sub.unsubscribe());
       }
 
-      this.DeskThingServer.sendDebug("[Server] fetching discord channel info");
+      this.DeskThingServer.sendDebug("[Server] Fetching Discord channel info");
+
+      // Send channel information to the client for display in the ChannelBanner
       this.DeskThingServer.sendDataToClient({
         type: "set",
         request: "channel_banner",
         payload: await this.rpc.getChannel(channelId),
       });
 
+      // Subscribe to voice events for the selected channel
       this.subscriptions.voice[channelId] = [
         await this.rpc.subscribe("VOICE_STATE_UPDATE", {
           channel_id: channelId,
@@ -237,12 +246,14 @@ class DiscordHandler {
     }
   }
 
+  // Add or update a user in the connected users list
   async addUser(newUser: userData, sendData: boolean = false) {
     const existingUserIndex = this.connectedUsers.findIndex(
       (user) => user.id === newUser.id
     );
 
     if (existingUserIndex !== -1) {
+      // Update existing user data
       this.connectedUsers[existingUserIndex] = {
         ...this.connectedUsers[existingUserIndex],
         ...newUser,
@@ -269,6 +280,7 @@ class DiscordHandler {
         );
       }
     } else {
+      // Add new user to the list
       this.connectedUsers.push(newUser);
       if (sendData) {
         this.sendDataToClients([newUser], "update");
@@ -276,24 +288,34 @@ class DiscordHandler {
     }
   }
 
+  // Handle when a user joins the voice channel
   async handleVoiceStateCreate(args: discordData) {
-    this.addUser(
-      {
-        id: args.user.id,
-        username: args.user.username ?? undefined,
-        nick: args.nick ?? undefined,
-        speaking: false,
-        volume: args.volume ?? undefined,
-        mute: args.mute,
-        deaf: args.voice_state.deaf || args.voice_state.self_deaf,
-        avatar: args.user.avatar ?? undefined,
-        profile: undefined,
-      },
-      true
+    this.DeskThingServer.sendLog(
+      `Handling Voice State Create: ${JSON.stringify(args)}`
     );
+    const userData = {
+      id: args.user.id,
+      username: args.user.username ?? undefined,
+      nick: args.nick ?? undefined,
+      speaking: false,
+      volume: args.volume ?? undefined,
+      mute: args.mute,
+      deaf: args.voice_state.deaf || args.voice_state.self_deaf,
+      avatar: args.user.avatar ?? undefined,
+      profile: undefined,
+    };
+
+    await this.addUser(userData, true);
+
+    // Send full call data to ensure all clients are in sync
+    this.sendDataToClients(this.connectedUsers, "call");
   }
 
+  // Handle when a user leaves the voice channel
   async handleVoiceStateDelete(args: discordData) {
+    this.DeskThingServer.sendLog(
+      `Handling Voice State Delete: ${JSON.stringify(args)}`
+    );
     this.connectedUsers = this.connectedUsers.filter(
       (user) => user.id !== args.user.id
     );
@@ -303,7 +325,11 @@ class DiscordHandler {
     );
   }
 
+  // Handle updates to a user's voice state
   async handleVoiceStateUpdate(args: discordData) {
+    this.DeskThingServer.sendLog(
+      `Handling Voice State Update: ${JSON.stringify(args)}`
+    );
     this.addUser(
       {
         id: args.user.id,
@@ -320,23 +346,40 @@ class DiscordHandler {
     );
   }
 
+  // Handle when a user starts speaking
   async handleSpeakingStart(args: { user_id: string }) {
-    this.addUser({
-      id: args.user_id,
-      speaking: true,
-    });
-    this.sendDataToClients([{ id: args.user_id, speaking: true }], "voice");
+    this.DeskThingServer.sendLog(
+      `Handling Speaking Start for user: ${args.user_id}`
+    );
+    // Update only speaking state, don't modify other user data
+    const existingUser = this.connectedUsers.find(
+      (user) => user.id === args.user_id
+    );
+    if (existingUser) {
+      existingUser.speaking = true;
+      this.sendDataToClients([{ id: args.user_id, speaking: true }], "voice");
+    }
   }
 
+  // Handle when a user stops speaking
   async handleSpeakingStop(args: { user_id: string }) {
-    this.addUser({
-      id: args.user_id,
-      speaking: true,
-    });
-    this.sendDataToClients([{ id: args.user_id, speaking: false }], "voice");
+    this.DeskThingServer.sendLog(
+      `Handling Speaking Stop for user: ${args.user_id}`
+    );
+    const existingUser = this.connectedUsers.find(
+      (user) => user.id === args.user_id
+    );
+    if (existingUser) {
+      existingUser.speaking = false;
+      this.sendDataToClients([{ id: args.user_id, speaking: false }], "voice");
+    }
   }
 
+  // Handle voice connection status changes
   async handleVoiceConnectionStatus(args: discordData) {
+    this.DeskThingServer.sendLog(
+      `Handling Voice Connection Status: ${JSON.stringify(args)}`
+    );
     if (args.state === "CONNECTING") {
       if (
         (await this.DeskThingServer.getData())?.settings?.auto_switch_view
@@ -351,8 +394,7 @@ class DiscordHandler {
       }
       await this.sendDataToClients(undefined, "join");
       this.DeskThingServer.sendLog("Connecting to a voice channel");
-    }
-    if (args.state === "DISCONNECTED") {
+    } else if (args.state === "DISCONNECTED") {
       this.DeskThingServer.sendLog("Unsubscribing from all voice channels");
       await this.unsubscribe();
       this.subscriptions.voice = {};
@@ -360,6 +402,7 @@ class DiscordHandler {
     }
   }
 
+  // Unsubscribe from all voice channel events
   async unsubscribe() {
     try {
       for (const channelId of Object.keys(this.subscriptions.voice)) {
@@ -372,7 +415,9 @@ class DiscordHandler {
     }
   }
 
+  // Set the Discord Rich Presence activity
   async setActivity() {
+    this.DeskThingServer.sendLog("Setting activity...");
     try {
       if (!this.startTimestamp) {
         this.startTimestamp = new Date();
@@ -411,13 +456,17 @@ class DiscordHandler {
           ],
         })
         .catch((error) => {
-          console.error("Failed to set activity:", error.message);
+          this.DeskThingServer.sendError(
+            `Failed to set activity: ${error.message}`
+          );
         });
+      this.DeskThingServer.sendLog("Activity set successfully");
     } catch (ex) {
       this.DeskThingServer.sendError(`Error in setActivity: ${ex}`);
     }
   }
 
+  // Subscribe to necessary Discord RPC events
   async setSubscribe() {
     this.DeskThingServer.sendLog(
       "Subscribing to voice channels and connection status"
@@ -426,12 +475,13 @@ class DiscordHandler {
     this.rpc.subscribe("VOICE_CONNECTION_STATUS", {});
   }
 
+  // Send data to the connected clients
   async sendDataToClients(
     payload: userData[] | notificationData | undefined,
     request: string = ""
   ) {
     this.DeskThingServer.sendDataToClient({
-      app: "client",
+      app: "discord",
       type: "data",
       request: request,
       payload: payload,
@@ -439,19 +489,19 @@ class DiscordHandler {
     this.DeskThingServer.sendLog("[server] Sending data to clients...");
   }
 
+  // Change voice settings (mute, deafened)
   async setVoiceSetting(data: any) {
     this.DeskThingServer.sendLog(
-      "Attempting to change voice setting to: " + data
+      `Attempting to change voice setting to: ${JSON.stringify(data)}`
     );
     this.rpc.setVoiceSettings(data);
     this.sendDataToClients(this.connectedUsers, "call");
   }
 
+  // Leave the current voice call
   async leaveCall() {
-    this.DeskThingServer.sendLog(
-      "Attempting to leave call... let's get the hecc out of here!"
-    );
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    this.DeskThingServer.sendLog("Attempting to leave call...");
+    // @ts-ignore
     this.rpc.selectVoiceChannel(null, { force: true });
     this.sendDataToClients(undefined, "leave");
   }

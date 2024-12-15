@@ -1,4 +1,3 @@
-import { DeskThing } from "deskthing-client";
 import Controls from "./Controls";
 import discordStore, { userData } from "../../Stores/discordStore";
 import { useEffect, useState } from "react";
@@ -13,74 +12,90 @@ export const Call = () => {
   const [callData, setCallData] = useState<userData[]>(
     discordStore.getCallData()
   );
-  const deskthing = DeskThing.getInstance();
 
   useEffect(() => {
+    // Subscribe to call data updates
     const handleCallDataUpdate = (data: userData[]) => {
       setCallData(data);
     };
-    console.log("Set new call user data");
 
     const unsubscribe =
       discordStore.subscribeToCallDataUpdate(handleCallDataUpdate);
+
+    // Request initial call data
+    discordStore.requestCallData();
+
     return () => {
       unsubscribe();
     };
-  }, [deskthing]);
+  }, []);
 
+  // Helper function to create a volume border based on user's volume
   const getVolumeBorder = (volume: number) => {
     const degree = (volume / 100) * 360;
     return `conic-gradient(green ${degree}deg, transparent ${degree}deg)`;
   };
 
   return (
-    <div className="flex flex-col w-screen h-screen">
-      <div className="flex flex-col flex-wrap h-screen justify-around items-center p-4">
-        <div>
-          <ChannelBanner />
-        </div>
-        {callData.map((participant) => (
-          <div className={`flex flex-col items-center m-3`}>
-            {participant.profile ? (
-              <div className={`relative w-32 h-32`}>
-                <div
-                  className={`absolute flex items-center justify-center inset-0 w-full h-full rounded-full ${
-                    participant.speaking
-                      ? "border-4 border-green-500"
-                      : "border-transparent p-1"
-                  }`}
-                  style={{
-                    background: getVolumeBorder(participant.volume ?? 0),
-                  }}
-                >
+    <div className="flex flex-col w-screen h-screen bg-gray-900 text-white">
+      {/* Channel information banner */}
+      <ChannelBanner />
+      {/* Participants display area */}
+      <div className="flex-1 flex flex-wrap justify-center items-center p-4 overflow-y-auto">
+        {callData && callData.length > 0 ? (
+          callData.map((participant) => (
+            <div
+              key={participant.id}
+              className="flex flex-col items-center m-3"
+            >
+              {participant.profile ? (
+                <div className="relative w-40 h-40">
+                  {/* Participant's avatar with speaking indication */}
                   <div
-                    className={`inset-0 w-full h-full overflow-hidden rounded-full`}
+                    className={`absolute inset-0 w-full h-full rounded-full ${
+                      participant.speaking
+                        ? "border-4 border-green-500"
+                        : "border-transparent p-1"
+                    }`}
                     style={{
-                      backgroundImage: `url(${participant.profile})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
+                      background: getVolumeBorder(participant.volume ?? 0),
                     }}
-                  />
+                  >
+                    <div
+                      className="inset-0 w-full h-full overflow-hidden rounded-full"
+                      style={{
+                        backgroundImage: `url(${participant.profile})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }}
+                    />
+                  </div>
+                  {/* Mute and deafened indicators */}
+                  <div className="absolute right-0 bottom-0 text-red-500 fill-current">
+                    {participant.mute && <IconMicOffDiscord />}
+                    {participant.deaf && <IconDeafenedDiscord />}
+                  </div>
                 </div>
-                <div className="absolute right-0 bottom-0 text-red-500 fill-current">
-                  {participant.mute && <IconMicOffDiscord />}
-                  {participant.deaf && <IconDeafenedDiscord />}
-                </div>
+              ) : (
+                // Default icon if no profile picture
+                <IconUserCircle
+                  iconSize={160}
+                  className="bg-green-500 rounded-full"
+                />
+              )}
+              <div className="user-info">
+                {/* Display user's nickname or username */}
+                <h2 className="font-semibold">
+                  {participant.nick || participant.username}
+                </h2>
               </div>
-            ) : (
-              <IconUserCircle
-                iconSize={128}
-                className="bg-green-500 rounded-full"
-              />
-            )}
-            <div className="user-info">
-              <h2 className="font-semibold text-white">
-                {participant.nick || participant.username}
-              </h2>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="text-center">No participants in the call.</p>
+        )}
       </div>
+      {/* Controls component */}
       <Controls />
     </div>
   );

@@ -1,6 +1,7 @@
 import { Icon, findClosestGlyphAvailable } from "./icons";
 
-function IconUserCircle(props: any): JSX.Element {
+// Adjust the icon component to use the 'iconSize' prop correctly
+const IconUserCircle = ({ iconSize = 128, className = "", ...props }) => {
   const strokeWidth = props.strokeWidth || 1;
 
   const iconList = [
@@ -16,13 +17,13 @@ function IconUserCircle(props: any): JSX.Element {
     },
   ];
 
-  const closestSize = findClosestGlyphAvailable(iconList, props.iconSize || 24);
+  const closestSize = findClosestGlyphAvailable(iconList, iconSize);
 
   const svgContent = `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">${closestSize.svgContent}</svg>
   `;
 
   return <Icon {...props} dangerouslySetInnerHTML={{ __html: svgContent }} />;
-}
+};
 
 export default IconUserCircle;

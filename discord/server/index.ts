@@ -73,7 +73,6 @@ const main = async () => {
       }
     });
   } else {
-    DeskThingServer.sendLog("Data Exists!");
     discord = new DiscordHandler(DeskThingServer);
     await discord.registerRPC();
   }
@@ -81,14 +80,15 @@ const main = async () => {
   DeskThingServer.on("set", handleSet);
   DeskThingServer.on("get", handleGet);
 
-  console.log("Finished starting discord v0.10.0");
+  DeskThingServer.sendLog("Discord app started successfully.");
 };
 
 const handleSet = (data: SocketData) => {
-  if (data == null) {
-    DeskThingServer.sendError("Data not included in get request to server");
+  if (!data.request) {
+    DeskThingServer.sendError("No request provided in 'set' data.");
     return;
   }
+
   switch (data.request) {
     case "call":
       discord.leaveCall();
@@ -100,25 +100,27 @@ const handleSet = (data: SocketData) => {
       discord.setVoiceSetting({ deaf: data.payload || false });
       break;
     default:
-      DeskThingServer.sendError(
-        "Set not implemented yet! Received: " + data.payload
-      );
+      DeskThingServer.sendError(`Unhandled 'set' request: ${data.request}`);
       break;
   }
 };
 
 const handleGet = (data: SocketData) => {
-  if (data == null) {
-    DeskThingServer.sendError("Data not included in get request to server");
+  if (data.app !== "discord") {
+    // Ignore data not intended for the discord app
     return;
   }
-  if (data.request === "call") {
-    if (discord && discord.connectedUsers.length > 0) {
-      discord.sendDataToClients(discord.connectedUsers, "call");
-    }
+
+  if (!data.request) {
+    DeskThingServer.sendError("No request provided in 'get' data.");
+    return;
   }
 
-  DeskThingServer.sendError("Get not implemented yet! Received: " + data);
+  if (data.request === "call") {
+    discord.sendDataToClients(discord.connectedUsers, "call");
+  } else {
+    DeskThingServer.sendError(`Unhandled 'get' request: ${data.request}`);
+  }
 };
 
 // Start the DeskThing
