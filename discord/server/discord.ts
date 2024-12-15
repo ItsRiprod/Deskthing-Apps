@@ -216,7 +216,7 @@ class DiscordHandler {
         this.subscriptions.voice[channelId].forEach((sub) => sub.unsubscribe());
       }
 
-      this.DeskThingServer.sendDebug("[Server] Fetching Discord channel info");
+      this.DeskThingServer.sendLog("[Server] Fetching Discord channel info");
 
       // Send channel information to the client for display in the ChannelBanner
       this.DeskThingServer.sendDataToClient({
