@@ -21,3 +21,6 @@
 
 # Do not push distro_zip results or any zip
 *.zip
+
+# Discord old reference stuff
+jail/

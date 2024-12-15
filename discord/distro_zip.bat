@@ -1,1 +1,1 @@
-powershell Compress-Archive dist/* index.zip
+powershell Compress-Archive -Force dist/* index.zip
