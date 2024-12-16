@@ -1,0 +1,407 @@
+{
+    "official": [
+        {
+            "id": "spotify",
+            "isAudioSource": true,
+            "isScreenSaver": false,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [],
+            "label": "Spotify App",
+            "version": "0.10.1",
+            "version_code": "10.1",
+            "compatible_server": [
+              "10"
+            ],
+            "compatible_client": [
+              "10"
+            ],
+            "description": "The primary way to interact with spotify",
+            "author": "Riprod",
+            "platforms": [
+              "windows",
+              "linux",
+              "macos"
+            ],
+            "homepage": "deskthing.app",
+            "repository": "https://github.com/ItsRiprod/Deskthing-Apps"
+          },
+        {
+            "id": "weatherwaves",
+            "isAudioSource": false,
+            "isScreenSaver": false,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [
+              ""
+            ],
+            "label": "Weather Waves",
+            "version": "0.10.1",
+            "version_code": 10.1,
+            "compatible_server": [
+              "10"
+            ],
+            "compatible_client": [
+              "10"
+            ],
+            "description": "A redesigned weather and spotify app at a glance.",
+            "author": "Dammit Jeff",
+            "platforms": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "homepage": "https://deskthing.app",
+            "repository": "https://github.com/itsriprod/deskthing-apps"
+        },
+        {
+            "id": "vinylplayer",
+            "isAudioSource": false,
+            "isScreenSaver": false,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [
+              ""
+            ],
+            "label": "Vinyl Player",
+            "version": "0.10.1",
+            "version_code": "10.1",
+            "compatible_server": [
+              "10"
+            ],
+            "compatible_client": [
+              "10"
+            ],
+            "description": "A simple UI alternative that shows a record player",
+            "author": "Riprod",
+            "platforms": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "homepage": "https://deskthing.app",
+            "repository": "https://github.com/ItsRiprod/deskthing-apps"
+          },
+        {
+            "id": "image",
+            "isAudioSource": false,
+            "isScreenSaver": true,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [
+              ""
+            ],
+            "label": "Image Viewer",
+            "version": "0.10.1",
+            "version_code": "10.1",
+            "compatible_server": [
+              "10"
+            ],
+            "compatible_client": [
+              "10"
+            ],
+            "description": "A simple app that displays an image",
+            "author": "Riprod",
+            "platforms": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "homepage": "https://deskthing.app",
+            "repository": "https://github.com/ItsRiprod/Deskthing-Apps"
+          },
+          {
+            "id": "weather",
+            "isAudioSource": false,
+            "isScreenSaver": false,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [
+              ""
+            ],
+            "label": "Weather App",
+            "version": "0.10.1",
+            "version_code": "10.1",
+            "compatible_server": [
+              "10"
+            ],
+            "compatible_client": [
+              "10"
+            ],
+            "description": "A simple weather app to display weather data",
+            "author": "Riprod",
+            "platforms": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "homepage": "https://deskthing.app",
+            "repository": ""
+          },
+          {
+            "id": "discord",
+            "isAudioSource": false,
+            "isScreenSaver": false,
+            "isWebApp": true,
+            "requires": [""],
+            "label": "Discord App",
+            "version": "0.10.0",
+            "version_code": 10,
+            "compatible_server": 10,
+            "compatible_client": 10,
+            "description": "The ultimate completely recoded discord app. It currently does not exist! Please wait for the official release.",
+            "author": "Riprod",
+            "platforms": ["windows", "macos", "linux"],
+            "homepage": "https://deskthing.app",
+            "repository": "https://github.com/ItsRiprod/deskthing-apps"
+          },          
+          {
+            "id": "system",
+            "isAudioSource": false,
+            "isScreenSaver": false,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [
+              ""
+            ],
+            "label": "Resource Usage",
+            "version": "0.10.0",
+            "version_code": "10.0",
+            "compatible_server": [
+              "10"
+            ],
+            "compatible_client": [
+              "10"
+            ],
+            "description": "A simple app to display CPU and RAM usage",
+            "author": "Riprod",
+            "platforms": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "homepage": "https://deskthing.app",
+            "repository": "https://github.com/itsriprod/deskthing-apps"
+          },
+          {
+            "id": "settingstest",
+            "isAudioSource": false,
+            "isScreenSaver": false,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [],
+            "label": "Settings Tester",
+            "version": "0.10.0",
+            "version_code": "10.0",
+            "compatible_server": [
+              "10"
+            ],
+            "compatible_client": [
+              "10"
+            ],
+            "description": "A simple app to test the settings functionality",
+            "author": "Riprod",
+            "platforms": [
+              "windows",
+              "mac",
+              "linux"
+            ],
+            "homepage": "https://deskthing.app",
+            "repository": "https://github.com/itsriprod/deskthing-apps"
+          },
+          {
+            "id": "exampleapp",
+            "isAudioSource": true,
+            "isScreenSaver": true,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [],
+            "label": "Ex App",
+            "version": "0.10.0",
+            "version_code": "1.0",
+            "compatible_server": [
+              "10"
+            ],
+            "compatible_client": [
+              "10"
+            ],
+            "description": "A simple app to demonstrate how to use various deskthing utilities ",
+            "author": "Riprod",
+            "platforms": [
+              "linux",
+              "windows",
+              "mac"
+            ],
+            "homepage": "https://github.com/ItsRiprod/Deskthing-Apps/wiki",
+            "repository": "https://github.com/ItsRiprod/Deskthing-Apps"
+          }
+          
+          
+    ],
+    "community": [
+        {
+            "id": "markethub",
+            "isAudioSource": false,
+            "isScreenSaver": false,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [],
+            "label": "Market Hub",
+            "version": "1.1.0",
+            "version_code": "1.1",
+            "compatible_server": ["10"],
+            "compatible_client": ["10"],
+            "description": "The Market Hub app offers a quick-access, at-a-glance view of selected stocks. Free API Key required (https://finnhub.io/dashboard).",
+            "author": "Dakota Kallas",
+            "platforms": ["linux", "windows", "mac"],
+            "repository": "https://github.com/dakota-kallas/DeskThing-MarketHub"
+          },
+          {
+            "id": "local",
+            "isAudioSource": true,
+            "isScreenSaver": false,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [],
+            "label": "GMP App",
+            "version": "0.9.1",
+            "version_code": "9.4",
+            "compatible_server": [
+              "9.2"
+            ],
+            "compatible_client": [
+              "9.2"
+            ],
+            "description": "GMP (Global Media Player) is a DeskThing app that locally controls playback of your selected streaming platform.",
+            "author": "RandomDebugGuy",
+            "platforms": [
+              "linux",
+              "windows"
+            ],
+            "homepage": "https://github.com/RandomDebugGuy/DeskThing-GMP",
+            "repository": "https://github.com/RandomDebugGuy/DeskThing-GMP"
+          },
+          {
+            "id": "co.lutea.lyrthing",
+            "isAudioSource": false,
+            "isScreenSaver": false,
+            "isWebApp": true,
+            "isLocalApp": true,
+            "requires": [
+              ""
+            ],
+            "label": "LyrThing",
+            "version": "0.1.2",
+            "description": "Now Playing and lyrics viewer for your music",
+            "author": "Natalie B.",
+            "platforms": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "compatible_server": [
+              "10"
+            ],
+            "compatible_client": [
+              "10"
+            ],
+            "homepage": "https://github.com/espeon/lyr-server",
+            "repository": "https://github.com/espeon/lyr-server"
+          },
+          {
+            "id": "github",
+            "isAudioSource": false,
+            "isScreenSaver": false,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [],
+            "label": "GitHub",
+            "version": "1.0.0",
+            "version_code": "1.0",
+            "compatible_server": ["9"],
+            "compatible_client": ["9"],
+            "description": "The GitHub app for DeskThing offers seamless management of repositories, pull requests, and issues, helping you stay organized and focused with real-time updates.",
+            "author": "Dakota Kallas",
+            "platforms": ["linux", "windows", "mac"],
+            "repository": "https://github.com/dakota-kallas/DeskThing-GitHub"
+          },
+          {
+            "id": "sonos-webapp",
+            "isAudioSource": true,
+            "isScreenSaver": false,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [
+              "utility"
+            ],
+            "label": "Sonos",
+            "version": "0.9.0",
+            "description": "An app to play sonos speakers on DeskThing",
+            "author": "nWo122383",
+            "platforms": [
+              "windows"
+            ],
+            "homepage": "",
+            "repository": "https://github.com/nwo122383/sonos-webapp/"
+          },
+          {
+            "id": "sportshub",
+            "isAudioSource": false,
+            "isScreenSaver": false,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [],
+            "label": "Sports Hub",
+            "version": "1.4.0",
+            "version_code": "1.4",
+            "compatible_server": ["10"],
+            "compatible_client": ["10"],
+            "description": "The Sports Hub app for DeskThing delivers instant, at-a-glance access to live sports updates, keeping you informed in real time.",
+            "author": "Dakota Kallas",
+            "platforms": ["linux", "windows", "mac"],
+            "repository": "https://github.com/dakota-kallas/DeskThing-SportsHub"
+          },
+          {
+            "id": "volctrl",
+            "isAudioSource": false,
+            "isScreenSaver": false,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [],
+            "label": "Volume mixer",
+            "version": "1.2.0",
+            "version_code": "1.2.0",
+            "compatible_server": [
+              "v0.9.0"
+            ],
+            "compatible_client": [
+              "v0.9.0"
+            ],
+            "description": "Allows to control volume for specific apps",
+            "author": "Jarsa132",
+            "platforms": [
+              "windows"
+            ],
+            "homepage": "https://github.com/Jarsa132/deskthing-volctrl",
+            "repository": "https://github.com/Jarsa132/deskthing-volctrl"
+          },
+        {
+            "id": "timer",
+            "isAudioSource": false,
+            "isWebApp": true,
+            "isLocalApp": false,
+            "requires": [],
+            "label": "Timer App",
+            "version": "v0.7.1",
+            "description": "Displays a simple timer",
+            "author": "TheNordicGoat",
+            "platforms": [
+              "windows",
+              "macos",
+              "linux"
+            ],
+            "homepage": "https://github.com/TylStres/DeskThing-Timer",
+            "repository": "https://github.com/TylStres/DeskThing-Timer"
+          }
+    ]
+}

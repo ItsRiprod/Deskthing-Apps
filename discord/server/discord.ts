@@ -18,24 +18,21 @@ interface VoiceState {
 class discord {
   private client_id: string
   private client_secret: string
-  private DeskThing: DeskThing
-
   constructor() {
-    this.DeskThing = DeskThing.getInstance()
     this.initiallizeData()
     if (this.client_id && this.client_secret) {
       
     }
-    this.DeskThing.sendLog('Discord Initialized')
+    DeskThing.sendLog('Discord Initialized')
   }
 
   async initiallizeData() {
-    const data = await this.DeskThing.getData()
+    const data = await DeskThing.getData()
     if (data) {
       this.syncData(data as {[key: string]: string | undefined} | undefined)
     }
 
-    this.DeskThing.on('data', this.syncData)
+    DeskThing.on('data', this.syncData)
     
   }
   

@@ -8,8 +8,8 @@
     ""
   ],
   "label": "Image Viewer",
-  "version": "0.10.0",
-  "version_code": "10.0",
+  "version": "0.10.1",
+  "version_code": "10.1",
   "compatible_server": [
     "10"
   ],

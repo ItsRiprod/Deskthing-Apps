@@ -3,14 +3,13 @@ import { DeskThing } from 'deskthing-client'
 import { SocketData } from 'deskthing-client/dist/types'
 
 const App: React.FC = () => {
-    const deskthing = DeskThing.getInstance()
 
     useEffect(() => {
         const onAppData = async (data: SocketData) => {
             console.log('Received data from the server!')
             console.log(data)
         }
-        const removeListener = deskthing.on('yourAppID', onAppData)
+        const removeListener = DeskThing.on('yourAppID', onAppData)
 
         return () => {
             removeListener()
