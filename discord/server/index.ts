@@ -90,7 +90,7 @@ const handleSet = (data: SocketData) => {
   }
 
   switch (data.request) {
-    case "call":
+    case "hangup":
       discord.leaveCall();
       break;
     case "mic":
@@ -106,18 +106,19 @@ const handleSet = (data: SocketData) => {
 };
 
 const handleGet = (data: SocketData) => {
-  if (data.app !== "discord") {
-    // Ignore data not intended for the discord app
-    return;
-  }
+  // if (data.app !== "discord") {
+  //   // Ignore data not intended for the discord app
+  //   return;
+  // }
 
   if (!data.request) {
     DeskThingServer.sendError("No request provided in 'get' data.");
     return;
   }
 
-  if (data.request === "call") {
-    discord.sendDataToClients(discord.connectedUsers, "call");
+  if (data.request == "refresh_call") {
+    DeskThingServer.sendLog("Sending requested call data to clients");
+    discord.refreshCallData();
   } else {
     DeskThingServer.sendError(`Unhandled 'get' request: ${data.request}`);
   }

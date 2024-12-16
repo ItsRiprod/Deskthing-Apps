@@ -1,5 +1,5 @@
 import Controls from "./Controls";
-import discordStore, { userData } from "../../Stores/discordStore";
+import discordStore, { UserData } from "../../Stores/discordStore";
 import { useEffect, useState } from "react";
 import {
   IconDeafenedDiscord,
@@ -9,18 +9,17 @@ import {
 import ChannelBanner from "./ChannelBanner";
 
 export const Call = () => {
-  const [callData, setCallData] = useState<userData[]>(
+  const [callData, setCallData] = useState<UserData[]>(
     discordStore.getCallData()
   );
 
   useEffect(() => {
     // Subscribe to call data updates
-    const handleCallDataUpdate = (data: userData[]) => {
+    const handleCallDataUpdate = (data: UserData[]) => {
       setCallData(data);
     };
 
-    const unsubscribe =
-      discordStore.subscribeToCallDataUpdate(handleCallDataUpdate);
+    const unsubscribe = discordStore.subscribeToCallData(handleCallDataUpdate);
 
     // Request initial call data
     discordStore.requestCallData();
@@ -32,8 +31,8 @@ export const Call = () => {
 
   // Helper function to create a volume border based on user's volume
   const getVolumeBorder = (volume: number) => {
-    const degree = (volume / 100) * 360;
-    return `conic-gradient(green ${degree}deg, transparent ${degree}deg)`;
+    const degree = (volume / 200) * 360;
+    return `conic-gradient(indigo ${degree}deg, transparent ${degree}deg)`;
   };
 
   return (

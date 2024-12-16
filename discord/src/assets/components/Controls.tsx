@@ -14,9 +14,11 @@ const Controls: React.FC<ControlsProps> = () => {
   const deskthing = DeskThing.getInstance();
   const [muted, setMuted] = useState(false);
   const [deafened, setDeafened] = useState(false);
+  const [helenKeller, setHelenKeller] = useState(false);
 
   // Toggle microphone mute/unmute
   const handleMic = () => {
+    if (deafened) setDeafened(false);
     const newMutedState = !muted;
     setMuted(newMutedState);
     deskthing.send({
@@ -29,6 +31,15 @@ const Controls: React.FC<ControlsProps> = () => {
   // Toggle deafened state
   const handleDeaf = () => {
     const newDeafenedState = !deafened;
+    if (newDeafenedState && !muted) {
+      setMuted(true);
+      setHelenKeller(true);
+    } else if (!newDeafenedState && helenKeller) {
+      setMuted(false);
+      setHelenKeller(false);
+    } else {
+      setHelenKeller(false);
+    }
     setDeafened(newDeafenedState);
     deskthing.send({
       type: "set",
@@ -41,8 +52,7 @@ const Controls: React.FC<ControlsProps> = () => {
   const handleEnd = () => {
     deskthing.send({
       type: "set",
-      request: "call",
-      payload: false,
+      request: "hangup",
     });
   };
 
@@ -68,7 +78,7 @@ const Controls: React.FC<ControlsProps> = () => {
           {muted ? (
             <IconMicOffDiscord
               iconSize={60} // Increased icon size
-              className="fill-current text-red-500"
+              className={"fill-current text-red-700"}
             />
           ) : (
             <IconMicDiscord
