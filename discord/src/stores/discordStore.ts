@@ -55,7 +55,7 @@ class DiscordStore {
   //private notificationStack: userData[] = [] // Will be used later for notifications
 
   // Channel data and callbacks for channel updates
-  private channelData: Channel | undefined;
+  private channelData: Channel | null = null;
 
   // Debounce flag for speaking updates
   private speakingUpdateTimeout: { [key: string]: NodeJS.Timeout } = {};
@@ -170,7 +170,7 @@ class DiscordStore {
       case "join":
         // Just clear the list and wait for call data
         this.activeCallMemberData = [];
-        this.requestCallData();
+        // this.requestCallData();
         break;
 
       case "refresh_call":
@@ -182,7 +182,7 @@ class DiscordStore {
         break;
 
       case "leave":
-        this.channelData = undefined;
+        this.channelData = null;
         this.activeCallMemberData = [];
         this.publishCallData();
         this.publishChannelData();
