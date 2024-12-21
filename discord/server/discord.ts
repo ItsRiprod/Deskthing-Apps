@@ -1,4 +1,4 @@
-import RPC, { Subscription, User } from "discord-rpc";
+import RPC, { Channel, Subscription, User } from "@ankziety/discord-rpc";
 import { DeskThing } from "deskthing-server";
 
 type ACTION_TYPES = "speaking" | "connect" | "disconnect" | "update" | "status";
@@ -52,7 +52,8 @@ class DiscordHandler {
   private client_id: string | undefined = undefined;
   private client_secret: string | undefined = undefined;
   private token: string | undefined = undefined;
-  connectedUsers: userData[];
+  private connectedUsers: userData[];
+  private selectedChannel: Channel;
 
   constructor(DeskThing: DeskThing) {
     this.DeskThingServer = DeskThing;
@@ -215,24 +216,30 @@ class DiscordHandler {
 
   // Handle when a voice channel is selected
   async handleVoiceChannelSelect(channelId: string) {
-    if (channelId) {
+    if (channelId && channelId != this.selectedChannel.id) {
       // Unsubscribe from previous voice channel events if any
-      if (this.subscriptions.voice[channelId]) {
-        this.subscriptions.voice[channelId].forEach((sub) => sub.unsubscribe());
+      if (this.subscriptions.voice[this.selectedChannel.id]) {
+        this.subscriptions.voice[this.selectedChannel.id].forEach((sub) =>
+          sub.unsubscribe()
+        );
       }
 
-      this.DeskThingServer.sendLog("[Server] Fetching Discord channel info");
+      this.DeskThingServer.sendLog("[server] Fetching Discord channel info");
       const channel = await this.rpc.getChannel(channelId);
+      if (!channel)
+        this.DeskThingServer.sendError("[server] channel could not be fetched");
       // Send channel information to the client for display in the ChannelBanner
+      this.selectedChannel = channel;
+
       this.DeskThingServer.sendDataToClient({
         app: "discord",
         type: "channel_info",
         request: "channel_banner",
-        payload: channel,
+        payload: this.selectedChannel,
       });
 
-      if (channel.voice_states) {
-        for (const voiceState of channel.voice_states) {
+      if (this.selectedChannel.voice_states) {
+        for (const voiceState of this.selectedChannel.voice_states) {
           if (voiceState.user) this.mergeUserData(voiceState.user);
         }
       }
@@ -255,7 +262,10 @@ class DiscordHandler {
       this.DeskThingServer.sendLog(
         `Subscribed to voice events for channel ${channelId}`
       );
-    }
+    } else
+      this.DeskThingServer.sendError(
+        `[server] joined the same call without leaving ${channelId} ${this.selectedChannel}`
+      );
   }
 
   // Add or update a user in the connected users list
@@ -416,10 +426,10 @@ class DiscordHandler {
 
   // Handle voice connection status changes
   async handleVoiceConnectionStatus(args: discordData) {
-    if (args.state === "VOICE_CONNECTED") return;
     this.DeskThingServer.sendLog(
       `Handling Voice Connection Status: ${JSON.stringify(args)}`
     );
+    if (args.state === "VOICE_CONNECTED") return;
     if (args.state === "CONNECTING") {
       if (
         (await this.DeskThingServer.getData())?.settings?.auto_switch_view
@@ -432,6 +442,7 @@ class DiscordHandler {
           payload: "Discord",
         });
       }
+
       this.DeskThingServer.sendDataToClient({
         app: "discord",
         type: "client_data",
@@ -521,9 +532,18 @@ class DiscordHandler {
     );
     await this.rpc.subscribe("VOICE_CHANNEL_SELECT", {});
     await this.rpc.subscribe("VOICE_CONNECTION_STATUS", {});
+    await this.rpc.subscribe("NOTIFICATION_CREATE", {});
   }
 
   async refreshCallData() {
+    this.DeskThingServer.sendLog(
+      JSON.stringify(await this.rpc.getSelectedChannel())
+    );
+
+    this.DeskThingServer.sendLog(
+      JSON.stringify(await this.rpc.getRelationships())
+    );
+
     this.DeskThingServer.sendDataToClient({
       app: "discord",
       type: "client_data",

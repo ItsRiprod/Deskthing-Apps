@@ -14,9 +14,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "deskthing-client": "latest",
-    "deskthing-server": "latest",
-    "discord-rpc": "^4.0.1",
+    "@ankziety/discord-rpc": "^4.0.2",
+    "deskthing-client": "0.10.0",
+    "deskthing-server": "0.10.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
