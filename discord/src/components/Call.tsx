@@ -1,11 +1,11 @@
 import Controls from "./Controls";
-import discordStore, { UserData } from "../../Stores/discordStore";
+import discordStore, { UserData } from "../Stores/discordStore";
 import { useEffect, useState } from "react";
 import {
   IconDeafenedDiscord,
   IconMicOffDiscord,
   IconUserCircle,
-} from "../icons";
+} from "../assets/icons";
 import ChannelBanner from "./ChannelBanner";
 
 export const Call = () => {
@@ -27,7 +27,7 @@ export const Call = () => {
     return () => {
       unsubscribe();
     };
-  }, []);
+  });
 
   // Helper function to create a volume border based on user's volume
   const getVolumeBorder = (volume: number) => {

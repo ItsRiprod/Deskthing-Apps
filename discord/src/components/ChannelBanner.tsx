@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import discordStore from "../../Stores/discordStore";
+import discordStore from "../Stores/discordStore";
 import { Channel } from "discord-rpc";
 
 interface ChannelBannerProps {}
@@ -19,7 +19,7 @@ const ChannelBanner: React.FC<ChannelBannerProps> = () => {
     return () => {
       unsubscribe();
     };
-  }, []);
+  });
 
   if (!channel) {
     // Do not render the banner if there is no channel data

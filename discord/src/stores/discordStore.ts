@@ -201,7 +201,7 @@ class DiscordStore {
 
         case "disconnect":
           this.activeCallMemberData = this.activeCallMemberData.filter(
-            (user) => user.id !== payload.id
+            (user) => user.id != payload.id
           );
           this.publishCallData();
           break;

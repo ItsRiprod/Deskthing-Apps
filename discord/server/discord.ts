@@ -511,22 +511,8 @@ class DiscordHandler {
     });
   }
 
-  // Send data to the connected clients
-  // sendDataToClients(
-  //   payload: userData[] | notificationData | undefined,
-  //   request: string = ""
-  // ) {
-  //   this.DeskThingServer.sendDataToClient({
-  //     app: "discord",
-  //     type: "data",
-  //     request: request,
-  //     payload: payload,
-  //   });
-  //   this.DeskThingServer.sendLog("[server] Sending data to clients...");
-  // }
-
   // Change voice settings (mute, deafened)
-  async setVoiceSetting(data: any) {
+  async setClientVoiceSetting(data: any) {
     this.DeskThingServer.sendLog(
       `Attempting to change voice setting to: ${JSON.stringify(data)}`
     );
@@ -613,7 +599,7 @@ class DiscordHandler {
     this.selectedChannel = null;
   }
 
-  async setUserVoiceState() {}
+  async setUserVoiceState(payload) {}
 
   // Leave the current voice call
   async leaveCall() {
@@ -641,6 +627,7 @@ class DiscordHandler {
     this.DeskThingServer.sendLog(
       "[Server] Attempting to get cached users in the current call"
     );
+
     return this.cachedUsers.filter((cachedUser) => {
       this.selectedChannel.voice_states.find(
         (state) => state.user.id == cachedUser.id

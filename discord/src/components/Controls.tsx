@@ -1,16 +1,18 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   IconCallDiscord,
   IconDeafenedDiscord,
   IconDeafenedOffDiscord,
   IconMicDiscord,
   IconMicOffDiscord,
-} from "../icons";
+} from "../assets/icons";
 import { DeskThing } from "deskthing-client";
 
 interface ControlsProps {}
 
 const Controls: React.FC<ControlsProps> = () => {
+  useCallback;
+
   const deskthing = DeskThing.getInstance();
   const [muted, setMuted] = useState(false);
   const [deafened, setDeafened] = useState(false);

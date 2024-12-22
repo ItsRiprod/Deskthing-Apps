@@ -1,5 +1,5 @@
 import React from "react";
-import { IconX } from "../icons";
+import { IconX } from "../assets/icons";
 
 interface LoadingProps {
   message?: string;
