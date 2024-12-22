@@ -599,6 +599,9 @@ class DiscordHandler {
   }
 
   async setUserVoiceState(voice_state: UserVoiceState) {
+    this.DeskThingServer.sendLog(
+      `[Server] Attempting to change voice state ${JSON.stringify(voice_state)}`
+    );
     await this.rpc.setUserVoiceState(voice_state.user_id, voice_state);
   }
 

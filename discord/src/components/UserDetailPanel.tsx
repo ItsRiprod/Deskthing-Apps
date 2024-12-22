@@ -16,6 +16,7 @@ const UserDetailPanel: React.FC<UserDetailPanelProps> = ({ user, onBack }) => {
     setTempVolume(newVolume);
     // Send new volume to server
     deskthing.send({
+      app: "discord",
       type: "set",
       request: "user_voice_state",
       payload: { user_id: user.user_id, volume: newVolume },
@@ -26,6 +27,7 @@ const UserDetailPanel: React.FC<UserDetailPanelProps> = ({ user, onBack }) => {
     const newMute = !tempMute;
     setTempMute(newMute);
     deskthing.send({
+      app: "discord",
       type: "set",
       request: "user_voice_state",
       payload: { user_id: user.user_id, mute: newMute },
@@ -35,7 +37,7 @@ const UserDetailPanel: React.FC<UserDetailPanelProps> = ({ user, onBack }) => {
   return (
     <div className="flex flex-col p-4 bg-gray-900 text-white h-full w-full">
       <button
-        className="mt-20 mb-20 text-blue-400 hover:underline"
+        className="mt-16 mb-4 text-blue-400 hover:underline"
         onClick={onBack}
       >
         &larr; Back

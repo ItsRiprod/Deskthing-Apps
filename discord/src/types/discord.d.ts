@@ -1,15 +1,15 @@
 type ACTION_TYPES = "speaking" | "connect" | "disconnect" | "update" | "status";
 
 export interface UserData {
-  user_id: string | undefined;
-  username?: string | undefined;
-  nick?: string | undefined;
-  speaking?: boolean | undefined;
-  volume?: number | undefined;
-  avatar?: string | undefined;
-  mute?: boolean | undefined;
-  deaf?: boolean | undefined;
-  profile?: string | undefined;
+  user_id: string;
+  username?: string;
+  nick?: string;
+  speaking?: boolean;
+  volume?: number;
+  avatar?: string;
+  mute?: boolean;
+  deaf?: boolean;
+  profile?: string;
 }
 
 export interface Device {

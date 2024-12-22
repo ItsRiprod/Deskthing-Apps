@@ -101,6 +101,7 @@ const handleSet = (data: SocketData) => {
     case "user_voice_state":
       // @ts-expect-error
       discord.setUserVoiceState(data.payload);
+      break;
     default:
       DeskThingServer.sendError(`Unhandled 'set' request: ${data.request}`);
       break;
