@@ -61,7 +61,6 @@ const main = async () => {
     };
 
     DeskThingServer.getUserInput(requestScopes, async (data) => {
-      console.log("Data Response", data.payload);
       if (data.payload.client_id && data.payload.client_secret) {
         DeskThingServer.saveData(data.payload);
         discord = new DiscordHandler(DeskThingServer);
@@ -94,11 +93,14 @@ const handleSet = (data: SocketData) => {
       discord.leaveCall();
       break;
     case "mic":
-      discord.setVoiceSetting({ mute: data.payload || false });
+      discord.setClientVoiceSetting({ mute: data.payload || false });
       break;
     case "deafened":
-      discord.setVoiceSetting({ deaf: data.payload || false });
+      discord.setClientVoiceSetting({ deaf: data.payload || false });
       break;
+    case "user_voice_state":
+      // @ts-expect-error
+      discord.setUserVoiceState(data.payload);
     default:
       DeskThingServer.sendError(`Unhandled 'set' request: ${data.request}`);
       break;
@@ -128,7 +130,7 @@ const handleGet = (data: SocketData) => {
 DeskThingServer.on("start", main);
 
 DeskThingServer.on("stop", () => {
-  console.log("Stopping DeskThing");
+  DeskThingServer.sendError("Stopping discord application");
   if (discord) {
     discord.unsubscribe();
   }

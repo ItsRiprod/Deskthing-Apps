@@ -7,19 +7,19 @@ interface ChannelBannerProps {}
 const ChannelBanner: React.FC<ChannelBannerProps> = () => {
   const [channel, setChannel] = useState<Channel>();
 
+  const handleChannelUpdate = (data: Channel) => {
+    setChannel(data);
+  };
+
   useEffect(() => {
     // Subscribe to channel data updates
-    const handleChannelUpdate = (data: Channel) => {
-      setChannel(data);
-    };
-
     const unsubscribe =
       discordStore.subscribeToChannelData(handleChannelUpdate);
 
     return () => {
       unsubscribe();
     };
-  });
+  }, []);
 
   if (!channel) {
     // Do not render the banner if there is no channel data

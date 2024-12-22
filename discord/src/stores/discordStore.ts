@@ -1,25 +1,13 @@
 import { DeskThing } from "deskthing-client";
 import { SocketData } from "deskthing-client/dist/types";
 import { Channel } from "discord-rpc";
-
-// Interface for user data received from the server
-export interface UserData {
-  id: string;
-  username?: string;
-  nick?: string;
-  speaking?: boolean;
-  volume?: number;
-  avatar?: string;
-  mute?: boolean;
-  deaf?: boolean;
-  profile?: string;
-}
+import { UserData } from "../types/discord";
 
 type EventUpdateCallbacks = (data: any) => void;
 
 interface VoiceActivityDataTransport extends SocketData {
   type: "speaking_data";
-  payload: { id: string; speaking: boolean };
+  payload: { user_id: string; speaking: boolean };
 }
 
 interface ChannelInfoTransport extends SocketData {
@@ -29,13 +17,13 @@ interface ChannelInfoTransport extends SocketData {
 
 interface VoiceStateDataTransport extends SocketData {
   type: "voice_state";
-  payload: { id: string; mute: boolean; deaf: boolean };
+  payload: { user_id: string; mute: boolean; deaf: boolean };
 }
 
 interface ChannelMemberDataTransport extends SocketData {
   type: "channel_member";
   request: "connect" | "disconnect";
-  payload: UserData | { id: string };
+  payload: UserData | { user_id: string };
 }
 
 class DiscordStore {
@@ -66,15 +54,19 @@ class DiscordStore {
     // this.listeners.push(this.DeskThingClient.on("notification_data", this.handleNotificationData))
 
     this.listeners.push(
+      // @ts-expect-error
       this.DeskThingClient.on("speaking_data", this.handleSpeakingData)
     );
     this.listeners.push(
+      // @ts-expect-error
       this.DeskThingClient.on("channel_info", this.handleChannelData)
     );
     this.listeners.push(
+      // @ts-expect-error
       this.DeskThingClient.on("channel_member", this.handleChannelMemberData)
     );
     this.listeners.push(
+      // @ts-expect-error
       this.DeskThingClient.on("voice_data", this.handleVoiceStateData)
     );
     this.listeners.push(
@@ -142,19 +134,19 @@ class DiscordStore {
   // Update the call data with new user information
   updateUserCallData(newData: UserData) {
     const existingUser = this.activeCallMemberData.find(
-      (user) => user.id === newData.id
+      (user) => user.user_id === newData.user_id
     );
 
     if (existingUser) {
       this.activeCallMemberData = this.activeCallMemberData.map((user) =>
-        user.id === newData.id
+        user.user_id === newData.user_id
           ? { ...existingUser, ...newData } // Preserve existing data
           : user
       );
     } else {
       // Add new user and request their full data
       this.activeCallMemberData = [...this.activeCallMemberData, newData];
-      this.requestCallData(); // Refresh full user data
+      // this.requestCallData(); // Refresh full user data
     }
 
     this.publishCallData();
@@ -201,7 +193,7 @@ class DiscordStore {
 
         case "disconnect":
           this.activeCallMemberData = this.activeCallMemberData.filter(
-            (user) => user.id != payload.id
+            (user) => user.user_id != payload.user_id
           );
           this.publishCallData();
           break;
@@ -233,7 +225,7 @@ class DiscordStore {
   handleSpeakingData = (data: VoiceActivityDataTransport) => {
     const payload = data.payload;
     if (payload) {
-      const userId = payload.id;
+      const userId = payload.user_id;
 
       // Clear existing timeout for this user if any
       if (this.speakingUpdateTimeout[userId]) {
@@ -243,7 +235,9 @@ class DiscordStore {
       // Set new timeout
       this.speakingUpdateTimeout[userId] = setTimeout(() => {
         this.activeCallMemberData = this.activeCallMemberData.map((user) =>
-          user.id === userId ? { ...user, speaking: payload.speaking } : user
+          user.user_id === userId
+            ? { ...user, speaking: payload.speaking }
+            : user
         );
         this.publishCallData();
         delete this.speakingUpdateTimeout[userId];
@@ -267,7 +261,6 @@ class DiscordStore {
       app: "discord",
       type: "get",
       request: "refresh_call",
-      payload: { channel_id: this.channelData?.id },
     });
   }
 
