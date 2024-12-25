@@ -19,7 +19,7 @@ const UserDetailPanel: React.FC<UserDetailPanelProps> = ({ user, onBack }) => {
       app: "discord",
       type: "set",
       request: "user_voice_state",
-      payload: { user_id: user.user_id, volume: newVolume },
+      payload: { id: user.id, volume: newVolume },
     });
   };
 
@@ -30,7 +30,7 @@ const UserDetailPanel: React.FC<UserDetailPanelProps> = ({ user, onBack }) => {
       app: "discord",
       type: "set",
       request: "user_voice_state",
-      payload: { user_id: user.user_id, mute: newMute },
+      payload: { id: user.id, mute: newMute },
     });
   };
 

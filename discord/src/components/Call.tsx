@@ -56,7 +56,7 @@ export const Call = () => {
           {callData && callData.length > 0 ? (
             callData.map((participant) => (
               <div
-                key={participant.user_id}
+                key={participant.id}
                 className="flex flex-col items-center m-3"
                 onClick={() => handleSelectUser(participant)}
               >

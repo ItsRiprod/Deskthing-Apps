@@ -7,7 +7,7 @@ type EventUpdateCallbacks = (data: any) => void;
 
 interface VoiceActivityDataTransport extends SocketData {
   type: "speaking_data";
-  payload: { user_id: string; speaking: boolean };
+  payload: { id: string; speaking: boolean };
 }
 
 interface ChannelInfoTransport extends SocketData {
@@ -17,13 +17,13 @@ interface ChannelInfoTransport extends SocketData {
 
 interface VoiceStateDataTransport extends SocketData {
   type: "voice_state";
-  payload: { user_id: string; mute: boolean; deaf: boolean };
+  payload: { id: string; mute: boolean; deaf: boolean };
 }
 
 interface ChannelMemberDataTransport extends SocketData {
   type: "channel_member";
   request: "connect" | "disconnect";
-  payload: UserData | { user_id: string };
+  payload: UserData | { id: string };
 }
 
 class DiscordStore {
@@ -134,12 +134,12 @@ class DiscordStore {
   // Update the call data with new user information
   updateUserCallData(newData: UserData) {
     const existingUser = this.activeCallMemberData.find(
-      (user) => user.user_id === newData.user_id
+      (user) => user.id === newData.id
     );
 
     if (existingUser) {
       this.activeCallMemberData = this.activeCallMemberData.map((user) =>
-        user.user_id === newData.user_id
+        user.id === newData.id
           ? { ...existingUser, ...newData } // Preserve existing data
           : user
       );
@@ -193,7 +193,7 @@ class DiscordStore {
 
         case "disconnect":
           this.activeCallMemberData = this.activeCallMemberData.filter(
-            (user) => user.user_id != payload.user_id
+            (user) => user.id != payload.id
           );
           this.publishCallData();
           break;
@@ -225,7 +225,7 @@ class DiscordStore {
   handleSpeakingData = (data: VoiceActivityDataTransport) => {
     const payload = data.payload;
     if (payload) {
-      const userId = payload.user_id;
+      const userId = payload.id;
 
       // Clear existing timeout for this user if any
       if (this.speakingUpdateTimeout[userId]) {
@@ -235,9 +235,7 @@ class DiscordStore {
       // Set new timeout
       this.speakingUpdateTimeout[userId] = setTimeout(() => {
         this.activeCallMemberData = this.activeCallMemberData.map((user) =>
-          user.user_id === userId
-            ? { ...user, speaking: payload.speaking }
-            : user
+          user.id === userId ? { ...user, speaking: payload.speaking } : user
         );
         this.publishCallData();
         delete this.speakingUpdateTimeout[userId];

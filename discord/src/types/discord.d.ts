@@ -1,7 +1,9 @@
+import { User } from "discord-rpc";
+
 type ACTION_TYPES = "speaking" | "connect" | "disconnect" | "update" | "status";
 
 export interface UserData {
-  user_id: string;
+  id: string;
   username?: string;
   nick?: string;
   speaking?: boolean;
@@ -57,7 +59,7 @@ export interface ClientVoiceState {
 }
 
 export interface UserVoiceState {
-  user_id: string;
+  id: string;
   mute?: boolean;
   volume?: number;
   pan?: {

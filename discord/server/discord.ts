@@ -196,7 +196,7 @@ class DiscordHandler {
   // Add or update a user in the connected users list
   async mergeUserData(newUser: UserData) {
     const existingUserIndex = this.connectedUserList.findIndex(
-      (user) => user.user_id === newUser.user_id
+      (user) => user.id === newUser.id
     );
 
     if (existingUserIndex != -1) {
@@ -207,7 +207,7 @@ class DiscordHandler {
       };
       // New user data to mess with
 
-      const userId = this.connectedUserList[existingUserIndex].user_id;
+      const userId = this.connectedUserList[existingUserIndex].id;
       const userAvatar = this.connectedUserList[existingUserIndex].avatar;
 
       // Encode the image and update the user profile
@@ -257,7 +257,6 @@ class DiscordHandler {
       profile: undefined,
     };
 
-    // @ts-expect-error
     await this.mergeUserData(userData);
 
     // Send full call data to ensure all clients are in sync
@@ -276,7 +275,7 @@ class DiscordHandler {
     );
 
     this.connectedUserList = this.connectedUserList.filter(
-      (user) => user.user_id !== args.user.id
+      (user) => user.id !== args.user.id
     );
 
     this.DeskThingServer.sendDataToClient({
@@ -311,7 +310,6 @@ class DiscordHandler {
       profile: undefined,
     };
 
-    // @ts-expect-error
     await this.mergeUserData(userData);
 
     this.DeskThingServer.sendDataToClient({
@@ -322,37 +320,35 @@ class DiscordHandler {
   }
 
   // Handle when a user starts speaking
-  async handleSpeakingStart(args: { user_id: string }) {
+  async handleSpeakingStart(args: { id: string }) {
     this.DeskThingServer.sendLog(
-      `Handling Speaking Start for user: ${args.user_id}`
+      `Handling Speaking Start for user: ${args.id}`
     );
     // Update only speaking state, don't modify other user data
     const existingUser = this.connectedUserList.find(
-      (user) => user.user_id === args.user_id
+      (user) => user.id === args.id
     );
     if (existingUser) {
       existingUser.speaking = true;
       this.DeskThingServer.sendDataToClient({
         app: "discord",
-        payload: { id: args.user_id, speaking: true },
+        payload: { id: args.id, speaking: true },
         type: "speaking_data",
       });
     }
   }
 
   // Handle when a user stops speaking
-  async handleSpeakingStop(args: { user_id: string }) {
-    this.DeskThingServer.sendLog(
-      `Handling Speaking Stop for user: ${args.user_id}`
-    );
+  async handleSpeakingStop(args: { id: string }) {
+    this.DeskThingServer.sendLog(`Handling Speaking Stop for user: ${args.id}`);
     const existingUser = this.connectedUserList.find(
-      (user) => user.user_id === args.user_id
+      (user) => user.id === args.id
     );
     if (existingUser) {
       existingUser.speaking = false;
       this.DeskThingServer.sendDataToClient({
         app: "discord",
-        payload: { id: args.user_id, speaking: false },
+        payload: { id: args.id, speaking: false },
         type: "speaking_data",
       });
     }
@@ -360,9 +356,9 @@ class DiscordHandler {
 
   // Handle voice connection status changes
   async handleVoiceConnectionStatus(args: discordData) {
-    // this.DeskThingServer.sendLog(
-    //   `Handling Voice Connection Status: ${JSON.stringify(args)}`
-    // );
+    this.DeskThingServer.sendLog(
+      `Handling Voice Connection Status: ${JSON.stringify(args)}`
+    );
     if (args.state === "VOICE_CONNECTED" && this.selectedChannel == null)
       await this.handleClientChannelSelect();
     if (args.state === "VOICE_CONNECTING") {
@@ -515,17 +511,18 @@ class DiscordHandler {
 
   async handleClientChannelSelect() {
     this.DeskThingServer.sendLog("[Server] Fetching Discord channel info");
-    const channel = await this.rpc.getSelectedChannel({ timeout: 500 });
+    const channel = await this.rpc.getSelectedChannel();
     if (!channel)
-      return this.DeskThingServer.sendError(
+      throw this.DeskThingServer.sendError(
         "[Server] Channel could not be fetched"
       );
 
-    await this.unsubscribe();
+    // await this.unsubscribe();
 
-    // Send channel information to the client for display in the ChannelBanner
     if (this.selectedChannel != null) {
+      this.DeskThingServer.sendError("[Server] Selected channel is not null");
       this.recentChannels.push(this.selectedChannel);
+      await this.clearSelectedChannel();
       this.DeskThingServer.sendLog(
         `[Server] Channel ${this.selectedChannel.id} added to recent channels`
       );
@@ -576,11 +573,14 @@ class DiscordHandler {
   }
 
   async hydrateUsers() {
+    this.DeskThingServer.sendError("[Server] Attempting to hydrate users");
     if (this.selectedChannel.voice_states) {
       for (const voiceState of this.selectedChannel.voice_states) {
         if (voiceState.user) await this.mergeUserData(voiceState.user);
       }
+      return;
     }
+    this.DeskThingServer.sendError("[Server] Failed to hydrate users");
   }
 
   async clearSelectedChannel() {
@@ -602,7 +602,7 @@ class DiscordHandler {
     this.DeskThingServer.sendLog(
       `[Server] Attempting to change voice state ${JSON.stringify(voice_state)}`
     );
-    await this.rpc.setUserVoiceState(voice_state.user_id, voice_state);
+    await this.rpc.setUserVoiceState(voice_state.id, voice_state);
   }
 
   // Leave the current voice call
