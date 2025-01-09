@@ -23,17 +23,17 @@ const main = async () => {
       auto_switch_view: {
         label: "Auto Switch View",
         type: "boolean",
-        value: true,
+        value: false,
       },
       notifications: {
         label: "Show Notifications",
         type: "boolean",
-        value: true,
+        value: false,
       },
       activity: {
         label: "Display Activity",
         type: "boolean",
-        value: true,
+        value: false,
       },
     });
   }

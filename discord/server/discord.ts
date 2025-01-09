@@ -111,20 +111,20 @@ class DiscordHandler {
         this.DeskThingServer.sendLog(
           "RPC ready! Setting activity and subscribing to events"
         );
-        // const setActivity = (await this.DeskThingServer.getData())?.settings
-        //   ?.activity?.value;
-        // if (setActivity) {
-        //   const cancelTask = this.DeskThingServer.addBackgroundTaskLoop(
-        //     async () => {
-        //       this.rpc.clearActivity();
-        //       await this.setActivity();
-        //       this.DeskThingServer.sendLog("Activity was set...");
-        //       await new Promise((resolve) => setTimeout(resolve, 30000));
-        //     }
-        //   );
-        // } else {
-        //   this.DeskThingServer.sendLog("Not starting Activity due to settings");
-        // }
+        const setActivity = (await this.DeskThingServer.getData())?.settings
+          ?.activity?.value;
+        if (setActivity) {
+          const cancelTask = this.DeskThingServer.addBackgroundTaskLoop(
+            async () => {
+              this.rpc.clearActivity();
+              await this.setActivity();
+              this.DeskThingServer.sendLog("Activity was set...");
+              await new Promise((resolve) => setTimeout(resolve, 30000));
+            }
+          );
+        } else {
+          this.DeskThingServer.sendLog("Not starting Activity due to settings");
+        }
         this.setSubscribe();
       });
 
@@ -363,9 +363,9 @@ class DiscordHandler {
 
   // Handle voice connection status changes
   async handleVoiceConnectionStatus(args: discordData) {
-    this.DeskThingServer.sendLog(
-      `Handling Voice Connection Status: ${JSON.stringify(args)}`
-    );
+    // this.DeskThingServer.sendLog(
+    //   `Handling Voice Connection Status: ${JSON.stringify(args)}`
+    // );
     if (args.state === "VOICE_CONNECTED" && this.selectedChannel == null)
       await this.handleClientChannelSelect();
     if (args.state === "VOICE_CONNECTING") {
