@@ -1,10 +1,8 @@
 # Deskthing Discord App
 
-### v0.10.0
-
-#### Code by: Ankziety
-
-#### Based on code by: Riprod
+> [!NOTE] > **v0.10.0**<br>
+> Code by: **Ankziety**<br>
+> Based on code by: **Riprod**
 
 **How to Make a Discord Developer Team and App**
 
