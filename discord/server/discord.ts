@@ -19,7 +19,7 @@ class DiscordHandler {
   private client_secret: string | undefined = undefined;
   private token: string | undefined = undefined;
   private connectedUserList: UserData[];
-  private selectedChannel: Channel = null;
+  private selectedChannel: Channel | null = null;
   private recentChannels: Channel[];
 
   constructor(DeskThing: DeskThing) {
@@ -184,12 +184,12 @@ class DiscordHandler {
 
   // Handle when a voice channel is selected
   async handleVoiceChannelSelect(channelId: string) {
-    if (channelId != null && channelId != this.selectedChannel.id) {
+    if (channelId != null && channelId != this.selectedChannel?.id) {
       // Unsubscribe from previous voice channel events if any
       await this.handleClientChannelSelect();
     } else
       this.DeskThingServer.sendError(
-        `[Server] Joined the same call without leaving ${channelId} ${this.selectedChannel.id}`
+        `[Server] Joined the same call without leaving ${channelId} ${this.selectedChannel?.id}`
       );
   }
 
@@ -228,6 +228,7 @@ class DiscordHandler {
       //     "update"
       //   );
       // }
+      return this.connectedUserList[existingUserIndex];
     } else {
       // Add new user to the list
       this.connectedUserList.push(newUser);
@@ -257,14 +258,18 @@ class DiscordHandler {
       profile: undefined,
     };
 
-    await this.mergeUserData(userData);
+    const mergedUser = await this.mergeUserData(userData);
+    if (!mergedUser)
+      throw this.DeskThingServer.sendError(
+        "A user joined the channel and it caused an error"
+      );
 
     // Send full call data to ensure all clients are in sync
     this.DeskThingServer.sendDataToClient({
       app: "discord",
       type: "channel_member",
       request: "connect",
-      payload: userData,
+      payload: mergedUser,
     });
   }
 
@@ -320,35 +325,37 @@ class DiscordHandler {
   }
 
   // Handle when a user starts speaking
-  async handleSpeakingStart(args: { id: string }) {
+  async handleSpeakingStart(args: { user_id: string }) {
     this.DeskThingServer.sendLog(
-      `Handling Speaking Start for user: ${args.id}`
+      `Handling Speaking Start for user: ${args.user_id}`
     );
     // Update only speaking state, don't modify other user data
     const existingUser = this.connectedUserList.find(
-      (user) => user.id === args.id
+      (user) => user.id === args.user_id
     );
     if (existingUser) {
       existingUser.speaking = true;
       this.DeskThingServer.sendDataToClient({
         app: "discord",
-        payload: { id: args.id, speaking: true },
+        payload: { id: args.user_id, speaking: true },
         type: "speaking_data",
       });
     }
   }
 
   // Handle when a user stops speaking
-  async handleSpeakingStop(args: { id: string }) {
-    this.DeskThingServer.sendLog(`Handling Speaking Stop for user: ${args.id}`);
+  async handleSpeakingStop(args: { user_id: string }) {
+    this.DeskThingServer.sendLog(
+      `Handling Speaking Stop for user: ${args.user_id}`
+    );
     const existingUser = this.connectedUserList.find(
-      (user) => user.id === args.id
+      (user) => user.id === args.user_id
     );
     if (existingUser) {
       existingUser.speaking = false;
       this.DeskThingServer.sendDataToClient({
         app: "discord",
-        payload: { id: args.id, speaking: false },
+        payload: { id: args.user_id, speaking: false },
         type: "speaking_data",
       });
     }
@@ -390,7 +397,7 @@ class DiscordHandler {
         request: "leave",
       });
 
-      this.DeskThingServer.sendLog("Unsubscribing from all voice channels");
+      // this.DeskThingServer.sendLog("Unsubscribing from all voice channels");
       await this.clearSelectedChannel();
       this.subscriptions.voice = {};
       this.connectedUserList = [];
@@ -496,14 +503,14 @@ class DiscordHandler {
     );
     await this.rpc.setVoiceSettings(data);
     await this.mergeUserData({
-      id: this.rpc.user.id,
+      id: this.rpc.user?.id,
       ...data.payload,
     });
     this.DeskThingServer.sendDataToClient({
       app: "discord",
       type: "voice_data",
       payload: {
-        id: this.rpc.user.id,
+        id: this.rpc.user?.id,
         ...data.payload,
       },
     });
@@ -519,24 +526,23 @@ class DiscordHandler {
 
     // await this.unsubscribe();
 
-    if (this.selectedChannel != null) {
-      this.DeskThingServer.sendError("[Server] Selected channel is not null");
-      this.recentChannels.push(this.selectedChannel);
-      await this.clearSelectedChannel();
-      this.DeskThingServer.sendLog(
-        `[Server] Channel ${this.selectedChannel.id} added to recent channels`
-      );
-    }
+    // if (this.selectedChannel != null) {
+    //   this.DeskThingServer.sendError("[Server] Selected channel is not null");
+    //   this.recentChannels.push(this.selectedChannel);
+    //   this.DeskThingServer.sendLog(
+    //     `[Server] Channel ${this.selectedChannel.id} added to recent channels`
+    //   );
+    // }
 
     this.selectedChannel = channel;
     this.DeskThingServer.sendLog(
-      `Set the selected channel to ${this.selectedChannel.id}`
+      `Set the selected channel to ${this.selectedChannel?.id}`
     );
 
     await this.hydrateUsers();
 
     // Subscribe to voice events for the selected channel
-    this.subscriptions.voice[this.selectedChannel.id] = [
+    this.subscriptions.voice[this.selectedChannel!.id] = [
       await this.rpc.subscribe("VOICE_STATE_UPDATE", {
         channel_id: this.selectedChannel.id,
       }),
@@ -573,7 +579,7 @@ class DiscordHandler {
   }
 
   async hydrateUsers() {
-    this.DeskThingServer.sendError("[Server] Attempting to hydrate users");
+    this.DeskThingServer.sendLog("[Server] Attempting to hydrate users");
     if (this.selectedChannel.voice_states) {
       for (const voiceState of this.selectedChannel.voice_states) {
         if (voiceState.user) await this.mergeUserData(voiceState.user);
@@ -584,7 +590,7 @@ class DiscordHandler {
   }
 
   async clearSelectedChannel() {
-    if (!this.selectedChannel) return;
+    if (this.selectedChannel == null) return;
     if (this.subscriptions.voice[this.selectedChannel.id]) {
       this.DeskThingServer.sendLog(
         `Found stale channel ${this.selectedChannel.id}, cleaning up...`
@@ -596,13 +602,16 @@ class DiscordHandler {
 
     this.recentChannels.push(this.selectedChannel);
     this.selectedChannel = null;
+    this.connectedUserList = this.connectedUserList.filter(
+      (u) => u.id == this.rpc.user?.id
+    );
   }
 
   async setUserVoiceState(voice_state: UserVoiceState) {
     this.DeskThingServer.sendLog(
       `[Server] Attempting to change voice state ${JSON.stringify(voice_state)}`
     );
-    await this.rpc.setUserVoiceState(voice_state.id, voice_state);
+    await this.rpc.setUserVoiceSettings(voice_state.id, voice_state);
   }
 
   // Leave the current voice call
@@ -628,6 +637,16 @@ class DiscordHandler {
     );
 
     return this.connectedUserList;
+  }
+
+  getCachedUser(id: string) {
+    this.DeskThingServer.sendLog(`Attempting to fetch user with id ${id}`);
+    const user = this.connectedUserList.find((u) => u.id == id);
+    if (!user)
+      throw this.DeskThingServer.sendError(
+        `User ${id} does not exist in the connected user cache`
+      );
+    return user;
   }
 }
 
