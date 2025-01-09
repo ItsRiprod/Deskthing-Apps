@@ -359,6 +359,7 @@ class DiscordHandler {
         type: "speaking_data",
       });
     }
+
   }
 
   // Handle voice connection status changes

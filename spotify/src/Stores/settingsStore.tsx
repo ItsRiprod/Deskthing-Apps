@@ -1,14 +1,13 @@
-import { DeskThing } from 'deskthing-client'
-import { Settings, SocketData } from 'deskthing-client/dist/types'
+import { AppSettings, DeskThing, SocketData } from 'deskthing-client'
 
-type SettingListener = (data: Settings) => Promise<void>
+type SettingListener = (data: AppSettings) => Promise<void>
 
 export class SettingsStore {
     private static instance: SettingsStore
     private deskthing: DeskThing
     private listeners: ((data: SocketData) => void)[] = []
     private settingsListeners: SettingListener[] = []
-    private currentSettings: Settings | null = null
+    private currentSettings: AppSettings | null = null
 
     constructor() {
         this.deskthing = DeskThing.getInstance()
@@ -23,14 +22,14 @@ export class SettingsStore {
         return SettingsStore.instance
     }
 
-    private handleSetting(data: Settings) {
-        this.currentSettings = data
+    private handleSetting(data: SocketData) {
+        this.currentSettings = data.payload
         if (this.currentSettings != null) {
-            this.settingsListeners.forEach(listener => listener(this.currentSettings as Settings))
+            this.settingsListeners.forEach(listener => listener(this.currentSettings as AppSettings))
         }
     }
 
-    getSettings(): Settings | null {
+    getSettings(): AppSettings | null {
         // this.deskthing.send({app: 'utility', type: 'set', request: 'volume', payload: 100})
         if (!this.currentSettings) {
             this.deskthing.send({app: 'client', type: 'get', request: 'settings'})

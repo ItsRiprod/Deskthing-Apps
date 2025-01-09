@@ -24,7 +24,7 @@ export class MusicStore {
     constructor() {
         this.deskthing = DeskThing.getInstance()
         this.listeners.push(this.deskthing.on('music', this.handleMusic.bind(this)))
-        this.listeners.push(this.deskthing.on('spotify', this.onAnalysisData.bind(this)))
+        this.listeners.push(this.deskthing.on('playlists', this.onAnalysisData.bind(this)))
 
         this.fetchInitialSong()
     }
@@ -43,9 +43,7 @@ export class MusicStore {
             type: 'get',
             request: 'music',
           });
-          this.deskthing.send({type: 'get', request: 'analysis'})
           this.deskthing.send({type: 'get', request: 'playlists'})
-          this.deskthing.send({type: 'get', request: 'features'})
         }
     }
 
@@ -70,15 +68,10 @@ export class MusicStore {
 
     private async handleMusic(data: SocketData) {
         const song = data.payload as SongData
-        const updateThumbnail = this.currentSong?.thumbnail !== song.thumbnail
         this.currentSong = song
         if (this.currentSong != null) {
             if (this.currentSong.color) {
                 this.backgroundColor = this.currentSong.color.rgb
-            }
-            if (updateThumbnail) {
-                this.deskthing.send({type: 'get', request: 'analysis'})
-                this.deskthing.send({type: 'get', request: 'features'})
             }
             await Promise.all(this.musicListeners['music'].map(listener => listener(this.currentSong as SongData, this.backgroundColor)))
         }

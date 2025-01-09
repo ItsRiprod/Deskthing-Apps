@@ -7,22 +7,19 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm run build-server",
-    "build-server": "esbuild server/index.ts --bundle --platform=node --allow-overwrite --outdir=dist/",
-    "postbuild": "distro_zip.bat",
+    "build-server": "esbuild server/index.ts --bundle --platform=node --outdir=dist/",
     "setup": "node setup.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@ankziety/discord-rpc": "^4.0.5",
-    "deskthing-client": "0.10.0",
-    "deskthing-server": "0.10.0",
+    "deskthing-client": "^0.10.3",
+    "deskthing-server": "^0.10.2",
+    "discord-interactions": "^4.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@types/discord-rpc": "^4.0.8",
-    "@types/node": "^22.10.1",
     "@eslint/js": "^9.17.0",
     "@types/react": "^18.3.16",
     "@types/react-dom": "^18.3.5",
