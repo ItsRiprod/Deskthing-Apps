@@ -3,7 +3,6 @@ import { MusicStore } from '../Stores/musicStore';
 import { SongData } from 'deskthing-client';
 import Loading from './Loading';
 import Playlists from './Playlists';
-import Stats from './Stats';
 import { ScrollingText } from '../components/ScrollingText';
 
 const Player: React.FC = () => {
@@ -72,8 +71,6 @@ const Player: React.FC = () => {
 
         </div>
       </div>
-
-      <Stats visible={visibleComponent === 'stats'} setVisible={() => toggleVisibleComponent('stats')} />
       <Playlists visible={visibleComponent === 'playlist'} setVisible={() => toggleVisibleComponent('playlist')} />
     </div>
   );

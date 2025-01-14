@@ -3,29 +3,22 @@ import { AudioFeaturesResponse, Playlist, SpotifyAudioAnalysis } from '../types/
 
 type MusicListener = (data: SongData | SpotifyAudioAnalysis | AudioFeaturesResponse | Playlist[] | null, backgroundColor?: string) => Promise<void>
 
-type ListenerType = 'music' | 'analysis' | 'features' | 'playlists'
+type ListenerType = 'music' | 'playlists'
 
 export class MusicStore {
     private static instance: MusicStore
-    private deskthing: DeskThing
     private listeners: ((data: SocketData) => void)[] = []
     private musicListeners: Record<ListenerType, MusicListener[]> = {
         music: [],
-        analysis: [],
-        features: [],
         playlists: [],
     }
     private currentSong: SongData | null = null
     private backgroundColor: string = ''
-    private analysisData: SpotifyAudioAnalysis | null = null
-    private featuresData: AudioFeaturesResponse | null = null
     private playlists: Playlist[] = []
 
     constructor() {
-        this.deskthing = DeskThing.getInstance()
-        this.listeners.push(this.deskthing.on('music', this.handleMusic.bind(this)))
-        this.listeners.push(this.deskthing.on('playlists', this.onAnalysisData.bind(this)))
-
+        this.listeners.push(DeskThing.on('music', this.handleMusic.bind(this)))
+        this.listeners.push(DeskThing.on('playlists', this.onAnalysisData.bind(this)))
         this.fetchInitialSong()
     }
 
@@ -38,27 +31,22 @@ export class MusicStore {
 
     async fetchInitialSong() {
         if (!this.currentSong) {
-          this.deskthing.send({
+          DeskThing.send({
             app: 'client',
             type: 'get',
             request: 'music',
           });
-          this.deskthing.send({type: 'get', request: 'playlists'})
+          DeskThing.send({type: 'get', request: 'playlists'})
+
+          const songData = await DeskThing.getMusic()
+          if (songData) {
+              this.currentSong = songData
+          }
         }
     }
 
     private async onAnalysisData(data: SocketData) {
-        if (data.type == 'analysis') {
-            this.analysisData = data.payload as SpotifyAudioAnalysis
-            if (this.analysisData != null) {
-                await Promise.all(this.musicListeners['analysis'].map(listener => listener(this.analysisData)))
-            }
-        } else if (data.type == 'features') {
-            this.featuresData = data.payload as AudioFeaturesResponse
-            if (this.featuresData != null) {
-                await Promise.all(this.musicListeners['features'].map(listener => listener(this.featuresData)))
-            }
-        } else if (data.type == 'playlists') {
+        if (data.type == 'playlists') {
             this.playlists = data.payload as Playlist[]
             if (this.playlists != null) {
                 await Promise.all(this.musicListeners['playlists'].map(listener => listener(this.playlists)))
@@ -77,50 +65,32 @@ export class MusicStore {
         }
     }
 
-    getBackgroundColor(): string {
-        return this.backgroundColor
-    }
-
     getSong(): SongData | null {
         return this.currentSong
     }
 
-    getAnalysisData(): SpotifyAudioAnalysis | null {
-        return this.analysisData
-    }
-
-    getFeaturesData(): AudioFeaturesResponse | null {
-        if (!this.featuresData) {
-            this.deskthing.send({type: 'get', request: 'features'})
-        }
-        return this.featuresData
-    }
-
     getPlaylists(): Playlist[] {
         if (!this.playlists) {
-            this.deskthing.send({type: 'get', request: 'playlists'})
+            DeskThing.send({type: 'get', request: 'playlists'})
         }
         return this.playlists
     }
 
-    setPlay(state: boolean) {
-        if (this.currentSong) {
-            this.currentSong.is_playing = state
-            this.musicListeners['music'].forEach(listener => listener(this.currentSong as SongData, this.backgroundColor))
-        }
+    getBackgroundColor(): string {
+        return this.backgroundColor
     }
 
     playPlaylist(playlistIndex: number) {
-        this.deskthing.send({type: 'set', request: 'play_playlist', payload: playlistIndex})
+        DeskThing.send({type: 'set', request: 'play_playlist', payload: playlistIndex})
     }
 
     addToPlaylist(playlistIndex: number) {
-        this.deskthing.send({type: 'set', request: 'add_playlist', payload: playlistIndex})
+        DeskThing.send({type: 'set', request: 'add_playlist', payload: playlistIndex})
     }
     
     setPlaylist(playlistIndex: number) {
         console.log('setPlaylist', playlistIndex)
-        this.deskthing.send({type: 'set', request: 'set_playlist', payload: playlistIndex})
+        DeskThing.send({type: 'set', request: 'set_playlist', payload: playlistIndex})
     }
 
     on(type: ListenerType, listener: MusicListener): () => void {

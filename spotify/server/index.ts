@@ -1,6 +1,5 @@
 import SpotifyHandler from './spotify'
-import { DeskThing as DK, IncomingData } from 'deskthing-server'
-const DeskThing = DK.getInstance()
+import { DeskThing, IncomingData } from 'deskthing-server'
 export { DeskThing }
 
 
@@ -35,12 +34,6 @@ const handleGet = async (data: IncomingData) => {
       break
     case 'refresh':
       await spotify.checkForRefresh()
-      break
-    case 'analysis':
-      await spotify.analysis()
-      break
-    case 'features':
-      await spotify.features()
       break
     case 'playlists': // Returns all playlists as array
       await spotify.playlists()

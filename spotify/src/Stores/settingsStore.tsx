@@ -4,15 +4,13 @@ type SettingListener = (data: AppSettings) => Promise<void>
 
 export class SettingsStore {
     private static instance: SettingsStore
-    private deskthing: DeskThing
     private listeners: ((data: SocketData) => void)[] = []
     private settingsListeners: SettingListener[] = []
-    private currentSettings: AppSettings | null = null
+    private currentSettings: AppSettings | undefined
 
     constructor() {
-        this.deskthing = DeskThing.getInstance()
-        this.listeners.push(this.deskthing.on('settings', this.handleSetting.bind(this)))
-        this.deskthing.send({app: 'client', type: 'get', request: 'settings'})
+        this.listeners.push(DeskThing.on('settings', this.handleSetting.bind(this)))
+        DeskThing.send({app: 'client', type: 'get', request: 'settings'})
     }
 
     static getInstance(): SettingsStore {
@@ -29,10 +27,10 @@ export class SettingsStore {
         }
     }
 
-    getSettings(): AppSettings | null {
-        // this.deskthing.send({app: 'utility', type: 'set', request: 'volume', payload: 100})
+    async getSettings(): Promise<AppSettings | undefined> {
+        // DeskThing.send({app: 'utility', type: 'set', request: 'volume', payload: 100})
         if (!this.currentSettings) {
-            this.deskthing.send({app: 'client', type: 'get', request: 'settings'})
+            this.currentSettings = await DeskThing.getSettings()
         }
         return this.currentSettings
     }
