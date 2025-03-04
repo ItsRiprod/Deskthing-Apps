@@ -1,15 +1,15 @@
 import React from 'react'
-import { DeskThing } from 'deskthing-client'
+import { DeskThing } from '@deskthing/client'
 import RewindIcon from '../svgs/Rewind'
+import { AUDIO_REQUESTS } from '@deskthing/types'
 
 const Rewind: React.FC = () => {
-  const deskthing = DeskThing.getInstance()
 
   const togglePlayPause = () => {
-    deskthing.sendMessageToParent({
-      type: 'action',
-      app: 'client',
-      payload: {id: 'rewind', source: 'server'}
+    DeskThing.triggerAction({
+      id: AUDIO_REQUESTS.REWIND,
+      source: 'server',
+      enabled: true
     })
   }
 

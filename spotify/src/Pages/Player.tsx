@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MusicStore } from '../Stores/musicStore';
-import { SongData } from 'deskthing-client';
+import { SongData } from '@deskthing/types';
 import Loading from './Loading';
 import Playlists from './Playlists';
 import { ScrollingText } from '../components/ScrollingText';

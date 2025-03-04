@@ -1,26 +1,18 @@
 {
   "id": "settingstest",
-  "isAudioSource": false,
-  "isScreenSaver": false,
   "isWebApp": true,
-  "isLocalApp": false,
   "requires": [],
   "label": "Settings Tester",
-  "version": "0.10.0",
+  "version": "0.10.4",
   "version_code": "10.0",
-  "compatible_server": [
-    "10"
-  ],
-  "compatible_client": [
-    "10"
-  ],
+  "compatible_server": 10.4,
+  "compatible_client": 10.4,
   "description": "A simple app to test the settings functionality",
   "author": "Riprod",
-  "platforms": [
-    "windows",
-    "mac",
-    "linux"
-  ],
+  "platforms": ["windows", "mac", "linux"],
   "homepage": "https://deskthing.app",
-  "repository": "https://github.com/itsriprod/deskthing-apps"
+  "repository": "https://github.com/itsriprod/deskthing-apps",
+  "tags": [false, false],
+  "requiredVersions": { "server": ">=0.10.4", "client": ">=0.10.4" },
+  "updateUrl": "https://github.com/itsriprod/deskthing-apps"
 }

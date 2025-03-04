@@ -1,0 +1,19 @@
+{
+  "label": "app ID",
+  "isAudioSource": false,
+  "isScreenSaver": false,
+  "isWebApp": true,
+  "requires": [],
+  "version": "0.10.6",
+  "description": "None",
+  "author": "Unknown",
+  "platforms": [
+    "linux",
+    "windows",
+    "mac"
+  ],
+  "homepage": "",
+  "repository": "",
+  "id": "appid",
+  "template": "full"
+}

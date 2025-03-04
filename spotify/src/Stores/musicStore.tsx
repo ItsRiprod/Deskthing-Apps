@@ -1,4 +1,5 @@
-import { DeskThing, SongData, SocketData } from 'deskthing-client'
+import { SongData, SocketData } from '@deskthing/types'
+import { DeskThing } from '@deskthing/client'
 import { AudioFeaturesResponse, Playlist, SpotifyAudioAnalysis } from '../types/spotify'
 
 type MusicListener = (data: SongData | SpotifyAudioAnalysis | AudioFeaturesResponse | Playlist[] | null, backgroundColor?: string) => Promise<void>

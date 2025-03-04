@@ -1,5 +1,6 @@
 import SpotifyHandler from './spotify'
-import { DeskThing, IncomingData } from 'deskthing-server'
+import { IncomingData, ServerEvent } from '@deskthing/types'
+import { DeskThing } from '@deskthing/server'
 export { DeskThing }
 
 
@@ -8,10 +9,10 @@ let spotify: SpotifyHandler
 const start = async () => {
   spotify = new SpotifyHandler()
 
-  DeskThing.on('get', handleGet)
-  DeskThing.on('set', handleSet)
-
-  DeskThing.on('callback-data', handleCallbackData)
+  DeskThing.on(ServerEvent.GET, handleGet)
+  DeskThing.on(ServerEvent.SET, handleSet)
+  DeskThing.sendLog('Spotify app started!')
+  DeskThing.on(ServerEvent.CALLBACK_DATA, handleCallbackData)
 }
 
 const handleCallbackData = async (data: IncomingData) => {
@@ -102,4 +103,4 @@ const handleSet = async (data: IncomingData) => {
   DeskThing.sendLog(response)
 }
 
-DeskThing.on('start', start)
+DeskThing.on(ServerEvent.START, start)

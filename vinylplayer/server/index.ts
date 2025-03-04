@@ -1,5 +1,4 @@
-import { DeskThing as DK } from 'deskthing-server';
-const DeskThing = DK.getInstance();
+import { DeskThing } from '@deskthing/server';
 export { DeskThing } // Required export of this exact name for the server to connect
 
 const start = async () => {

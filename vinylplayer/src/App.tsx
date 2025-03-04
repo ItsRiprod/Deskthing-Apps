@@ -3,7 +3,8 @@ import { Settings } from 'deskthing-client/dist/types'
 import Record from './views/Record'
 import Fullscreen from './views/Fullscreen'
 import RecordCenter from './views/RecordCenter'
-import { AppSettings, DeskThing, SocketData } from 'deskthing-client'
+import { AppSettings, SocketData } from '@deskthing/types'
+import { DeskThing } from '@deskthing/client'
 
 const App: React.FC = () => {
     const [currentView, setCurrentview] = useState('record')

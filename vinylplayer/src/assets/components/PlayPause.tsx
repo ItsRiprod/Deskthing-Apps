@@ -1,34 +1,32 @@
 import React, { useEffect, useState } from 'react'
-import { MusicStore } from '../../Stores/musicStore'
-import { DeskThing } from 'deskthing-client'
-import { SongData } from 'deskthing-client/dist/types'
+import { DeskThing } from '@deskthing/client'
+import { AUDIO_REQUESTS, SocketData, SongData } from '@deskthing/types'
 import PlayIcon from '../svgs/Play'
 import PauseIcon from '../svgs/Pause'
 
 const PlayPause: React.FC = () => {
-  const musicStore = MusicStore.getInstance()
-  const deskthing = DeskThing.getInstance()
   const [isPlaying, setIsPlaying] = useState(false)
 
   useEffect(() => {
-    const handlePlayStateChange = async (musicData: SongData) => {
-      setIsPlaying(musicData.is_playing)
+    const handlePlayStateChange = async (musicData: SocketData) => {
+      const songData = musicData.payload as SongData
+      setIsPlaying(songData.is_playing)
     }
 
-    const listener = musicStore.on(handlePlayStateChange)
+    const listener = DeskThing.on('music', handlePlayStateChange)
 
     return () => {
       listener()
     }
-  }, [musicStore])
+  }, [DeskThing])
 
   const togglePlayPause = () => {
-    musicStore.setPlay(!isPlaying)
+    setIsPlaying(!isPlaying)
 
-    deskthing.sendMessageToParent({
-      type: 'action',
-      app: 'client',
-      payload: {id: 'play', source: 'server'}
+    DeskThing.triggerAction({
+      id: AUDIO_REQUESTS.PLAY,
+      source: 'server',
+      enabled: true
     })
   }
 

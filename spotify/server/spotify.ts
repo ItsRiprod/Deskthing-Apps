@@ -1,5 +1,9 @@
-import axios, { AxiosError, isAxiosError } from 'axios'
-import { Action, ActionCallback, SongData, DeskThing, AppSettings } from 'deskthing-server'
+/**
+ * I would like to apologize for this ✨
+ * It works and has just kept growing to be this monster. I do plan on redoing all of it from scratch once the main server is done.
+ */
+import { Action, ActionCallback, SongData, AppSettings, ServerEvent } from '@deskthing/types'
+import { DeskThing } from '@deskthing/server'
 
 export interface SpotifySongData extends SongData {
   isLiked: boolean
@@ -16,7 +20,6 @@ type playlist = {
 }
 
 type savedData = {
-  settings?: AppSettings
   client_id?: string
   client_secret?: string
   access_token?: string
@@ -45,10 +48,10 @@ class SpotifyHandler {
   private recent_device_id: string | undefined
 
   constructor() {
-    DeskThing.on("data", (data) => {
-      this.Data = data;
+    DeskThing.on(ServerEvent.DATA, (data) => {
+      this.Data = data.payload;
     });
-    DeskThing.on("action", (action) => {
+    DeskThing.on(ServerEvent.ACTION, (action) => {
       this.runAction(action.payload as ActionCallback);
     });
     this.initializeData();
@@ -115,7 +118,7 @@ class SpotifyHandler {
         version: "0.10.3",
         version_code: 10,
       };
-      DeskThing.registerActionObject(playlistAction);
+      DeskThing.registerAction(playlistAction);
       // Set up the action (overwrites the old one if it exists)
       const refreshAction: Action = {
         name: "Refresh Song",
@@ -125,7 +128,7 @@ class SpotifyHandler {
         version: "0.10.3",
         version_code: 10,
       };
-      DeskThing.registerActionObject(refreshAction);
+      DeskThing.registerAction(refreshAction);
 
       const cycleKeyAction: Action = {
         name: "Cycle Key",
@@ -135,7 +138,7 @@ class SpotifyHandler {
         version: "0.10.3",
         version_code: 10,
       };
-      DeskThing.registerActionObject(cycleKeyAction);
+      DeskThing.registerAction(cycleKeyAction);
   
       const playPlaylistAction: Action = {
         name: "Play Playlist",
@@ -148,7 +151,7 @@ class SpotifyHandler {
         enabled: true,
         version_code: 10,
       };
-      DeskThing.registerActionObject(playPlaylistAction);
+      DeskThing.registerAction(playPlaylistAction);
     }
 
     const likeAction: Action = {
@@ -160,44 +163,33 @@ class SpotifyHandler {
       enabled: false,
       version_code: 10,
     };
-    DeskThing.registerActionObject(likeAction);
+    DeskThing.registerAction(likeAction);
 
-    const requiredSettings = [
-      "change_source",
-      "output_device",
-      "transfer_playback_on_error"
-    ];
-  
-    const hasAllSettings = requiredSettings.every(
-      (setting) => this.Data?.settings?.[setting]
-    );
-
-    if (!hasAllSettings) {
-      const settings: AppSettings = {
-        change_source: {
-          type: "boolean",
-          value: true,
-          label: "Switch Output on Select",
-        },
-        output_device: {
-          value: "default",
-          label: "Output Device",
-          type: "select",
-          options: [
-            {
-              value: "default",
-              label: "Default",
-            },
-          ],
-        },
-        transfer_playback_on_error: {
-          value: true,
-          label: "Transfer Playback on Error",
-          type: "boolean",
-        }
-      };
-      DeskThing.addSettings(settings);
-    }
+    const settings: AppSettings = {
+      change_source: {
+        type: "boolean",
+        value: true,
+        label: "Switch Output on Select",
+      },
+      output_device: {
+        value: "default",
+        label: "Output Device",
+        type: "select",
+        options: [
+          {
+            value: "default",
+            label: "Default",
+          },
+        ],
+      },
+      transfer_playback_on_error: {
+        value: true,
+        label: "Transfer Playback on Error",
+        type: "boolean",
+      }
+    };
+    // New way of initializing settings
+    DeskThing.initSettings(settings);
 
     if (!this.Data.client_id || !this.Data.client_secret) {
       const requestScopes = {
@@ -454,7 +446,8 @@ class SpotifyHandler {
         switch (status) {
           case 204:
             DeskThing.sendWarning('[HandleError] Encountered error 204 - Playback is not available or active. Try playing music manually')
-            if (this.recent_device_id && this.Data.settings && this.Data.settings.transfer_playback_on_error.value == true) {
+            const settings = await DeskThing.getSettings()
+            if (this.recent_device_id && settings && settings.transfer_playback_on_error.value == true) {
               this.transferPlayback(this.recent_device_id)
             }
             break;
@@ -737,7 +730,7 @@ class SpotifyHandler {
       }
 
       DeskThing.saveData({ playlists: this.Data.playlists });
-      DeskThing.sendDataToClient({
+      DeskThing.send({
         app: "spotify",
         type: "playlists",
         payload: this.Data.playlists,
@@ -882,7 +875,7 @@ class SpotifyHandler {
     });
 
     DeskThing.saveData({ playlists: this.Data.playlists });
-    DeskThing.sendDataToClient({
+    DeskThing.send({
       app: "spotify",
       type: "playlists",
       payload: this.Data.playlists,
@@ -995,11 +988,12 @@ class SpotifyHandler {
 
   async transfer() {
     try {
+      const settings = await DeskThing.getSettings();
       if (
-        this.Data.settings?.output_device.value !== "default" &&
-        this.Data.settings?.output_device.value
+        settings?.output_device.value !== "default" &&
+        settings?.output_device.value
       ) {
-        this.transferPlayback(this.Data.settings.output_device.value as string);
+        this.transferPlayback(settings.output_device.value as string);
         DeskThing.sendLog("Transferred successfully");
       }
     } catch (error) {
@@ -1180,31 +1174,12 @@ class SpotifyHandler {
           isLiked: isLiked[0],
         };
 
-        const deviceExists =
-          this.Data.settings &&
-          this.Data.settings.output_device.type == "multiselect" &&
-          this.Data.settings.output_device.options.some(
-            (option) => option.value === currentPlayback.device.id
-          );
         
-          if (currentPlayback.device.id) {
-            this.recent_device_id = currentPlayback.device.id
-          }
-
-        if (!deviceExists) {
-          // Update options with the new device
-          DeskThing.sendLog(
-            `Adding new device ${currentPlayback.device.name} to device list...`
-          );
-          this.Data.settings &&
-            this.Data.settings.output_device.type == "multiselect" &&
-            this.Data.settings.output_device.options.push({
-              value: currentPlayback.device.id,
-              label: currentPlayback.device.name,
-            });
-
-          DeskThing.saveData({ settings: this.Data.settings });
+        if (currentPlayback.device.id) {
+          this.recent_device_id = currentPlayback.device.id
         }
+
+        addDevice(currentPlayback.device.id, currentPlayback.device.name);
 
         DeskThing.send({
           app: "client",
@@ -1250,32 +1225,11 @@ class SpotifyHandler {
           id: currentPlayback?.item.id,
           isLiked: false,
         };
-
-        const deviceExists =
-          this.Data.settings &&
-          this.Data.settings.output_device.type == "multiselect" &&
-          this.Data.settings.output_device.options.some(
-            (option) => option.value === currentPlayback.device.id
-          );
-  
         if (currentPlayback.device.id) {
           this.recent_device_id = currentPlayback.device.id
         }
-  
-        if (!deviceExists) {
-          // Update options with the new device
-          DeskThing.sendLog(
-            `Adding new device ${currentPlayback.device.name} to device list...`
-          );
-          this.Data.settings &&
-            this.Data.settings.output_device.type == "multiselect" &&
-            this.Data.settings.output_device.options.push({
-              value: currentPlayback.device.id,
-              label: currentPlayback.device.name,
-            });
-  
-          DeskThing.saveData({ settings: this.Data.settings });
-        }
+
+        addDevice(currentPlayback.device.id, currentPlayback.device.name);
   
         DeskThing.send({
           app: "client",
@@ -1301,6 +1255,33 @@ class SpotifyHandler {
       DeskThing.sendError("Error getting song data:" + error);
       return error;
     }
+  }
+}
+
+// Adds the device to settings
+const addDevice = async (id: string, name: string) => {
+  const settings = await DeskThing.getSettings()
+
+  const deviceExists =
+    settings &&
+    settings.output_device.type == "select" &&
+    settings.output_device.options.some(
+      (option) => option.value === id
+    );
+
+  if (!deviceExists) {
+    // Update options with the new device
+    DeskThing.sendLog(
+      `Adding new device ${name} to device list...`
+    );
+    if (settings && settings.output_device.type == "select") {
+        settings.output_device.options.push({
+          value: id,
+          label: name,
+        });
+        DeskThing.saveSettings(settings);
+      }
+
   }
 }
 

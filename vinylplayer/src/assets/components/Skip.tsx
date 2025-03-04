@@ -1,15 +1,15 @@
 import React from 'react'
-import { DeskThing } from 'deskthing-client'
+import { DeskThing } from '@deskthing/client'
 import SkipIcon from '../svgs/Skip'
+import { AUDIO_REQUESTS } from '@deskthing/types'
 
 const Skip: React.FC = () => {
-  const deskthing = DeskThing.getInstance()
 
   const togglePlayPause = () => {
-    deskthing.sendMessageToParent({
-      type: 'action',
-      app: 'client',
-      payload: {id: 'skip', source: 'server'}
+    DeskThing.triggerAction({
+      id: AUDIO_REQUESTS.NEXT,
+      source: 'server',
+      enabled: true
     })
   }
 

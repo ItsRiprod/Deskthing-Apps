@@ -1,32 +1,49 @@
 import React, { useEffect, useState } from 'react'
-import { MusicStore } from '../Stores/musicStore'
-import { SongData } from 'deskthing-client'
+import { SocketData, SongData } from '@deskthing/types'
 import PlayPause from '../assets/components/PlayPause'
 import Skip from '../assets/components/Skip'
 import Rewind from '../assets/components/Rewind'
+import { DeskThing } from '@deskthing/client'
 
 const RecordCenter: React.FC = () => {
-    const musicStore = MusicStore.getInstance()
-    const [songData, setSongData] = useState<SongData | null>(musicStore.getSong())
-    const [thumbnail, setThumbnail] = useState<string>(songData?.thumbnail || '')
+    const [songData, setSongData] = useState<SongData | null>(null)
+    const [thumbnail, setThumbnail] = useState<string>('')
     const [isPlaying, setIsPlaying] = useState<boolean>(false)
 
     useEffect(() => {
-        const onMusicUpdates = async (data: SongData) => {
-            setSongData(data)
-            console.log('getting music', data.is_playing)
-            setIsPlaying(data.is_playing)
-            if (data.thumbnail && data.thumbnail !== thumbnail) {
-                setThumbnail(data.thumbnail)
+        let isMounted = true
+
+        const onMusicUpdates = async (data: SocketData) => {
+            if (!isMounted) return
+            const songData = data.payload as SongData
+            setSongData(songData)
+            setIsPlaying(songData.is_playing)
+            if (songData.thumbnail && songData.thumbnail !== thumbnail) {
+                setThumbnail(DeskThing.formatImageUrl(songData.thumbnail))
             }
         }
         
-        const off = musicStore.on(onMusicUpdates)
+        const initializeData = async () => {
+            try {
+                const data = await DeskThing.getMusic()
+                if (isMounted && data) {
+                    setSongData(data)
+                    setThumbnail(data.thumbnail || '')
+                }
+            } catch (error) {
+                console.error('Failed to initialize music data:', error)
+            }
+        }
+
+        initializeData()
+
+        const unsubscribe = DeskThing.on('music', onMusicUpdates)
 
         return () => {
-            off()
+            isMounted = false
+            unsubscribe()
         }
-    })
+    }, [thumbnail])
 
     return (
         <div style={{background:`${songData ? songData.color?.rgba : 'rgb(0, 0, 0)'}`}} className="bg-slate-800 w-screen overflow-hidden h-screen flex justify-center items-center">
@@ -52,8 +69,6 @@ const RecordCenter: React.FC = () => {
                 </div>
             </div>
         </div>
-
     )
 }
-
 export default RecordCenter

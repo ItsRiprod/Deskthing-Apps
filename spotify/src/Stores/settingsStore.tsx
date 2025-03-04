@@ -1,4 +1,5 @@
-import { AppSettings, DeskThing, SocketData } from 'deskthing-client'
+import { AppSettings, SocketData } from '@deskthing/types'
+import { DeskThing } from '@deskthing/client'
 
 type SettingListener = (data: AppSettings) => Promise<void>
 
