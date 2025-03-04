@@ -23,7 +23,7 @@ export function ChatLayout({
   if (!isExpanded && !embedded) {
     return (
       <div
-        className="fixed bottom-4 right-4 z-50 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-primary p-3 text-white shadow-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-colors duration-200"
+        className="fixed bottom-4 right-4 z-50 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-primary p-3 text-white shadow-lg hover:bg-primary-dark focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-colors duration-200"
         onClick={() => setChatExpanded(true)}
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
@@ -45,7 +45,7 @@ export function ChatLayout({
         <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-900">
           <h3 className="font-semibold text-gray-900 dark:text-white">Chat</h3>
           <button 
-            className="rounded p-1.5 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 dark:text-gray-400 transition-colors duration-200" 
+            className="rounded-sm p-1.5 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 dark:text-gray-400 transition-colors duration-200" 
             onClick={handleCloseChat}
             aria-label="Close chat"
           >
@@ -54,7 +54,7 @@ export function ChatLayout({
         </div>
         
         {/* Main chat content */}
-        <div className="flex-grow overflow-auto bg-white dark:bg-gray-800">
+        <div className="grow overflow-auto bg-white dark:bg-gray-800">
           <Chat />
         </div>
       </div>

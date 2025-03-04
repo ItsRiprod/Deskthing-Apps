@@ -15,3 +15,5 @@
 /testingproj
 /.extras
 /testingApps
+.env
+.env.old

@@ -24,7 +24,7 @@ export function Call(): JSX.Element {
     <div className="flex h-full flex-col">
       {callStatus?.timestamp && <CallTimer startTime={callStatus.timestamp} />}
       {participants.length === 0 ? (
-        <div className="flex flex-grow items-center justify-center">
+        <div className="flex grow items-center justify-center">
           <p className="text-lg text-gray-500">No participants in call</p>
         </div>
       ) : (

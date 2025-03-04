@@ -25,7 +25,7 @@ export function CallLayout(): JSX.Element {
         </div>
         
         {/* Participant grid - main view of call participants */}
-        <div className="flex-grow h-full overflow-y-auto">
+        <div className="grow h-full overflow-y-auto">
           <ParticipantGrid participants={callStatus.participants} />
         </div>
       </div>

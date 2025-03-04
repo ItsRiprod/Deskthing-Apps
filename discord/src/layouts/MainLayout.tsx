@@ -11,8 +11,7 @@ export function MainLayout(): JSX.Element {
   const isChatExpanded = useAppSelector((state) => state.chatStatus?.isExpanded);
   const { isLoading } = useAppState()
 
-  // Invert this for prod
-  if (!isLoading) {
+  if (isLoading) {
     return (
       <Loading />
     )

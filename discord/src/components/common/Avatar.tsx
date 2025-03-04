@@ -22,7 +22,7 @@ const Avatar = ({ src, alt, size = 'md', className = '' }: AvatarProps) => {
     <img
       src={url}
       alt={alt}
-      className={`${sizeClasses[size]} rounded-full object-cover shadow-sm hover:opacity-90 transition-opacity ${className}`}
+      className={`${sizeClasses[size]} rounded-full object-cover shadow-xs hover:opacity-90 transition-opacity ${className}`}
     />
   );
 };

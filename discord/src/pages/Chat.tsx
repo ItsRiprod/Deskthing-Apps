@@ -8,7 +8,7 @@ export function Chat(): JSX.Element {
   return (
     <div className="flex h-full flex-col">
       {/* Messages area */}
-      <div className="flex-grow overflow-y-auto p-4">
+      <div className="grow overflow-y-auto p-4">
         {!messages || messages.length === 0 ? (
           <div className="flex h-full items-center justify-center text-gray-300">
             No messages yet

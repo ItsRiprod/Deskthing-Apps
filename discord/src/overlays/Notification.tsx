@@ -40,7 +40,7 @@ export default function NotificationOverlay({
       }`}
     >
       <div className="flex w-72 items-center rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-lg">
-        <div className="mr-3 flex-shrink-0">
+        <div className="mr-3 shrink-0">
           {notification.author.profileUrl && (
             <img 
               src={notification.author.profileUrl} 
@@ -49,7 +49,7 @@ export default function NotificationOverlay({
             />
           )}
         </div>
-        <div className="flex-grow text-gray-100">
+        <div className="grow text-gray-100">
           <h4 className="mb-1 font-medium">{notification.title}</h4>
           <p className="text-sm text-gray-300">{notification.content}</p>
           <span className="mt-1 text-xs text-gray-400">
@@ -58,7 +58,7 @@ export default function NotificationOverlay({
         </div>
         <button 
           onClick={handleClose}
-          className="ml-2 flex-shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-700 hover:text-gray-200"
+          className="ml-2 shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-700 hover:text-gray-200"
         >
           <IconX />
         </button>

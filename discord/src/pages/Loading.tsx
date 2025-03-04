@@ -39,7 +39,7 @@ export function Loading() {
     <div className="h-screen w-screen flex flex-col items-center justify-center gap-8">
       <button
         onClick={handleChangeHint}
-        className="animate-popIn relative flex items-center justify-center w-96 h-96 flex-col"
+        className="animate-pop-in relative flex items-center justify-center w-96 h-96 flex-col"
       >
         <div
           style={{ transform: `rotate(${rotation}deg)` }}
@@ -49,7 +49,7 @@ export function Loading() {
         <p className="text-zinc-200 text-3xl font-semibold">
           Connecting to Discord
         </p>
-        <div className="text-gray-400 text-lg text-center max-w-md px-4">
+        <div key={currentHint} className="animate-drop-in text-gray-400 text-lg text-center max-w-md px-4">
           {hints[currentHint]}
         </div>
       </button>
