@@ -1,5 +1,5 @@
 import DiscordHandler from './discord'
-import { DeskThing as DK, SocketData } from 'deskthing-server'
+import { DeskThing as DK, SocketData } from '@deskthing/types'
 const DeskThing = DK.getInstance()
 export { DeskThing }
 

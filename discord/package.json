@@ -5,35 +5,45 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && npm run build-server && node scripts/package.js",
+    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:wrapper\"",
+    "build": "deskthing package",
     "build-server": "esbuild server/index.ts --bundle --platform=node --outfile=dist/index.js",
     "setup": "node setup.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:vite": "vite",
+    "dev:wrapper": "npx @deskthing/cli dev"
   },
   "dependencies": {
-    "deskthing-client": "^0.10.3",
-    "deskthing-server": "^0.10.2",
+    "@deskthing/server": "^0.10.4",
+    "@deskthing/types": "^0.10.7",
     "discord-interactions": "^4.0.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "discord-rpc": "^4.0.1",
+    "dotenv": "^16.4.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@deskthing/cli": "^0.10.6",
     "@eslint/js": "^9.17.0",
-    "@types/react": "^18.3.16",
-    "@types/react-dom": "^18.3.5",
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/discord-rpc": "^4.0.9",
+    "@types/node": "^22.13.5",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-legacy": "^5.4.3",
     "@vitejs/plugin-react": "^4.3.4",
     "archiver": "^7.0.1",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
     "esbuild": "^0.19.12",
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.16",
-    "tailwindcss": "^3.4.16",
+    "tailwindcss": "^4.0.0",
+    "tsm": "^2.3.0",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.0",
-    "vite": "^5.4.11"
+    "vite": "^5.4.14"
   }
 }

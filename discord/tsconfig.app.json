@@ -22,7 +22,15 @@
     "noImplicitAny": false,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
+    "paths": {
+      "@shared/*": ["./shared/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "vite.config.ts"],
+
+  "references": [
+    { "path": "./tsconfig.shared.json" }
+  ]
 }

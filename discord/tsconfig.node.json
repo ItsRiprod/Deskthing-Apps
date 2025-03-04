@@ -4,11 +4,24 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "skipLibCheck": true,
     "module": "ESNext",
+    "outDir": "./dist/",
+    "rootDir": "./server",
+    "esModuleInterop": true,
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
-    "noEmit": true
+    "noEmit": true,
+
+
+    /* Path mapping for shared types */
+    "paths": {
+      "@shared/*": ["./shared/*"]
+    }
   },
-  "include": ["vite.config.ts"]
+  "include": ["server"],
+  "references": [
+    { "path": "./tsconfig.shared.json" }
+  ]
 }
