@@ -20,18 +20,18 @@ export function Loading() {
 
   useEffect(() => {
     const handleScroll = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
       e.stopImmediatePropagation()
-      e.stopPropagation()
-      e.preventDefault()
       if (e.deltaY != 0) {
           setRotation((prev) => prev - e.deltaY * 0.5);
       } else if (e.deltaX != 0) {
         setRotation((prev) => prev - e.deltaX * 0.5);
       }
     };
-    window.addEventListener("wheel", handleScroll);
+    window.addEventListener("wheel", handleScroll, { passive: false, capture: true });
     return () => {
-      window.removeEventListener("wheel", handleScroll);
+      window.removeEventListener("wheel", handleScroll, { capture: true });
     };
   }, []);
 

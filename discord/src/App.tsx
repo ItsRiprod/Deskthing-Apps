@@ -6,7 +6,7 @@ import OverlayWrapper from './overlays/OverlayWrapper'
 function App(): JSX.Element {
   return (
     <AppStateProvider>
-      <div className="h-screen w-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+      <div className="h-screen w-screen overflow-hidden bg-gray-900">
         <MainLayout />
         <OverlayWrapper />
       </div>

@@ -26,9 +26,9 @@ export class DiscordRPC extends EventEmitter {
     return this._isConnected;
   }
 
-  updateUser = async () => {
-    if (this.rpcClient?.user) {
-      try {
+  updateUser = async (): Promise<CallParticipant | undefined> => {
+    const update = async () => {
+      if (this.rpcClient?.user) {
         const voiceSettings = await this.rpcClient.getVoiceSettings();
         this.user = {
           id: this.rpcClient.user.id,
@@ -43,8 +43,19 @@ export class DiscordRPC extends EventEmitter {
           isSpeaking: false,
         };
         return this.user;
+      }
+    };
+    if (this.rpcClient?.user) {
+      try {
+        return await update()
       } catch (error) {
         DeskThing.sendError(`Error updating user: ${error}`);
+      }
+    } else {
+      // Wait a second before trying again
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (this.rpcClient?.user) {
+        return await update()
       }
     }
   };
@@ -62,7 +73,7 @@ export class DiscordRPC extends EventEmitter {
     try {
       const client = new Client({ transport: "ipc" });
       DeskThing.sendLog("Created new Discord RPC client");
-      
+
       await new Promise<void>((resolve, reject) => {
         client.on("ready", () => {
           this.rpcClient = client as ActualClient;
@@ -140,24 +151,26 @@ export class DiscordRPC extends EventEmitter {
     try {
       if (!this.rpcClient) {
         DeskThing.sendError(`RPC client is not connected`);
-        return
+        return;
       }
       this.ensureConnected();
       if (this.subscriptions.has(`${event}`)) {
         await this.unsubscribe(event);
       } else {
-        DeskThing.sendLog(`Nothing to unsubscribe from ${event}`)
+        DeskThing.sendLog(`Nothing to unsubscribe from ${event}`);
       }
-      DeskThing.sendLog(`Subscribing to ${event} ${channelId}...`)
+      DeskThing.sendLog(`Subscribing to ${event} ${channelId}...`);
       const subscription = await Promise.race([
         this.rpcClient.subscribe(event, {
           channel_id: channelId,
         }),
-        new Promise((resolve, _) => setTimeout(() => resolve(), 5000)) as Promise<void>
+        new Promise((resolve, _) =>
+          setTimeout(() => resolve(), 5000)
+        ) as Promise<void>,
       ]);
       if (!subscription) {
-        DeskThing.sendError(`Failed to subscribe to ${event}. Timed out!`)
-        return
+        DeskThing.sendError(`Failed to subscribe to ${event}. Timed out!`);
+        return;
       }
       await new Promise((resolve) => setTimeout(resolve, 300));
       this.subscriptions.set(`${event}`, subscription);
@@ -171,19 +184,14 @@ export class DiscordRPC extends EventEmitter {
 
   async unsubscribe(event: RPCEvents): Promise<void> {
     try {
-
       this.ensureConnected();
       const subscription = this.subscriptions.get(`${event}`);
       if (subscription) {
         await subscription.unsubscribe();
         this.subscriptions.delete(`${event}`);
-        DeskThing.sendLog(
-          `Unsubscribed from ${event}`
-        );
+        DeskThing.sendLog(`Unsubscribed from ${event}`);
       } else {
-        DeskThing.sendLog(
-          `No active subscription found for event: ${event}`
-        );
+        DeskThing.sendLog(`No active subscription found for event: ${event}`);
       }
     } catch (error) {
       DeskThing.sendError(`Error unsubscribing from ${event}: ${error}`);
@@ -222,7 +230,7 @@ export class DiscordRPC extends EventEmitter {
       this.ensureConnected();
       DeskThing.sendLog(`Setting voice settings: ${JSON.stringify(settings)}`);
       await this.rpcClient!.setVoiceSettings(settings as VoiceSettings);
-      this.updateUser()
+      this.updateUser();
     } catch (error) {
       DeskThing.sendError(`Error setting voice settings: ${error}`);
       throw error;

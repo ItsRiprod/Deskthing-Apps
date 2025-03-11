@@ -17,13 +17,12 @@
   "dependencies": {
     "@deskthing/server": "^0.10.4",
     "@deskthing/types": "^0.10.7",
-    "@tailwindcss/vite": "^4.0.0",
     "discord-interactions": "^4.0.0",
     "discord-rpc": "^4.0.1",
     "dotenv": "^16.4.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwindcss": "^4.0.0"
+    "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
     "@deskthing/cli": "^0.10.6",
@@ -41,6 +40,7 @@
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.16",
+    "postcss-import": "^16.1.0",
     "tsm": "^2.3.0",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.0",

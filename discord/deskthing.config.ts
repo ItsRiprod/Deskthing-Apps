@@ -12,7 +12,7 @@ export default defineConfig({
     },
     client: {
       logging: {
-        level: "info",
+        level: "debug",
       },
     },
     server: {

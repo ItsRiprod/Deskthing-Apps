@@ -48,8 +48,7 @@ export function useDiscordActions() {
   }, []);
 
   const toggleDeafen = useCallback(() => {
-    DeskThing.debug('Toggling deafen')
-    // DeskThing.triggerAction({ id: ACTIONS.DEAFEN, value: 'toggle', enabled: true });
+    DeskThing.triggerAction({ id: ACTIONS.DEAFEN, value: 'toggle', enabled: true });
   }, []);
 
   const disconnect = useCallback(() => {

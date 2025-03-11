@@ -40,7 +40,7 @@ export default function NotificationOverlay({
       }`}
     >
       <div className="flex w-72 items-center rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-lg">
-        <div className="mr-3 shrink-0">
+        <div className="mr-3 flex-shrink-0">
           {notification.author.profileUrl && (
             <img 
               src={notification.author.profileUrl} 

@@ -8,7 +8,7 @@ interface Props {
 
 const SpeakingIndicator = ({ user }: Props) => {
   return (
-    <div className="relative shrink-0">
+    <div className="relative flex-shrink-0">
       <UserAvatar user={user} />
       {user.isSpeaking && (
         <div className="absolute -inset-1 rounded-full border-2 border-green-500 animate-pulse" />

@@ -126,8 +126,8 @@ export class DiscordService extends EventEmitter {
         this.updateRichPresence();
       }
 
-      await this.rpc.updateUser();
-      this.rpc.user && this.callStatus.updateCurrentUser(this.rpc.user);
+      const user = await this.rpc.updateUser();
+      user && this.callStatus.updateCurrentUser(user);
 
       this.emit("ready");
       DeskThing.sendLog("Discord integration initialized successfully");

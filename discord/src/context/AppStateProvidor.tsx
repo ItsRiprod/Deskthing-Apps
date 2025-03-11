@@ -168,6 +168,7 @@ export const AppStateProvider: React.FC<{children: ReactNode}> = ({ children }) 
     // Set up event listeners
     const unsubscribeCallStatus = DeskThing.on('call', (event) => {
       if (!isValid) return
+      DeskThing.info('Got call information')
       
       if (event.request === 'set' && event.payload) {
         DeskThing.info('Updating call', event)

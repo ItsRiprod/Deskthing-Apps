@@ -28,7 +28,7 @@ export function MainLayout(): JSX.Element {
         </>
       ) : (
         // When not in a call - either expanded chat or chat button
-        <ChatLayout expanded={isChatExpanded} />
+        <ChatLayout />
       )}
     </div>
   );
