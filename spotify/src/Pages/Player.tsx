@@ -4,6 +4,7 @@ import { SongData } from '@deskthing/types';
 import Loading from './Loading';
 import Playlists from './Playlists';
 import { ScrollingText } from '../components/ScrollingText';
+import { DeskThing } from '@deskthing/client';
 
 const Player: React.FC = () => {
   const musicStore = MusicStore.getInstance()
@@ -35,7 +36,6 @@ const Player: React.FC = () => {
       unsubscribe();
     };
   }, []);
-
 
   if (!currentSong || Object.keys(currentSong).length == 0) {
     return <div className="w-screen h-screen"><Loading text={'Loading Song...'} /></div>;

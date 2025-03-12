@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:wrapper\"",
-    "build": "vite build && npm run build-server && node scripts/package.js",
+    "build": "deskthing package",
     "build-server": "esbuild server/index.ts --bundle --platform=node --outfile=dist/index.js",
     "setup": "node setup.js",
     "lint": "eslint .",
@@ -16,9 +16,10 @@
     "build-workers": "esbuild server/workers/*.ts --bundle --platform=node --outdir=dist/workers --format=cjs"
   },
   "dependencies": {
-    "@deskthing/client": "^0.10.3",
-    "@deskthing/server": "^0.10.3",
-    "@deskthing/types": "^0.10.6",
+    "@deskthing/client": "^0.10.4",
+    "@deskthing/server": "^0.10.5",
+    "@deskthing/types": "^0.10.7",
+    "dotenv": "^16.4.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -33,8 +34,10 @@
     "autoprefixer": "^10.4.19",
     "concurrently": "^9.1.2",
     "eslint": "^9.9.0",
+    "eslint-plugin-prettier": "^5.2.3",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
+    "prettier": "^3.5.3",
     "tailwindcss": "^3.4.10",
     "tsm": "^2.3.0",
     "typescript": "^5.5.3",

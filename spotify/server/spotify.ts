@@ -2,7 +2,7 @@
  * I would like to apologize for this ✨
  * It works and has just kept growing to be this monster. I do plan on redoing all of it from scratch once the main server is done.
  */
-import { Action, ActionCallback, SongData, AppSettings, ServerEvent } from '@deskthing/types'
+import { Action, ActionCallback, SongData, AppSettings, ServerEvent, SETTING_TYPES } from '@deskthing/types'
 import { DeskThing } from '@deskthing/server'
 
 export interface SpotifySongData extends SongData {
@@ -103,6 +103,8 @@ class SpotifyHandler {
           thumbnail_url: "",
         },
       ];
+
+      // This will not be needed later
       DeskThing.saveData({ playlists: playlists });
 
       // Set up the action (overwrites the old one if it exists)
@@ -167,14 +169,14 @@ class SpotifyHandler {
 
     const settings: AppSettings = {
       change_source: {
-        type: "boolean",
+        type: SETTING_TYPES.BOOLEAN,
         value: true,
         label: "Switch Output on Select",
       },
       output_device: {
         value: "default",
         label: "Output Device",
-        type: "select",
+        type: SETTING_TYPES.SELECT,
         options: [
           {
             value: "default",
@@ -185,7 +187,7 @@ class SpotifyHandler {
       transfer_playback_on_error: {
         value: true,
         label: "Transfer Playback on Error",
-        type: "boolean",
+        type: SETTING_TYPES.BOOLEAN,
       }
     };
     // New way of initializing settings
@@ -206,10 +208,10 @@ class SpotifyHandler {
             'You can get your Spotify Client Secret from the <a href="https://developer.spotify.com/dashboard" target="_blank" style="color: lightblue;">Spotify Developer Dashboard</a>. You must create a new application and then under "View Client Secret", Copy and paste that into this field.',
         },
         redirect_uri: {
-          value: "http://localhost:8888/callback/spotify",
+          value: "deskthing://a?app=spotify",
           label: "Redirect URL",
           instructions:
-            'Set the Spotify Redirect URI to http://localhost:8888/callback/spotify and then click "Save".\n This ensures you can authenticate your account to this application',
+            'Set the Spotify Redirect URI to deskthing://a?app=spotify and then click "Save".\n This ensures you can authenticate your account to this application',
         },
       };
 
@@ -729,6 +731,7 @@ class SpotifyHandler {
         this.Data.playlists[playlistIndex - 1] = playlist;
       }
 
+      // This will not be needed later
       DeskThing.saveData({ playlists: this.Data.playlists });
       DeskThing.send({
         app: "spotify",
@@ -874,6 +877,7 @@ class SpotifyHandler {
       }
     });
 
+    // This will not be needed later 
     DeskThing.saveData({ playlists: this.Data.playlists });
     DeskThing.send({
       app: "spotify",
@@ -1264,7 +1268,7 @@ const addDevice = async (id: string, name: string) => {
 
   const deviceExists =
     settings &&
-    settings.output_device.type == "select" &&
+    settings.output_device.type == SETTING_TYPES.SELECT &&
     settings.output_device.options.some(
       (option) => option.value === id
     );
@@ -1274,7 +1278,7 @@ const addDevice = async (id: string, name: string) => {
     DeskThing.sendLog(
       `Adding new device ${name} to device list...`
     );
-    if (settings && settings.output_device.type == "select") {
+    if (settings && settings.output_device.type == SETTING_TYPES.SELECT) {
         settings.output_device.options.push({
           value: id,
           label: name,

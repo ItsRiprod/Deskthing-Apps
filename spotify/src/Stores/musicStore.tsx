@@ -19,7 +19,7 @@ export class MusicStore {
 
     constructor() {
         this.listeners.push(DeskThing.on('music', this.handleMusic.bind(this)))
-        this.listeners.push(DeskThing.on('playlists', this.onAnalysisData.bind(this)))
+        this.listeners.push(DeskThing.on('playlists', this.onPlaylistData.bind(this)))
         this.fetchInitialSong()
     }
 
@@ -46,7 +46,7 @@ export class MusicStore {
         }
     }
 
-    private async onAnalysisData(data: SocketData) {
+    private async onPlaylistData(data: SocketData) {
         if (data.type == 'playlists') {
             this.playlists = data.payload as Playlist[]
             if (this.playlists != null) {
