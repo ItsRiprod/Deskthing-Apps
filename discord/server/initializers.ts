@@ -66,6 +66,15 @@ DeskThing.on(ServerEvent.GET, async (socketData) => {
           request: 'set',
         })
       }
+      case 'guildList': {
+        const guildStore = StoreProvider.getGuildList()
+        const guildList = guildStore.getStatus()
+        DeskThing.send({
+          type: 'guildList',
+          payload: guildList,
+          request: 'set',
+        })
+      }
         default:
         return
     }

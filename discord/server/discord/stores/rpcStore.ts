@@ -271,6 +271,7 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
         ) as Promise<void>,
       ]);
       if (!subscription) {
+        this.subscriptions[event] = { unsubscribe: async () => true, channelId };
         DeskThing.sendError(`Failed to subscribe to ${event}. Timed out!`);
         return;
       }
@@ -301,6 +302,8 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
       DeskThing.sendError(`Error unsubscribing from ${event}: ${error}`);
     }
   }
+
+
   private rpcListener<T extends keyof RPCEventTypes>(
     event: T,
     data: RPCEventTypes[T]

@@ -9,7 +9,6 @@ import { ChatStatusManager } from "./discord/stores/chatStore";
 import { GuildListManager } from "./discord/stores/guildStore";
 import { NotificationStatusManager } from "./discord/stores/notificationStore";
 import { RichPresence } from "./discord/stores/presenceStore";
-import { DiscordService } from "./discord/discordService";
 import { DeskthingStore } from "./discord/stores/deskthingStore"
 
 export class StoreProvider {
@@ -35,12 +34,7 @@ export class StoreProvider {
     this.guildList = new GuildListManager(this.rpc);
     this.notificationStatus = new NotificationStatusManager(this.rpc);
     this.richPresence = new RichPresence(this.rpc);
-    this.deskthingStore = new DeskthingStore(
-      this.callStatus,
-      this.chatStatus,
-      this.guildList,
-      this.notificationStatus
-    );
+    this.deskthingStore = new DeskthingStore(this.callStatus, this.chatStatus, this.guildList, this.notificationStatus);
   }
 
   public static getInstance(): StoreProvider {
@@ -84,10 +78,6 @@ export class StoreProvider {
 
   public getTokenStorage(): TokenStorage {
     return this.tokenStorage;
-  }
-
-  public getDeskthingStore(): DeskthingStore {
-    return this.deskthingStore;
   }
 
   public async initialize(): Promise<void> {

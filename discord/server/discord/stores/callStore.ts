@@ -29,8 +29,7 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     channel: undefined,
     user: undefined,
   };
-  private debounceTimeoutId: NodeJS.Timeout | null = null;
-  private debounceFlag = false;
+  private activeSubscriptions = false
   private rpc: DiscordRPCStore;
 
   constructor(rpc: DiscordRPCStore) {
@@ -43,6 +42,7 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     this.rpc.on(
       RPCEvents.VOICE_STATE_CREATE,
       async (data: VoiceStateCreate) => {
+        DeskThing.sendDebug(`Voice state created for user ${data.user.id}`);
         const participant: CallParticipant = {
           id: data.user.id,
           profileUrl: await getEncodedImage(
@@ -64,6 +64,7 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     this.rpc.on(
       RPCEvents.VOICE_STATE_UPDATE,
       async (data: VoiceStateCreate) => {
+        DeskThing.sendDebug(`Voice state updated for user ${data.user.id}`);
         const participant: CallParticipant = {
           id: data.user.id,
           profileUrl: await getEncodedImage(
@@ -137,6 +138,7 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
 
   public async updateCurrentUser(participant?: CallParticipant) {
     if (!participant) {
+      DeskThing.sendWarning('Unable to find participant - updating user with RPC')
       participant = await this.rpc.updateUser();
       if (!participant) {
         DeskThing.sendWarning('Unable to find current user')
@@ -145,7 +147,6 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     }
 
     this.currentStatus.user = participant;
-    this.emit("update", this.currentStatus);
   }
 
   public removeParticipant(userId: string) {
@@ -172,6 +173,7 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
 
   public async setConnectionStatus(isConnected: boolean) {
     if (this.currentStatus.isConnected != isConnected) {
+      this.clearOldSubscriptions()
       this.currentStatus.isConnected = isConnected;
       this.currentStatus.participants = [];
       this.currentStatus.channelId = null;
@@ -195,18 +197,31 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     }
   }
 
-  private async setupChannelSpecificListeners(channelId: string) {
-    this.rpc.subscribe(RPCEvents.VOICE_CHANNEL_SELECT, channelId);
+  private clearOldSubscriptions = async () => {
+    if (!this.activeSubscriptions) return
+    this.activeSubscriptions = false
+    DeskThing.sendDebug('Clearing old subscriptions')
+    this.rpc.unsubscribe(RPCEvents.VOICE_STATE_CREATE);
+    this.rpc.unsubscribe(RPCEvents.VOICE_STATE_UPDATE);
+    this.rpc.unsubscribe(RPCEvents.VOICE_STATE_DELETE);
+    this.rpc.unsubscribe(RPCEvents.SPEAKING_START);
+    this.rpc.unsubscribe(RPCEvents.SPEAKING_STOP);
+  }
+
+
+  private async setupChannelSpecificSubscriptions(channelId: string) {
+    await this.clearOldSubscriptions()
     this.rpc.subscribe(RPCEvents.VOICE_STATE_CREATE, channelId);
     this.rpc.subscribe(RPCEvents.VOICE_STATE_UPDATE, channelId);
     this.rpc.subscribe(RPCEvents.VOICE_STATE_DELETE, channelId);
     this.rpc.subscribe(RPCEvents.SPEAKING_START, channelId);
     this.rpc.subscribe(RPCEvents.SPEAKING_STOP, channelId);
+    this.activeSubscriptions = true
   }
 
   public async setupNewChannel(channel: Channel) {
     this.updateChannelId(channel.id);
-    this.setupChannelSpecificListeners(channel.id);
+    this.setupChannelSpecificSubscriptions(channel.id);
     this.currentStatus.channelId = channel.id;
     if (channel.voice_states) {
       for (const voiceState of channel.voice_states) {

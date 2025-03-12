@@ -2,7 +2,7 @@ import React, { useReducer, useEffect, ReactNode, useMemo, useState } from 'reac
 import { DeskThing } from '@deskthing/client';
 
 // Import from shared types (based on your shared types setup)
-import { CallStatus, ChatStatus, NotificationStatus } from '@shared/types/discord';
+import { CallStatus, ChannelStatus, ChatStatus, GuildListStatus, GuildStatus, NotificationStatus } from '@shared/types/discord';
 import { AppStateContext } from './AppStateContext'
 
 // Define app state structure
@@ -14,6 +14,7 @@ export interface AppState {
     isConnected: boolean;
     lastConnected: number | null;
   };
+  guildList: GuildListStatus | null;
 }
 
 // Initial state
@@ -24,7 +25,8 @@ const initialState: AppState = {
   connectionStatus: {
     isConnected: false,
     lastConnected: null
-  }
+  },
+  guildList: null,
 };
 
 // Action types with proper typing
@@ -37,7 +39,8 @@ type Action =
   | { type: 'SET_CONNECTION_STATUS'; payload: boolean }
   | { type: 'MARK_NOTIFICATION_READ'; payload: string }
   | { type: 'MARK_ALL_NOTIFICATIONS_READ' }
-
+  | { type: 'SET_GUILD_LIST'; payload: GuildListStatus }
+  | { type: 'SET_CHANNELS_STATUS'; payload: ChannelStatus[] }
 
 // Reducer with explicit return types
 function appReducer(state: AppState, action: Action): AppState {
@@ -101,7 +104,19 @@ function appReducer(state: AppState, action: Action): AppState {
         request: "updateAll",
       });
       return state;
-      
+    case 'SET_CHANNELS_STATUS':
+      return {
+        ...state,
+        guildList: {
+          ...state.guildList,
+          textChannels: action.payload
+        } as GuildListStatus
+      };
+    case 'SET_GUILD_LIST':
+      return {
+        ...state,
+        guildList: action.payload
+      };
     default:
       return state;
   }
@@ -165,6 +180,16 @@ export const AppStateProvider: React.FC<{children: ReactNode}> = ({ children }) 
       }
     );
 
+    DeskThing.fetch<GuildListStatus>({ type: "get", request: "guildList" }, { type: "guildList", request: "set" }, (guildList) => {
+      if (!isValid) return
+      
+      if (guildList) {
+        dispatch({ type: "SET_GUILD_LIST", payload: guildList });
+      } else {
+        DeskThing.warn('Initial request for guild list data returned undefined')
+      }
+    });
+
     // Set up event listeners
     const unsubscribeCallStatus = DeskThing.on('call', (event) => {
       if (!isValid) return
@@ -188,6 +213,22 @@ export const AppStateProvider: React.FC<{children: ReactNode}> = ({ children }) 
         dispatch({ type: 'SET_CHAT_STATUS', payload: event.payload });
       }
     });
+
+    const unsubscribeGuildStatus = DeskThing.on('guildList', (event) => {
+      if (!isValid) return
+      if (event.request === 'set' && event.payload) {
+        DeskThing.info('Updating chat', event)
+        dispatch({ type: 'SET_GUILD_LIST', payload: event.payload });
+      }
+    });
+
+    const unsubscribeChannelsStatus = DeskThing.on('channels', (event) => {
+      if (!isValid) return
+      if (event.request === 'set' && event.payload) {
+        DeskThing.info('Updating chat', event)
+        dispatch({ type: 'SET_CHANNELS_STATUS', payload: event.payload });
+      }
+    });
     
     const unsubscribeNotification = DeskThing.on('notification', (event) => {
       if (!isValid) return
@@ -202,6 +243,8 @@ export const AppStateProvider: React.FC<{children: ReactNode}> = ({ children }) 
     return () => {
       isValid = false
       unsubscribeCallStatus();
+      unsubscribeGuildStatus();
+      unsubscribeChannelsStatus();
       unsubscribeChatStatus()
       unsubscribeNotification();
     };
@@ -233,11 +276,13 @@ export const AppStateProvider: React.FC<{children: ReactNode}> = ({ children }) 
     markAllNotificationsAsRead
   ]);
 
+  const memoizedChildren = useMemo(() => children, [children])
+
   return (
     <AppStateContext.Provider 
       value={fullContextMemo}
     >
-      {children}
+      {memoizedChildren}
     </AppStateContext.Provider>
   );
 };

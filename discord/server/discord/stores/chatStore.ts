@@ -38,18 +38,6 @@ export class ChatStatusManager extends EventEmitter<chatStatusEvents> {
         }
       }
     );
-
-    // this.rpc.on(RPCEvents.TYPING_START, (data: { user_id: string, channel_id: string }) => {
-    //   if (data.channel_id === this.currentStatus.currentChannelId) {
-    //     this.addTypingUser(data.user_id);
-    //   }
-    // });
-
-    // this.rpc.on(RPCEvents.TYPING_STOP, (data: { user_id: string, channel_id: string }) => {
-    //   if (data.channel_id === this.currentStatus.currentChannelId) {
-    //     this.removeTypingUser(data.user_id);
-    //   }
-    // });
   }
 
   public updateChannelId(channelId: string | null) {

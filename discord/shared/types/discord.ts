@@ -70,3 +70,22 @@ export interface Notification {
     timestamp: number;
     read: boolean;
   }
+
+export interface GuildStatus {
+  id: string;
+  name: string;
+  icon?: string;
+}
+
+export interface ChannelStatus {
+  id: string;
+  name: string;
+  type: number;
+  guild_id?: string;
+}
+
+export interface GuildListStatus {
+  selectedGuildId: string | null;
+  guilds: GuildStatus[];
+  textChannels: ChannelStatus[];
+}
