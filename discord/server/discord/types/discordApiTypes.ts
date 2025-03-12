@@ -90,7 +90,7 @@ export type Channel = {
   /**
    * Guild text: 0, Guild voice: 2, DM: 1, Group DM: 3
    */
-  type: number;
+  type: ChannelTypes;
   guild_id?: string | undefined;
   /**
    * (text)
@@ -568,3 +568,109 @@ export interface NotificationCreate {
   title: string;
   body: string;
 }
+
+export interface RoleTags {
+  bot_id?: string;
+  integration_id?: string;
+  premium_subscriber?: null;
+  subscription_listing_id?: string;
+  available_for_purchase?: null;
+  guild_connections?: null;
+}
+
+export interface Role {
+  id: string;
+  name: string;
+  color: number;
+  hoist: boolean;
+  icon?: string;
+  unicode_emoji?: string;
+  position: number;
+  permissions: string;
+  managed: boolean;
+  mentionable: boolean;
+  tags?: RoleTags;
+  flags: number;
+}
+
+export interface WelcomeScreenChannel {
+  channel_id: string;
+  description: string;
+  emoji_id?: string;
+  emoji_name?: string;
+}
+
+export interface WelcomeScreen {
+  description?: string;
+  welcome_channels: WelcomeScreenChannel[];
+}
+
+  export interface GetGuildsData {
+    guilds: Array<{
+      id: string
+      name: string
+    }>
+  }
+
+  export interface GetGuildData {
+    id: string
+    name: string
+    icon_url: string | null
+  }
+
+  export interface GetGuildResponse {
+    cmd: 'GET_GUILD'
+    data: GetGuildData
+    nonce: string
+  }
+
+  export interface Guild {
+    id: string
+    name: string
+    icon?: string
+    icon_hash?: string
+    splash?: string
+    discovery_splash?: string
+    owner?: boolean
+    owner_id?: string
+    permissions?: string
+    region?: string
+    afk_channel_id?: string
+    afk_timeout?: number
+    widget_enabled?: boolean
+    widget_channel_id?: string
+    verification_level?: number
+    default_message_notifications?: number
+    explicit_content_filter?: number
+    roles?: Role[]
+    emojis?: Emoji[]
+    features?: string[]
+    mfa_level?: number
+    application_id?: string
+    system_channel_id?: string
+    system_channel_flags?: number
+    rules_channel_id?: string
+    max_presences?: number
+    max_members?: number
+    vanity_url_code?: string
+    description?: string
+    banner?: string
+    premium_tier?: number
+    premium_subscription_count?: number
+    preferred_locale?: string
+    public_updates_channel_id?: string
+    max_video_channel_users?: number
+    max_stage_video_channel_users?: number
+    approximate_member_count?: number
+    approximate_presence_count?: number
+    welcome_screen?: WelcomeScreen
+    nsfw_level?: number
+    stickers?: Sticker[]
+    premium_progress_bar_enabled?: boolean
+    safety_alerts_channel_id?: string
+
+    /**
+     * Added progmatically by DeskThing - not retrieved by the Discord API
+     */
+    channels: Channel[]
+  }

@@ -4,7 +4,7 @@ import {
   SETTING_TYPES,
 } from "@deskthing/types";
 import { AppSettingIDs } from "./discord/types/deskthingTypes";
-import discord from "./discord/index";
+import StoreProvider from "./storeProvider";
 
 export const setupSettings = () => {
   DeskThing.initSettings({
@@ -51,12 +51,12 @@ DeskThing.on(ServerEvent.SETTINGS, async (settingData) => {
     switch (key) {
       case AppSettingIDs.CLIENT_ID:
         if (setting.type == SETTING_TYPES.STRING) {
-            setting.value && discord.setClientId(setting.value);
+            setting.value && StoreProvider.getAuth().setClientId(setting.value);
         }
         break;
       case AppSettingIDs.CLIENT_SECRET:
         if (setting.type == SETTING_TYPES.STRING) {
-            setting.value && discord.setClientSecret(setting.value);
+            setting.value && StoreProvider.getAuth().setClientSecret(setting.value);
         }
         // update discord
         break;

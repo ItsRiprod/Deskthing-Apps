@@ -1,22 +1,39 @@
 import { DeskThing } from "@deskthing/server";
-import { MessageObject, NotificationCreate } from "../types/discordApiTypes";
+import { MessageObject, NotificationCreate, RPCEvents } from "../types/discordApiTypes";
 import { getEncodedImage, ImageType } from "../utils/imageFetch";
 import { Notification, NotificationStatus } from "@shared/types/discord";
+import { DiscordRPCStore } from "./rpcStore";
+import { EventEmitter } from "node:events"
 
-export class NotificationStatusManager {
+interface notificationStatusEvents {
+  notificationAdded: [Notification],
+  notificationRead: [string],
+  allNotificationsRead: [],
+  statusCleared: [],
+  statusUpdated: [NotificationStatus]
+}
+
+export class NotificationStatusManager extends EventEmitter<notificationStatusEvents> {
   private currentStatus: NotificationStatus = {
     notifications: [],
   };
   private debounceTimeoutId: NodeJS.Timeout | null = null;
+  private rpc: DiscordRPCStore;
 
-  constructor() {}
+  constructor(rpc: DiscordRPCStore) {
+    super()
+    this.rpc = rpc;
+    this.setupEventListeners();
+  }
+
+  private setupEventListeners(): void {
+    this.rpc.on(RPCEvents.NOTIFICATION_CREATE, (notif: NotificationCreate) => {
+      this.addNewNotification(notif);
+    });
+  }
 
   public updateClient = () => {
-    DeskThing.send({
-      type: "notification",
-      payload: this.currentStatus,
-      request: "set",
-    });
+    this.emit('statusUpdated', this.currentStatus);
   };
 
   private debounceUpdateClient = () => {
@@ -60,6 +77,7 @@ export class NotificationStatusManager {
     // Keep only the last 50 notifications
     this.currentStatus.notifications =
       this.currentStatus.notifications.slice(-50);
+    this.emit('notificationAdded', newNotification);
     this.debounceUpdateClient();
   }
 
@@ -78,12 +96,14 @@ export class NotificationStatusManager {
     );
     if (notification) {
       notification.read = true;
+      this.emit('notificationRead', notificationId);
       this.debounceUpdateClient();
     }
   }
 
   public markAllNotificationsAsRead() {
     this.currentStatus.notifications.forEach((n) => (n.read = true));
+    this.emit('allNotificationsRead');
     this.debounceUpdateClient();
   }
 
@@ -95,5 +115,7 @@ export class NotificationStatusManager {
     this.currentStatus = {
       notifications: [],
     };
+    this.emit('statusCleared');
+    this.emit('statusUpdated', this.currentStatus);
   }
 }

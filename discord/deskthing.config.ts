@@ -8,11 +8,11 @@ dotEnv.config()
 export default defineConfig({
   development: {
     logging: {
-      level: "debug",
+      level: "info",
     },
     client: {
       logging: {
-        level: "debug",
+        level: "info",
       },
     },
     server: {

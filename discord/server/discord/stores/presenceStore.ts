@@ -1,5 +1,5 @@
 import { DeskThing } from "@deskthing/server";
-import { DiscordRPC } from "../api/rpc-client";
+import { DiscordRPCStore } from "./rpcStore";
 
 export interface RichPresenceOptions {
   primary?: string;
@@ -10,33 +10,41 @@ export interface RichPresenceOptions {
 }
 
 export class RichPresence {
-  private rpc: DiscordRPC;
+  private currentActivity: RichPresenceOptions = {};
+  private rpc: DiscordRPCStore;
   
-  constructor(rpc: DiscordRPC) {
+  constructor(rpc: DiscordRPCStore) {
     this.rpc = rpc;
   }
 
-  async setActivity({ primary, secondary, timer, image1, image2 }: RichPresenceOptions): Promise<void> {
+  async setActivity(options: RichPresenceOptions): Promise<void> {
     try {
       if (!this.rpc.isConnected) {
         throw new Error("RPC client is not connected");
       }
 
-      const startTimestamp = timer ? Date.now() : undefined;
+      const startTimestamp = options.timer ? Date.now() : undefined;
 
       await this.rpc.setActivity({
-        details: primary,
-        state: secondary,
+        details: options.primary,
+        state: options.secondary,
         startTimestamp,
-        largeImageKey: image1,
-        smallImageKey: image2,
+        largeImageKey: options.image1,
+        smallImageKey: options.image2,
         instance: false,
       });
       
       DeskThing.sendLog("Rich presence updated");
+      this.currentActivity = options;
     } catch (error) {
       DeskThing.sendError(`Failed to update rich presence: ${error}`);
       throw error;
+    }
+  }
+
+  async resetActivity(): Promise<void> {
+    if (this.currentActivity) {
+      await this.setActivity(this.currentActivity)
     }
   }
 
@@ -48,6 +56,7 @@ export class RichPresence {
       
       await this.rpc.setActivity({});
       DeskThing.sendLog("Rich presence cleared");
+      this.currentActivity = {};
     } catch (error) {
       DeskThing.sendError(`Failed to clear rich presence: ${error}`);
     }

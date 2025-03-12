@@ -1,6 +1,7 @@
 import { DeskThing } from "@deskthing/server";
 import { ServerEvent, Action } from "@deskthing/types";
-import discord from "./discord/index";
+import StoreProvider from "./storeProvider";
+import { AppSettingIDs } from "./discord/types/deskthingTypes"
 
 // Organize actions by category
 const voiceActions: Action[] = [
@@ -131,58 +132,58 @@ export const setupActions = () => {
 type actionHandler = (value: string | undefined) => void;
 
 const actionHandlers: Record<string, actionHandler> = {
-
   // Voice
   mute: (value) => {
     switch (value) {
       case "mute":
-        return discord.mute();
+        return StoreProvider.getCallControls().mute();
       case "unmute":
-        return discord.unmute();
+        return StoreProvider.getCallControls().unmute();
       case "toggle":
       default:
-        return discord.toggleMute();
+        return StoreProvider.getCallControls().toggleMute();
     }
   },
   deafen: (value) => {
     switch (value) {
       case "deafen":
-        return discord.deafen();
+        return StoreProvider.getCallControls().deafen();
       case "undeafen":
-        return discord.undeafen();
+        return StoreProvider.getCallControls().undeafen();
       case "toggle":
       default:
-        return discord.toggleDeafen();
+        return StoreProvider.getCallControls().toggleDeafen();
     }
   },
   disconnect: () => {
-    return discord.disconnect();
+    return StoreProvider.getCallControls().disconnect();
   },
 
   // Utility
-  reauth: () => {
-    return discord.reAuth();
+  reauth: async () => {
+    StoreProvider.getAuth().authenticate();
   },
-  represence: () => {
-    return discord.rePresence();
+
+  represence: async () => {
+    return StoreProvider.getRichPresence().resetActivity();
   },
 
   // Actions
   expandChat: () => {
-    return discord.expandChat();
+    return StoreProvider.getChatStatus().setChatExpand(true);
   },
   collapseChat: () => {
-    return discord.collapseChat();
+    return StoreProvider.getChatStatus().setChatExpand(false);
   },
   selectTextChannel: (value) => {
-    return discord.selectTextChannel(value);
+    return StoreProvider.getChatStatus().selectTextChannel(value);
   },
   // Notifications
   markNotificationAsRead: (value) => {
-    return discord.markNotificationAsRead(value);
+    return StoreProvider.getNotificationStatus().markNotificationAsRead(value || '');
   },
   markAllNotificationsAsRead: () => {
-    return discord.markAllNotificationsAsRead();
+    return StoreProvider.getNotificationStatus().markAllNotificationsAsRead();
   },
 };
 

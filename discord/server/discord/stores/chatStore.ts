@@ -1,9 +1,15 @@
 import { DeskThing } from "@deskthing/server";
-import { Channel, MessageObject } from "../types/discordApiTypes";
+import { Channel, MessageObject, RPCCommands, RPCEvents } from "../types/discordApiTypes";
 import { getEncodedImage, ImageType } from "../utils/imageFetch";
 import { ChatMessage, ChatStatus } from "@shared/types/discord";
+import { EventEmitter } from "node:events";
+import { DiscordRPCStore } from "./rpcStore";
 
-export class ChatStatusManager {
+type chatStatusEvents = {
+  update: [ChatStatus];
+};
+
+export class ChatStatusManager extends EventEmitter<chatStatusEvents> {
   private currentStatus: ChatStatus = {
     isExpanded: false,
     currentChannelId: null,
@@ -12,8 +18,39 @@ export class ChatStatusManager {
   };
   private debounceTimeoutId: NodeJS.Timeout | null = null;
   private typingUserTimeouts: Map<string, NodeJS.Timeout> = new Map();
+  private rpc: DiscordRPCStore;
 
-  constructor() {}
+  constructor(rpc: DiscordRPCStore) {
+    super();
+    this.rpc = rpc;
+    this.setupEventListeners();
+  }
+
+  private setupEventListeners(): void {
+    this.rpc.on(
+      RPCEvents.MESSAGE_CREATE,
+      async (data: { message: MessageObject; channel_id: string }) => {
+        if (data.channel_id === this.currentStatus.currentChannelId) {
+          await this.addNewMessage({
+            ...data.message,
+            channel_id: data.channel_id,
+          });
+        }
+      }
+    );
+
+    // this.rpc.on(RPCEvents.TYPING_START, (data: { user_id: string, channel_id: string }) => {
+    //   if (data.channel_id === this.currentStatus.currentChannelId) {
+    //     this.addTypingUser(data.user_id);
+    //   }
+    // });
+
+    // this.rpc.on(RPCEvents.TYPING_STOP, (data: { user_id: string, channel_id: string }) => {
+    //   if (data.channel_id === this.currentStatus.currentChannelId) {
+    //     this.removeTypingUser(data.user_id);
+    //   }
+    // });
+  }
 
   public updateChannelId(channelId: string | null) {
     this.currentStatus.currentChannelId = channelId;
@@ -21,7 +58,6 @@ export class ChatStatusManager {
       this.currentStatus.messages = [];
       this.currentStatus.typingUsers = [];
     }
-    // TODO: Add Deskthing.send for updating the channel id in @server\discord\index.ts similar to callStatus
     DeskThing.sendLog(`Chat channel ID updated: ${channelId || "None"}`);
     this.debounceUpdateClient();
   }
@@ -33,18 +69,13 @@ export class ChatStatusManager {
   }
 
   public updateClient = () => {
-    DeskThing.send({
-      type: "chat",
-      payload: this.currentStatus,
-      request: "set",
-    });
+    this.emit("update", this.currentStatus);
   };
 
   private debounceUpdateClient = () => {
     if (this.debounceTimeoutId) {
       clearTimeout(this.debounceTimeoutId);
     } else {
-      // If this is the first update, send it immediately
       DeskThing.sendLog("Updating client with new chat status");
       this.updateClient();
     }
@@ -53,21 +84,20 @@ export class ChatStatusManager {
       DeskThing.sendLog("Updating client with new chat status");
       this.updateClient();
       this.debounceTimeoutId = null;
-    }, 1000); // update with a second delay
+    }, 1000);
   };
 
   public async addNewMessage(message: MessageObject) {
-    // Check if we already have this message to prevent duplicates
     if (this.currentStatus.messages.some((m) => m.id === message.id)) {
       return;
     }
-    console.log(message)
+    console.log(message);
     const chatMessage: ChatMessage = {
       id: message.id,
-      content: message.content || 'No text content',
+      content: message.content || "No text content",
       author: {
-        id: message.author?.id || 'unknown',
-        username: message.author?.username || 'Unknown User',
+        id: message.author?.id || "unknown",
+        username: message.author?.username || "Unknown User",
         profileUrl: await getEncodedImage(
           message.author?.avatar,
           ImageType.UserAvatar,
@@ -78,7 +108,6 @@ export class ChatStatusManager {
     };
 
     this.currentStatus.messages.push(chatMessage);
-    // Keep only the last 50 messages
     this.currentStatus.messages = this.currentStatus.messages.slice(-50);
     this.debounceUpdateClient();
   }
@@ -89,12 +118,10 @@ export class ChatStatusManager {
       this.debounceUpdateClient();
     }
 
-    // Clear any existing timeout for this user
     if (this.typingUserTimeouts.has(userId)) {
       clearTimeout(this.typingUserTimeouts.get(userId));
     }
 
-    // Set a timeout to remove the user after 5 seconds of inactivity
     const timeoutId = setTimeout(() => {
       this.removeTypingUser(userId);
     }, 5000);
@@ -104,9 +131,26 @@ export class ChatStatusManager {
   public setupNewChannel = async (channel: Channel) => {
     this.updateChannelId(channel.id);
     channel?.messages?.forEach(async (message) => {
-      DeskThing.sendLog('Adding new message' + message.content)
+      DeskThing.sendLog("Adding new message" + message.content);
       await this.addNewMessage(message);
     });
+
+    await this.rpc.subscribe(RPCEvents.MESSAGE_CREATE, channel.id);
+    // await this.rpc.subscribe(RPCEvents.TYPING_START, channel.id);
+    // await this.rpc.subscribe(RPCEvents.TYPING_STOP, channel.id);
+  };
+
+  async selectTextChannel(channelId: string | undefined | null) {
+    if (channelId) {
+      const channel = (await this.rpc.request(RPCCommands.GET_CHANNEL, {
+        channel_id: channelId,
+      })) as Channel;
+      if (channel) {
+        this.setupNewChannel(channel);
+      }
+    } else {
+      this.updateChannelId(null);
+    }
   }
 
   public removeTypingUser(userId: string) {
@@ -115,7 +159,6 @@ export class ChatStatusManager {
     );
     this.debounceUpdateClient();
 
-    // Clear the timeout for this user if it exists
     if (this.typingUserTimeouts.has(userId)) {
       clearTimeout(this.typingUserTimeouts.get(userId));
       this.typingUserTimeouts.delete(userId);
@@ -127,6 +170,12 @@ export class ChatStatusManager {
   }
 
   public clearStatus() {
+    if (this.currentStatus.currentChannelId) {
+      this.rpc.unsubscribe(RPCEvents.MESSAGE_CREATE);
+      // this.rpc.unsubscribe(RPCEvents.TYPING_START);
+      // this.rpc.unsubscribe(RPCEvents.TYPING_STOP);
+    }
+
     this.currentStatus = {
       isExpanded: false,
       currentChannelId: null,
