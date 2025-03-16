@@ -29,6 +29,7 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
       this.redirect_uri = settings[SpotifySettingIDs.REDIRECT_URI]?.value as string | undefined;
     }
     if (data) {
+      DeskThing.sendLog('Found auth token in storage')
       this.access_token = data.access_token as string | undefined;
       this.refresh_token = data.refresh_token as string | undefined;
     }

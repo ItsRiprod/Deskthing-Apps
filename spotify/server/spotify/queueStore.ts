@@ -4,6 +4,7 @@ import { QueueResponse } from "../types/spotifyAPI";
 import EventEmitter from "node:events";
 import { SongStore } from "./songStore";
 import { SongQueue } from "@shared/spotifyTypes";
+import { getEncodedImage } from "../utils/imageUtils"
 
 type queueStoreEvents = {
   queueUpdate: [SongQueue];
@@ -29,10 +30,15 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
     );
   }
 
-  async getCurrentQueue(): Promise<QueueResponse | undefined> {
+  private async getCurrentQueue(): Promise<QueueResponse | undefined> {
+    DeskThing.sendDebug('QueueStore: getCurrentQueue');
     try {
       const currentQueue = await this.spotifyApi.getCurrentQueue();
-      if (!currentQueue) return undefined;
+      if (!currentQueue) {
+        DeskThing.sendWarning('No queue data available');
+        return undefined
+      };
+      DeskThing.sendLog('Got the current queue successfully')
 
       this.rawQueueData = currentQueue;
       this.lastFetchTime = Date.now();
@@ -44,13 +50,23 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
   }
 
   async getQueueData(): Promise<SongQueue | undefined> {
+    DeskThing.sendDebug('QueueStore: getQueueData');
     if (this.isCacheValid()) {
+      DeskThing.sendDebug('QueueStore: getQueueData - using cached data');
       return this.queueData;
     }
 
     const queue = await this.getCurrentQueue();
-    if (!queue) return undefined;
+    if (!queue) {
+      DeskThing.sendError('No queue data available');
+      return undefined;
+    }
     return await this.getAbbreviatedSongs(queue);
+  }
+
+  async addToQueue(uri: string) {
+    DeskThing.sendDebug('QueueStore: addToQueue ' + uri);
+    await this.spotifyApi.addToQueue(uri.startsWith('spotify:track:') ? uri : 'spotify:track:' + uri);
   }
 
   async checkForRefresh() {
@@ -121,15 +137,15 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
               name: song.name,
               artists: song.artists.map((artist) => artist.name),
               album: song.album.name,
-              thumbnail: song.album.images[0].url,
+              thumbnail: await getEncodedImage(song.album.images[0].url),
             };
           } else {
             return {
-              id: song.id,
+              id: 'spotify:track:' + song.id,
               name: song.name,
               artists: [song.show.publisher],
               album: song.show.name,
-              thumbnail: await DeskThing.saveImageReferenceFromURL(song.show.images[0].url)
+              thumbnail: await getEncodedImage(song.show.images[0].url)
             };
           }
         })),
@@ -142,20 +158,22 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
                 (artist) => artist.name
               ),
               album: queue.currently_playing.album.name,
-              thumbnail: await DeskThing.saveImageReferenceFromURL(queue.currently_playing.album.images[0].url),
+              thumbnail: await getEncodedImage(queue.currently_playing.album.images[0].url),
             }
           : {
-              id: queue.currently_playing.id,
+              id: 'spotify:track:' + queue.currently_playing.id,
               name: queue.currently_playing.name,
               artists: [queue.currently_playing.show.publisher],
               album: queue.currently_playing.show.name,
-              thumbnail: await DeskThing.saveImageReferenceFromURL(queue.currently_playing.show.images[0].url),
+              thumbnail: await getEncodedImage(queue.currently_playing.show.images[0].url),
             }
         : null,
     };
 
     this.queueData = queueData;
     this.lastFetchTime = Date.now();
+
+    this.emit('queueUpdate', queueData);
 
     return queueData;
   }

@@ -119,7 +119,7 @@ DeskThing.on(SpotifyEvent.SET, async (data) => {
   }
 
   const actionStore = storeProvider.getActionStore();
-  const songStore = storeProvider.getSongStore();
+  const queueStore = storeProvider.getQueueStore();
   const playlistStore = storeProvider.getPlaylistStore();
   let response;
   switch (data.request) {
@@ -134,6 +134,9 @@ DeskThing.on(SpotifyEvent.SET, async (data) => {
       break;
     case "add_preset": // Expects playlist index
       response = await playlistStore.addToPlaylist(data.payload);
+      break;
+    case "add_queue": // Expects uri
+      response = await queueStore.addToQueue(data.payload);
       break;
   }
   DeskThing.sendLog(response);

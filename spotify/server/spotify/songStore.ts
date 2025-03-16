@@ -7,6 +7,7 @@ import { DeviceStore } from "./deviceStore"
 
 type songStoreEvents = {
   songUpdate: [SpotifySongData];
+  rawSongUpdate: [PlayerResponse];
   thumbnailUpdate: [string];
   deviceUpdate: [Device];
   iconUpdate: [{ id: string; state: string }];
@@ -38,7 +39,7 @@ export class SongStore extends EventEmitter<songStoreEvents> {
     if (!currentPlayback) return undefined;
 
     this.deviceStore.addDevicesFromPlayback(currentPlayback);
-
+    this.emit("rawSongUpdate", currentPlayback);
     return currentPlayback;
   }
 

@@ -117,7 +117,7 @@ export class SpotifyStore {
   async getCurrentPlayback(): Promise<PlayerResponse | undefined> {
     DeskThing.sendDebug("SpotifyStore: getCurrentPlayback");
     const url = `${this.BASE_URL}?additional_types=episode`;
-    return this.makeRequest("get", url);
+    return this.makeRequest("get", url)
   }
 
   async getPlaylist(playlistId: string) {
@@ -130,13 +130,20 @@ export class SpotifyStore {
     return this.makeRequest("get", url);
   }
 
-  async play(data: {
+  async play(data?: {
     context_uri?: string;
-    offset?: { uri: string };
+    uris?: string[];
+    offset?: { position?: number; uri?: string };
     position_ms?: number;
+    device_id?: string;
   }) {
-    const url = `${this.BASE_URL}/play`;
-    return this.makeRequest("put", url, data);
+    if (!data) return this.makeRequest("put", `${this.BASE_URL}/play`);
+
+    DeskThing.sendDebug('SpotifyStore: play - data: ' + JSON.stringify(data));
+
+    const url = `${this.BASE_URL}/play${data.device_id ? `?device_id=${data.device_id}` : ''}`;
+    const { device_id, ...bodyData } = data;
+    return this.makeRequest("put", url, bodyData);
   }
 
   async next() {
@@ -181,6 +188,11 @@ export class SpotifyStore {
       const body = { uris: [currentPlayback.item.uri] };
       return this.makeRequest("post", url, body);
     }
+  }
+
+  async addToQueue(uri: string) {
+    const url = `${this.BASE_URL}/queue?uri=${uri}`;
+    return this.makeRequest("post", url);
   }
 
   async transferPlayback(deviceId: string) {

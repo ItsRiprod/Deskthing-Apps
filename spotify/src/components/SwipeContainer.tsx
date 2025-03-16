@@ -1,87 +1,141 @@
-import { useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react";
 
 type SwipeContainerTypes = {
-    children: React.ReactNode
-    className?: string
-    onSwipeLeft?: () => void
-    onSwipeRight?: () => void
-    onTap?: () => void
-    swipeLeftIcon?: React.ReactNode
-    swipeRightIcon?: React.ReactNode
-}
+  children: React.ReactNode;
+  className?: string;
+  onSwipeLeft?: () => void;
+  onSwipeRight?: () => void;
+  onTap?: () => void;
+  swipeLeftIcon?: React.ReactNode;
+  swipeRightIcon?: React.ReactNode;
+  leftTriggerColor?: string;
+  rightTriggerColor?: string;
+};
 
-export const SwipeContainer = ({ children, className, onSwipeLeft, onSwipeRight, swipeLeftIcon, swipeRightIcon }: SwipeContainerTypes) => {
-    const [offset, setOffset] = useState(0)
-    const [startX, setStartX] = useState(0)
-    const threshold = 100
+export const SwipeContainer = ({
+  children,
+  className,
+  leftTriggerColor = "bg-red-500",
+  rightTriggerColor = "bg-green-500",
+  onSwipeLeft,
+  onTap,
+  onSwipeRight,
+  swipeLeftIcon,
+  swipeRightIcon,
+}: SwipeContainerTypes) => {
+  const [offset, setOffset] = useState(0);
+  const startXRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const threshold = 100;
 
-    const handleTouchStart = (e: React.TouchEvent) => {
-        setStartX(e.touches[0].clientX)
+  // Use requestAnimationFrame for smoother updates
+  const updateOffset = useCallback((newOffset: number) => {
+    if (containerRef.current) {
+      containerRef.current.style.transform = `translateX(${newOffset}px)`;
+    }
+    setOffset(newOffset);
+  }, []);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    startXRef.current = e.touches[0].clientX;
+    isDraggingRef.current = true;
+  }, []);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    startXRef.current = e.clientX;
+    isDraggingRef.current = true;
+  }, []);
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!isDraggingRef.current) return;
+      const currentX = e.touches[0].clientX;
+      const diff = currentX - startXRef.current;
+      updateOffset(diff);
+    },
+    [updateOffset]
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isDraggingRef.current) return;
+      const currentX = e.clientX;
+      const diff = currentX - startXRef.current;
+      updateOffset(diff);
+    },
+    [updateOffset]
+  );
+
+  const handleEnd = useCallback(() => {
+    if (!isDraggingRef.current) return;
+
+    if (offset > threshold && onSwipeRight) {
+      onSwipeRight();
+    } else if (offset < -threshold && onSwipeLeft) {
+      onSwipeLeft();
+    } else if (Math.abs(offset) < 10 && onTap) {
+      // Detect tap when there's minimal movement
+      onTap();
     }
 
-    const handleMouseDown = (e: React.MouseEvent) => {
-        setStartX(e.clientX)
-    }
-
-    const handleTouchMove = (e: React.TouchEvent) => {
-        const currentX = e.touches[0].clientX
-        const diff = currentX - startX
-        setOffset(diff)
-    }
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (startX === 0) return
-        const currentX = e.clientX
-        const diff = currentX - startX
-        setOffset(diff)
-    }
-
-    const handleTouchEnd = () => {
-        if (offset > threshold && onSwipeRight) {
-            onSwipeRight()
-        } else if (offset < -threshold && onSwipeLeft) {
-            onSwipeLeft()
+    // Animate back to center
+    if (containerRef.current) {
+      containerRef.current.style.transition = "transform 0.3s ease";
+      containerRef.current.style.transform = "translateX(0)";
+      // Reset transition after animation completes
+      setTimeout(() => {
+        if (containerRef.current) {
+          containerRef.current.style.transition = "";
         }
-        setOffset(0)
-        setStartX(0)
+      }, 300);
     }
 
-    const handleMouseUp = () => {
-        if (startX === 0) return
-        if (offset > threshold && onSwipeRight) {
-            onSwipeRight()
-        } else if (offset < -threshold && onSwipeLeft) {
-            onSwipeLeft()
-        }
-        setOffset(0)
-        setStartX(0)
-    }
+    setOffset(0);
+    isDraggingRef.current = false;
+  }, [offset, onSwipeLeft, onSwipeRight, onTap, threshold]);
 
-    return (
-        <div className={`relative overflow-hidden ${className}`}>
-            <div
-                className="relative flex items-center transition-transform"
-                style={{ transform: `translateX(${offset}px)` }}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-            >
-                {swipeLeftIcon && (
-                    <div className="absolute left-0 transform -translate-x-full">
-                        {swipeLeftIcon}
-                    </div>
-                )}
-                {children}
-                {swipeRightIcon && (
-                    <div className="absolute right-0 transform translate-x-full">
-                        {swipeRightIcon}
-                    </div>
-                )}
-            </div>
+  const memoChildren = useMemo(() => children, [children]);
+
+  return (
+    <div
+      className={`relative transition-colors flex overflow-hidden ${className}`}
+    >
+      <div
+        ref={containerRef}
+        className="w-full flex items-center"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleEnd}
+        onMouseLeave={handleEnd}
+      >
+        <div
+          style={{
+            width: offset + 8,
+            transform: `translateX(${-offset}px)`,
+            opacity: Math.min(Math.abs(offset) * 0.01, 1),
+          }}
+          className={`flex absolute left-0 h-full items-center justify-center ${leftTriggerColor}`}
+        >
+          {swipeLeftIcon && <div>{swipeLeftIcon}</div>}
         </div>
-    )
-}
+        <div className="w-full flex items-center z-10 justify-center">
+          {memoChildren}
+        </div>
+        <div
+          style={{
+            width: offset * -1 + 8,
+            transform: `translateX(${offset * -1}px)`,
+            opacity: Math.min(Math.abs(offset) * 0.01, 1),
+          }}
+          className={`flex absolute h-full right-0 items-center justify-center ${rightTriggerColor}`}
+        >
+          {swipeRightIcon && <div>{swipeRightIcon}</div>}
+        </div>
+      </div>
+    </div>
+  );
+};

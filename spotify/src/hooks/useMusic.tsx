@@ -2,7 +2,7 @@ import { useContext } from "react"
 import { MusicContext } from "../contexts/MusicContext"
 
 // Custom hook to use the music context
-export const useMusic = () => {
+export function useMusic() {
     const context = useContext(MusicContext);
     if (context === undefined) {
       throw new Error('useMusic must be used within a MusicProvider');

@@ -11,12 +11,18 @@ export class ActionStore {
   private spotifyAuth: AuthStore;
   private playlistStore: PlaylistStore;
   private songStore: SongStore;
+  private context_uri: string | undefined
 
   constructor(spotifyApi: SpotifyStore, spotifyAuth: AuthStore, playlistStore: PlaylistStore, songStore: SongStore) {
     this.spotifyApi = spotifyApi;
     this.spotifyAuth = spotifyAuth;
     this.playlistStore = playlistStore;
     this.songStore = songStore;
+
+    this.songStore.on('rawSongUpdate', (song) => {
+      if (!song?.context?.uri) return
+      this.context_uri = song.context .uri;
+    })
   }
 
   async handleAction(action: Action | ActionReference) {
@@ -72,17 +78,25 @@ export class ActionStore {
     return this.spotifyApi.pause();
   }
 
+  /**
+   * id - content id
+   * playlist - playlist id
+   * position - position in playlist
+   * @param context 
+   * @returns 
+   */
   async play(context?: { playlist?: string; id?: string; position?: number }) {
     if (context) {
+      DeskThing.sendDebug(`Playing ${context.id ? 'track' : 'playlist'}`);
       return this.spotifyApi.play({
-        context_uri: context.playlist,
-        offset: { uri: `spotify:track:${context.id}` },
-        position_ms: context.position
+        context_uri: context.playlist ? `spotify:playlist:${context.playlist}` : undefined,
+        uris: context.id ? [context.id.includes('spotify:') ?  context.id : `spotify:track:${context.id}`] : undefined,
+        offset: context.position !== undefined ? { position: context.position } : undefined,
       });
     }
-    return this.spotifyApi.play({ context_uri: '' });
+    DeskThing.sendDebug('Resuming current song');
+    return this.spotifyApi.play();
   }
-
   async seek(position: string | number) {
     return this.spotifyApi.seek(position);
   }

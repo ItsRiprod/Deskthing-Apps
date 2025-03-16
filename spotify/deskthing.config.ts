@@ -8,12 +8,12 @@ dotEnv.config()
 export default defineConfig({
   development: {
     logging: {
-      level: "silent",
+      level: "info",
       prefix: "[DeskThing Server]",
     },
     client: {
       logging: {
-        level: "silent",
+        level: "debug",
         prefix: "[DeskThing Client]",
         enableRemoteLogging: true,
       },

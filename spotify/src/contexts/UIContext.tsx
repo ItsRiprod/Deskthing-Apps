@@ -1,29 +1,14 @@
 
-import { createContext, useState } from 'react';
+import { createContext } from 'react';
 
-type PanelType = 'left' | 'right' | null;
-type PanelState = 'presets' | 'queue' | 'playlists' | null;
+export type PanelType = 'left' | 'right' | null;
+export type PanelState = 'Queue' | 'Playlists' | null;
 
 export interface UIContextType {
   panel: PanelType;
-  setPanel: (panel: PanelType) => void;
+  setPanel: React.Dispatch<React.SetStateAction<PanelType>>;
   panelState: PanelState;
   setPanelState: (panelState: PanelState) => void;
 }
 
 export const UIContext = createContext<UIContextType | undefined>(undefined);
-
-export const UIProvider = ({ children }: { children: React.ReactNode }) => {
-  const [panel, hiddenSetPanel] = useState<PanelType>(null);
-  const [panelState, setPanelState] = useState<PanelState>(null);
-
-  const setPanel = (newPanel: PanelType) => {
-    hiddenSetPanel((state) => state === null ? newPanel : null)
-  }
-
-  return (
-    <UIContext.Provider value={{ panel, setPanel, panelState, setPanelState }}>
-      {children}
-    </UIContext.Provider>
-  );
-}

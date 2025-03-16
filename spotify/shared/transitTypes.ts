@@ -45,4 +45,5 @@ export type ToServerTypes =
   | { type: SpotifyEvent.SET; request: "set_preset"; payload: number }
   | { type: SpotifyEvent.SET; request: "add_preset"; payload: number }
   | { type: SpotifyEvent.SET; request: "like_song"; payload?: string }
+  | { type: SpotifyEvent.SET; request: "add_queue"; payload: string }
   | { type: SpotifyEvent.REMOVE; request: "queue"; payload: string }
