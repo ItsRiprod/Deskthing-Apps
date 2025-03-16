@@ -1,28 +1,29 @@
-import { DeskThing } from "@deskthing/server";
+import { createDeskThing } from "@deskthing/server";
 import { ActionStore } from "./actionStore";
 import { SpotifyStore } from "./spotifyStore";
 import { SongStore } from "./songStore";
 import { PlaylistStore } from "./playlistStore";
 import { AuthStore } from "./authStore";
-import { SpotifySongData } from "@shared/spotifyTypes";
+import { ToClientTypes, ToServerTypes } from "../../shared/transitTypes";
+import { DeviceStore } from "./deviceStore";
+import { SpotifySettingIDs } from "../setupSettings";
+
+const DeskThing = createDeskThing<ToServerTypes, ToClientTypes>();
 
 export class DeskthingStore {
-  private actionStore: ActionStore;
-  private SpotifyStore: SpotifyStore;
   private songStore: SongStore;
   private playlistStore: PlaylistStore;
   private authStore: AuthStore;
+  private deviceStore: DeviceStore;
 
   constructor(
-    actionStore: ActionStore,
-    spotifyApi: SpotifyStore,
     songStore: SongStore,
     playlistStore: PlaylistStore,
-    authStore: AuthStore
+    authStore: AuthStore,
+    deviceStore: DeviceStore
   ) {
-    this.actionStore = actionStore;
-    this.SpotifyStore = spotifyApi;
     this.songStore = songStore;
+    this.deviceStore = deviceStore;
     this.playlistStore = playlistStore;
     this.authStore = authStore;
     this.setup();
@@ -30,7 +31,11 @@ export class DeskthingStore {
 
   setup() {
     // Listen for song updates
-    this.songStore.on("songUpdate", (songData: Partial<SpotifySongData>) => {
+    this.songStore.on("songUpdate", (songData) => {
+      DeskThing.sendDebug(
+        "deskthingStore: song change detected, sending: " +
+          JSON.stringify(songData)
+      );
       DeskThing.send({
         app: "client",
         type: "song",
@@ -51,6 +56,14 @@ export class DeskthingStore {
       DeskThing.send({
         app: "spotify",
         type: "playlists",
+        payload: playlists,
+      });
+    });
+
+    this.playlistStore.on("presetsUpdate", (playlists) => {
+      DeskThing.send({
+        app: "spotify",
+        type: "presets",
         payload: playlists,
       });
     });
@@ -76,6 +89,19 @@ export class DeskthingStore {
         type: "device",
         payload: device,
       });
+    });
+
+    this.deviceStore.on("devicesListUpdate", (devices) => {
+      DeskThing.setSettingOptions(SpotifySettingIDs.OUTPUT_DEVICE, [
+        {
+          value: "default",
+          label: "Default",
+        },
+        ...devices.map((d) => ({
+          value: d.id,
+          label: d.name,
+        })),
+      ]);
     });
   }
 

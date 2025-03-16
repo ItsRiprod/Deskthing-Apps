@@ -8,12 +8,12 @@ dotEnv.config()
 export default defineConfig({
   development: {
     logging: {
-      level: "debug",
+      level: "silent",
       prefix: "[DeskThing Server]",
     },
     client: {
       logging: {
-        level: "debug",
+        level: "silent",
         prefix: "[DeskThing Client]",
         enableRemoteLogging: true,
       },
@@ -24,6 +24,7 @@ export default defineConfig({
     },
     server: {
       editCooldownMs: 8000,
+      refreshInterval: 15,
       mockData: {
         settings: {
           "client_id": process.env.SPOTIFY_CLIENT_ID,

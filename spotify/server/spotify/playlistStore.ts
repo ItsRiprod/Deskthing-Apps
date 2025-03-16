@@ -1,14 +1,18 @@
 import { DeskThing } from "@deskthing/server";
-import { playlist } from "@shared/spotifyTypes";
-import { SpotifyStore } from "./spotifyStore";
+import { Playlist } from "../../shared/spotifyTypes";
+import storeProvider from "./storeProvider";
 import EventEmitter from "node:events";
+import { SpotifyStore } from "./spotifyStore"
 
 type playlistStoreEvents = {
-  playlistsUpdate: [playlist[]];
+  playlistsUpdate: [Playlist[]];
+  presetsUpdate: [Playlist[]];
+  allPlaylistsUpdate: [Playlist[]];
 };
 
 export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
-  private playlists: playlist[] = [];
+  private presetSlots: Playlist[] = [];
+  private availablePlaylists: Playlist[] = [];
   private spotifyApi: SpotifyStore;
 
   constructor(spotifyApi: SpotifyStore) {
@@ -17,31 +21,48 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
   }
 
   async initializePlaylists() {
-    // Set up default placeholder playlists
-    this.playlists = [
+    // Set up default placeholder preset slots
+    this.presetSlots = [
       this.createEmptyPlaylist(1),
       this.createEmptyPlaylist(2),
       this.createEmptyPlaylist(3),
       this.createEmptyPlaylist(4),
     ];
 
-    await DeskThing.saveData({ playlists: this.playlists });
+    // Fetch available playlists from Spotify
+    const spotifyPlaylists = await this.spotifyApi.getPlaylists();
+    if (spotifyPlaylists) {
+      this.availablePlaylists = spotifyPlaylists.map(playlist => ({
+        title: playlist.name,
+        owner: playlist.owner.display_name || "Unknown",
+        tracks: playlist.tracks.total,
+        id: playlist.id,
+        uri: playlist.uri,
+        thumbnail_url: playlist.images[0]?.url || "",
+      }));
+    }
+
+    await DeskThing.saveData({ presetSlots: this.presetSlots });
     await this.sendPlaylistsToClient();
-    this.emit("playlistsUpdate", this.playlists);
+    this.emit("presetsUpdate", this.presetSlots);
+    this.emit("allPlaylistsUpdate", this.availablePlaylists);
   }
 
-  async getPlaylists() {
-    return this.playlists;
+  async getPlaylists(): Promise<Playlist[]> {
+    return this.presetSlots;
   }
 
-  private createEmptyPlaylist(index: number): playlist {
+  async getAllPlaylists(): Promise<Playlist[]> {
+    return this.availablePlaylists;
+  }
+
+  private createEmptyPlaylist(index: number): Playlist {
     return {
       title: `Unset${index}`,
       owner: "Unknown",
       tracks: 0,
       id: "-1",
       uri: "spotify:collection:tracks",
-      color: "0000000",
       thumbnail_url: "",
     };
   }
@@ -88,7 +109,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       return;
     }
 
-    const playlist = this.playlists[index - 1];
+    const playlist = this.presetSlots[index - 1];
     if (!playlist?.uri) {
       DeskThing.sendError(`Invalid playlist or missing URI at index ${index}`);
       return;
@@ -98,8 +119,9 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
   }
 
   async refreshPlaylists() {
+    // Refresh preset slots
     await Promise.all(
-      this.playlists.map(async (playlist, index) => {
+      this.presetSlots.map(async (playlist, index) => {
         if (playlist.id === "-1") return;
 
         if (playlist.id === "liked") {
@@ -110,35 +132,46 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       })
     );
 
+    // Refresh available playlists
+    const spotifyPlaylists = await this.spotifyApi.getPlaylists();
+    if (spotifyPlaylists) {
+      this.availablePlaylists = spotifyPlaylists.map(playlist => ({
+        title: playlist.name,
+        owner: playlist.owner.display_name || "Unknown",
+        tracks: playlist.tracks.total,
+        id: playlist.id,
+        uri: playlist.uri,
+        thumbnail_url: playlist.images[0]?.url || "",
+      }));
+    }
+
     await this.saveAndUpdatePlaylists();
   }
 
   private async refreshLikedSongsPlaylist(index: number) {
     const response = await this.spotifyApi.getLikedTracks();
 
-    this.playlists[index] = {
+    this.presetSlots[index] = {
       title: "Liked Songs",
       owner: "You",
       tracks: response.total || 0,
       id: "liked",
       uri: "spotify:collection:tracks",
-      color: "1DB954",
       thumbnail_url: await DeskThing.encodeImageFromUrl(
         "https://t.scdn.co/images/3099b3803ad9496896c43f22fe9be8c4.png"
       ),
     };
   }
 
-  private async refreshRegularPlaylist(index: number, playlist: playlist) {
+  private async refreshRegularPlaylist(index: number, playlist: Playlist) {
     const response = await this.spotifyApi.getPlaylist(playlist.id);
 
-    this.playlists[index] = {
+    this.presetSlots[index] = {
       title: response.name || "Unknown",
       owner: response.owner.display_name || "Unknown",
       tracks: response.tracks.total || 0,
       id: response.id || "-1",
       uri: response.uri || "spotify:playlist:unknown",
-      color: response.primary_color || null,
       thumbnail_url:
         playlist.thumbnail_url ||
         (await DeskThing.encodeImageFromUrl(response.images[0]?.url)),
@@ -148,13 +181,12 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
   private async setLikedSongsPlaylist(index: number) {
     const response = await this.spotifyApi.getLikedTracks();
 
-    this.playlists[index] = {
+    this.presetSlots[index] = {
       title: "Liked Songs",
       owner: "You",
       tracks: response.total || 0,
       id: "liked",
       uri: "spotify:collection:tracks",
-      color: "1DB954",
       thumbnail_url: await DeskThing.encodeImageFromUrl(
         "https://t.scdn.co/images/3099b3803ad9496896c43f22fe9be8c4.png"
       ),
@@ -165,13 +197,12 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
     const playlistId = playlistUri.split(":")[2];
     const response = await this.spotifyApi.getPlaylist(playlistId);
 
-    this.playlists[index] = {
+    this.presetSlots[index] = {
       title: response.name || "Unknown",
       owner: response.owner.display_name || "Unknown",
       tracks: response.tracks.total || 0,
       id: response.id || "-1",
       uri: response.uri || "spotify:playlist:unknown",
-      color: response.primary_color || null,
       thumbnail_url: await DeskThing.encodeImageFromUrl(
         response.images[0]?.url
       ),
@@ -179,17 +210,15 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
   }
 
   private async saveAndUpdatePlaylists() {
-    await DeskThing.saveData({ playlists: this.playlists });
+    await DeskThing.saveData({ presetSlots: this.presetSlots });
     await this.sendPlaylistsToClient();
-    this.emit("playlistsUpdate", this.playlists);
+    this.emit("playlistsUpdate", this.presetSlots);
+    this.emit("allPlaylistsUpdate", this.availablePlaylists);
   }
 
   private async sendPlaylistsToClient() {
-    DeskThing.send({
-      app: "spotify",
-      type: "playlists",
-      payload: this.playlists,
-    });
+    this.emit('playlistsUpdate', this.presetSlots);
+    this.emit('allPlaylistsUpdate', this.availablePlaylists);
   }
 
   async addToPlaylist(playlistIndex: number) {
@@ -198,7 +227,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       return;
     }
 
-    const playlist = this.playlists[playlistIndex - 1];
+    const playlist = this.presetSlots[playlistIndex - 1];
     if (!playlist?.uri) {
       DeskThing.sendError(
         "Invalid playlist or missing URI at index " + playlistIndex
@@ -218,7 +247,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
   }
 
   private isValidIndex(index: number): boolean {
-    return index >= 1 && index <= this.playlists.length;
+    return index >= 1 && index <= this.presetSlots.length;
   }
 
   private isLikedSongsPlaylist(context: any): boolean {

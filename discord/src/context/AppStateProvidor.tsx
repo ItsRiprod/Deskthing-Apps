@@ -1,5 +1,5 @@
 import React, { useReducer, useEffect, ReactNode, useMemo, useState } from 'react';
-import { DeskThing } from '@deskthing/client';
+import { DeskThing } from '@deskthing/client'
 
 // Import from shared types (based on your shared types setup)
 import { CallStatus, ChannelStatus, ChatStatus, GuildListStatus, GuildStatus, NotificationStatus } from '@shared/types/discord';

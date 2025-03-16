@@ -56,3 +56,4 @@ export { default as IconPlus } from "./Plus";
 export { default as IconSettings } from "./Settings";
 export { default as IconPlaylistAdd } from "./PlaylistAdd";
 export { default as IconPlay } from "./Play";
+export { default as IconGrip } from "./IconGrip";

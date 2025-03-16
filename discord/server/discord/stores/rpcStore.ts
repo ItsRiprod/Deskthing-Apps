@@ -8,12 +8,7 @@ import {
   RPCEvents,
   VoiceStateCreate,
 } from "../types/discordApiTypes";
-import {
-  CallParticipant,
-  CallStatus,
-  ChatStatus,
-  NotificationStatus,
-} from "@shared/types/discord";
+import { CallParticipant } from "@shared/types/discord";
 import { getEncodedImage, ImageType } from "../utils/imageFetch";
 import { EventEmitter } from "node:events";
 
@@ -62,10 +57,11 @@ type EventCallback = (...args: any[]) => void;
 export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
   private rpcClient: ActualClient | null = null;
   private _isConnected: boolean = false;
-  private subscriptions: Record<string, Subscription & { channelId?: string }> = {};
+  private subscriptions: Record<string, Subscription & { channelId?: string }> =
+    {};
   private eventHandlers: Record<string, Set<EventCallback>> = {};
   public user: CallParticipant | null = null;
-  private loggingInID: string | undefined
+  private loggingInID: string | undefined;
 
   constructor() {
     super();
@@ -149,9 +145,9 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
   async connect(clientId: string): Promise<void> {
     if (this.loggingInID == clientId) {
       DeskThing.sendLog("Already logging in with this client ID");
-      return
+      return;
     } else {
-      this.loggingInID = clientId
+      this.loggingInID = clientId;
     }
     DeskThing.sendLog(
       `Attempting to connect to Discord RPC with clientId: ${clientId}`
@@ -203,7 +199,7 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
       DeskThing.sendError(`Failed to connect to Discord RPC: ${error}`);
       throw error;
     } finally {
-      this.loggingInID = undefined
+      this.loggingInID = undefined;
     }
   }
 
@@ -240,7 +236,10 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
     DeskThing.sendDebug("Resubscribing to all events...");
     for (const event in this.subscriptions) {
       DeskThing.sendDebug(`Resubscribing to ${event}...`);
-      await this.subscribe(event as RPCEvents, this.subscriptions[event].channelId);
+      await this.subscribe(
+        event as RPCEvents,
+        this.subscriptions[event].channelId
+      );
     }
     for (const event in this.eventHandlers) {
       DeskThing.sendDebug(`Re-registering callback for event: ${event}`);
@@ -254,7 +253,10 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
       if (!this.rpcClient) {
         DeskThing.sendError(`RPC client is not connected`);
         // This is to ensure that the listener is still registered so it can be subscribed to once the client connects
-        this.subscriptions[event] = { channelId, unsubscribe: async () => true }
+        this.subscriptions[event] = {
+          channelId,
+          unsubscribe: async () => true,
+        };
         return;
       }
       this.ensureConnected();
@@ -271,7 +273,10 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
         ) as Promise<void>,
       ]);
       if (!subscription) {
-        this.subscriptions[event] = { unsubscribe: async () => true, channelId };
+        this.subscriptions[event] = {
+          unsubscribe: async () => true,
+          channelId,
+        };
         DeskThing.sendError(`Failed to subscribe to ${event}. Timed out!`);
         return;
       }
@@ -303,7 +308,6 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
     }
   }
 
-
   private rpcListener<T extends keyof RPCEventTypes>(
     event: T,
     data: RPCEventTypes[T]
@@ -324,12 +328,12 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
   public authenticate = async (token: string) => {
     const response = await this.request("AUTHENTICATE", {
       access_token: token,
-    })
+    });
     await this.updateUser();
     await this.resubscribeAll();
 
-    return response
-  }
+    return response;
+  };
 
   private offRPCEvent<T extends RPCEvents>(event: T, listener?: () => void) {
     this.rpcClient?.off(

@@ -72,7 +72,7 @@ export class ActionStore {
     return this.spotifyApi.pause();
   }
 
-  async play(context?: { playlist: string; id: string; position: number }) {
+  async play(context?: { playlist?: string; id?: string; position?: number }) {
     if (context) {
       return this.spotifyApi.play({
         context_uri: context.playlist,
@@ -91,11 +91,11 @@ export class ActionStore {
     return this.spotifyApi.volume(newVol);
   }
 
-  async repeat(state: string) {
+  async repeat(state: "context" | "track" | "off") {
     return this.spotifyApi.repeat(state);
   }
 
-  async shuffle(state: string) {
+  async shuffle(state: boolean) {
     return this.spotifyApi.shuffle(state);
   }
 

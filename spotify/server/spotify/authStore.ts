@@ -177,7 +177,7 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
   }
 
   async getAccessToken(code?: string): Promise<string | undefined> {
-
+    DeskThing.sendDebug('SpotifyStore: getAccessToken called');
     if (!code && this.access_token) {
         return this.access_token
     } else if (!code) {

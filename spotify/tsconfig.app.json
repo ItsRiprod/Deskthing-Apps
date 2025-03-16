@@ -25,7 +25,8 @@
     "noFallthroughCasesInSwitch": true,
 
     "paths": {
-      "@shared/*": ["./shared/*"]
+      "@shared/*": ["./shared/*"],
+      "@src/*": ["./src/*"]
     }
   },
   "include": ["src", "vite.config.ts"],

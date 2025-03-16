@@ -1,3 +1,5 @@
+import { Device } from "@shared/spotifyTypes"
+
 export interface ExternalUrls {
   spotify: string;
 }
@@ -24,6 +26,44 @@ export interface Artist {
   name: string;
   type: string;
   uri: string;
+}
+
+export interface SimplifiedArtist {
+  external_urls: ExternalUrls;
+  href: string;
+  id: string;
+  name: string;
+  type: string;
+  uri: string;
+}
+
+export interface Show {
+  available_markets: string[];
+  copyrights: {
+    text: string;
+    type: string;
+  }[];
+  description: string;
+  html_description: string;
+  explicit: boolean;
+  external_urls: {
+    spotify: string;
+  };
+  href: string;
+  id: string;
+  images: {
+    url: string;
+    height: number | null;
+    width: number | null;
+  }[];
+  is_externally_hosted: boolean | null;
+  languages: string[];
+  media_type: string;
+  name: string;
+  publisher: string;
+  type: "show";
+  uri: string;
+  total_episodes: number;
 }
 
 export interface Album {
@@ -96,45 +136,7 @@ export interface Episode {
   type: "episode";
   uri: string;
   restrictions?: Restrictions;
-  show: {
-    available_markets: string[];
-    copyrights: {
-      text: string;
-      type: string;
-    }[];
-    description: string;
-    html_description: string;
-    explicit: boolean;
-    external_urls: {
-      spotify: string;
-    };
-    href: string;
-    id: string;
-    images: {
-      url: string;
-      height: number | null;
-      width: number | null;
-    }[];
-    is_externally_hosted: boolean | null;
-    languages: string[];
-    media_type: string;
-    name: string;
-    publisher: string;
-    type: "show";
-    uri: string;
-    total_episodes: number;
-  };
-}
-
-export interface Device {
-  id: string | null;
-  is_active: boolean;
-  is_private_session: boolean;
-  is_restricted: boolean;
-  name: string;
-  type: string;
-  volume_percent: number | null;
-  supports_volume: boolean;
+  show: Show;
 }
 
 export interface Context {
@@ -239,4 +241,9 @@ export interface PlaylistResponse {
   tracks: Paging<PlaylistTrack>;
   type: string;
   uri: string;
+}
+
+export interface QueueResponse {
+  currently_playing: Track | Episode | null;
+  queue: (Track | Episode)[];
 }

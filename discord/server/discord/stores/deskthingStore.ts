@@ -1,8 +1,8 @@
-import { DeskThing } from "@deskthing/server";
-import { CallStatusManager } from "./callStore";
-import { ChatStatusManager } from "./chatStore";
-import { GuildListManager } from "./guildStore";
-import { NotificationStatusManager } from "./notificationStore";
+import { DeskThing } from '@deskthing/server'
+import { CallStatusManager } from './callStore'
+import { ChatStatusManager } from './chatStore'
+import { GuildListManager } from './guildStore'
+import { NotificationStatusManager } from './notificationStore'
 
 export class DeskthingStore {
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();

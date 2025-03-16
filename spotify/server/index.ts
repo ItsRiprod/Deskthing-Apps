@@ -1,13 +1,11 @@
-import { SocketData, ServerEvent } from '@deskthing/types'
+import { ServerEvent } from '@deskthing/types'
 import { DeskThing } from '@deskthing/server'
-export { DeskThing }
+import { initialize } from './initializer'
 
 const start = async () => {
   // Dynamically import the initializer
-  const { initialize } = await import('./initializer')
   await initialize() 
   DeskThing.sendLog('Spotify app started!')
-
 }
 
 

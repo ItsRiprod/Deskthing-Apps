@@ -6,6 +6,8 @@ import { PlaylistStore } from './playlistStore'
 import { SongStore } from './songStore'
 import { SpotifyStore } from './spotifyStore'
 import { DeskthingStore } from './deskthingStore'
+import { DeviceStore } from './deviceStore'
+import { QueueStore } from './queueStore'
 
 export class StoreProvider {
   private static instance: StoreProvider
@@ -14,25 +16,28 @@ export class StoreProvider {
   private playlistStore: PlaylistStore
   private songStore: SongStore
   private spotifyApi: SpotifyStore
+  private deviceStore: DeviceStore
+  private queueStore: QueueStore
   private deskthingStore: DeskthingStore
 
   private constructor() {
     this.authStore = new AuthStore()
     this.spotifyApi = new SpotifyStore(this.authStore)
     this.playlistStore = new PlaylistStore(this.spotifyApi)
-    this.songStore = new SongStore(this.spotifyApi)
+    this.deviceStore = new DeviceStore(this.spotifyApi)
+    this.songStore = new SongStore(this.spotifyApi, this.deviceStore)
     this.actionStore = new ActionStore(
       this.spotifyApi,
       this.authStore,
       this.playlistStore,
       this.songStore
     )
+    this.queueStore = new QueueStore(this.spotifyApi)
     this.deskthingStore = new DeskthingStore(
-      this.actionStore,
-      this.spotifyApi,
       this.songStore,
       this.playlistStore,
-      this.authStore
+      this.authStore,
+      this.deviceStore
     )
   }
 
@@ -61,6 +66,10 @@ export class StoreProvider {
 
   public getSpotifyApi(): SpotifyStore {
     return this.spotifyApi
+  }
+
+  public getQueueStore(): QueueStore {
+    return this.queueStore
   }
 
   public async initialize() {
