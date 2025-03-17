@@ -10,6 +10,7 @@ export type Playlist = {
   tracks: number
   id: string
   uri: string
+  index: number
   snapshot_id: string
   thumbnail_url: string | undefined
 }

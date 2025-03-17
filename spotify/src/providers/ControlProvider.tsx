@@ -9,20 +9,27 @@ const DeskThing = createDeskThing<ToClientTypes, ToServerTypes>()
 
 
 export const ControlProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const playPlaylist = useCallback((playlistIndex: number) => {
-      const playlistSTring = playlistIndex.toString()
-      DeskThing.send({ type: SpotifyEvent.PLAY, request: 'playlist', payload: playlistSTring });
+    const playPlaylist = useCallback((playlistId: string) => {
+      DeskThing.send({ type: SpotifyEvent.PLAY, request: 'playlist', payload: playlistId });
+    }, []);
+
+    const playPreset = useCallback((presetIndex: number) => {
+      DeskThing.send({ type: SpotifyEvent.PLAY, request: 'preset', payload: presetIndex });
     }, []);
   
-    const addCurrentTOPreset = useCallback((playlistIndex: number) => {
+    const addCurrentToPreset = useCallback((playlistIndex: number) => {
       DeskThing.send({ type: SpotifyEvent.ADD, request: 'current_to_preset', payload: playlistIndex });
+    }, []);
+
+    const addCurrentToPlaylist = useCallback((playlistId: string) => {
+      DeskThing.send({ type: SpotifyEvent.ADD, request: 'current_to_playlist', payload: playlistId });
     }, []);
   
     const setPlaylistToPreset = useCallback((presetIndex: number, playlistId: string) => {
       DeskThing.send({ type: SpotifyEvent.SET, request: 'preset', payload: { presetNum: presetIndex, playlistId: playlistId } });
     }, []);
   
-    const setPlaylist = useCallback((playlistIndex: number) => {
+    const setCurrentToPreset = useCallback((playlistIndex: number) => {
       DeskThing.send({ type: SpotifyEvent.SET, request: 'current_to_preset', payload: playlistIndex });
     }, []);
   
@@ -63,14 +70,17 @@ export const ControlProvider: React.FC<{ children: ReactNode }> = ({ children })
       DeskThing.send({ type: SpotifyEvent.ADD, request: 'queue', payload: songUri });
     }, []);
 
+
     const removeFromQueue = useCallback((songUri: string) => {
       DeskThing.send({ type: SpotifyEvent.REMOVE, request: 'queue', payload: songUri });
     }, []);
   
     const contextValue: ControlContextType = {
       playPlaylist,
-      addToPlaylist: addCurrentTOPreset,
-      setPlaylist,
+      playPreset,
+      addCurrentToPreset,
+      addCurrentToPlaylist,
+      setCurrentToPreset,
       playSong,
       seekToPosition,
       setPlaylistToPreset,

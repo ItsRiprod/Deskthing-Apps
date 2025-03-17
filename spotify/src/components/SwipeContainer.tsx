@@ -70,10 +70,10 @@ export const SwipeContainer = ({
   const handleEnd = useCallback(() => {
     if (!isDraggingRef.current) return;
 
-    if (offset > threshold && onSwipeRight) {
-      onSwipeRight();
-    } else if (offset < -threshold && onSwipeLeft) {
+    if (offset > threshold && onSwipeLeft) {
       onSwipeLeft();
+    } else if (offset < -threshold && onSwipeRight) {
+      onSwipeRight();
     } else if (Math.abs(offset) < 10 && onTap) {
       // Detect tap when there's minimal movement
       onTap();

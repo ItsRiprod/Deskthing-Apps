@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import ArrowLeft from "../assets/icons/ArrowLeft";
 import { useUI } from "../hooks/useUI";
 import { LeftPanel } from "./leftPanel";
@@ -6,12 +6,24 @@ import { RightPanel } from "./rightPanel";
 
 export const PanelManager = () => {
   const { panel, setPanel } = useUI();
-
+  
   const switchPanel = (isRightSide: boolean) => {
     const newState = isRightSide ? 'right' : 'left'
     console.log('Switching to ', newState)
     setPanel((state) => state == newState ? newState : state == null ? newState : null);
   }
+  
+  const [clickablePanel, setClickablePanel] = useState(false)
+  useEffect(() => {
+    if (panel == null) {
+      setClickablePanel(false)
+    } else {
+      const timer = setTimeout(() => {
+        setClickablePanel(true)
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [panel])
 
   useEffect(() => {
     let touchHappened = false;
@@ -55,6 +67,7 @@ export const PanelManager = () => {
     <div className="relative max-h-screen h-screen w-screen overflow-x-hidden">
       <LeftPanel
         className={`absolute ${panel === "left" ? "animate-slide-in-left" : "animate-slide-out-left"}`}
+        clickable={clickablePanel}
         />
       <div className="w-full absolute pointer-events-none items-center justify-center h-full flex">
         <ArrowLeft

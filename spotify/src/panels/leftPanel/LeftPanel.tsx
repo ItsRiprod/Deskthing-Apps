@@ -7,12 +7,14 @@ import { PanelState } from "@src/contexts/UIContext"
 
 type LeftPanelTypes = {
   className?: string;
+  clickable?: boolean;
 };
 
-export const LeftPanel = ({ className }: LeftPanelTypes) => {
+export const LeftPanel = ({ className, clickable = true }: LeftPanelTypes) => {
   const { panelState, setPanelState } = useUI();
 
   const handleButtonClick = (state: PanelState) => {
+    if (!clickable) return;
     setPanelState(state);
   }
 
@@ -21,6 +23,7 @@ export const LeftPanel = ({ className }: LeftPanelTypes) => {
   return (
     <div
       className={`w-5/12 h-screen flex-col items-center bg-neutral-950 flex ${className}`}
+      style={{ pointerEvents: clickable ? 'auto' : 'none' }}
     >
       <div className="h-24 w-full flex items-center justify-between p-4">
         <h1 className="text-2xl text-zinc-200 font-bold">{panelState}</h1>

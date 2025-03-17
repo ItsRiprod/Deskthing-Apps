@@ -161,10 +161,10 @@ DeskThing.on(SpotifyEvent.ADD, async (data) => {
   let response;
   switch (data.request) {
     case "current_to_preset": // Expects playlist index
-      response = await playlistStore.addCurrentPlaylistToPreset(data.payload);
-      break;
-    case "current_to_preset": // Expects playlist index
       response = await playlistStore.addCurrentToPreset(data.payload);
+      break;
+    case "current_to_playlist": // Expects uri
+      response = await playlistStore.addCurrentToPlaylist(data.payload);
       break;
     case "queue": // Expects uri
       response = await queueStore.addToQueue(data.payload);

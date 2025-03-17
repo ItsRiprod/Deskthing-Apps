@@ -2,9 +2,11 @@
 import { createContext } from 'react';
 
 export type ControlContextType = {
-  playPlaylist: (playlistIndex: number) => void;
-  addToPlaylist: (playlistIndex: number) => void;
-  setPlaylist: (playlistIndex: number) => void;
+  playPlaylist: (playlistId: string) => void;
+  playPreset: (playlistIndex: number) => void;
+  addCurrentToPreset: (playlistIndex: number) => void;
+  addCurrentToPlaylist: (playlistId: string) => void;
+  setCurrentToPreset: (playlistIndex: number) => void;
   playSong: (songId: string) => void;
   likeSong: (id?: string) => void;
   seekToPosition: (positionMs: number) => void;

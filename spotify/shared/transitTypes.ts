@@ -52,6 +52,7 @@ export type ToServerTypes =
 
   // Adds the current song to preset
   | { type: SpotifyEvent.ADD; request: "current_to_preset"; payload: number }
+  | { type: SpotifyEvent.ADD; request: "current_to_playlist"; payload: string }
   | { type: SpotifyEvent.ADD; request: "preset"; payload: string }
   | { type: SpotifyEvent.ADD; request: "queue"; payload: string }
 

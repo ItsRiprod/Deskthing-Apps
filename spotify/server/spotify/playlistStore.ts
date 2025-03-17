@@ -52,12 +52,13 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
     const spotifyPlaylists = playlistsResponse.items
 
     if (spotifyPlaylists && (spotifyPlaylists?.length || 0) > 0) {
-      this.availablePlaylists = await Promise.all(spotifyPlaylists.map(async playlist => ({
+      this.availablePlaylists = await Promise.all(spotifyPlaylists.map(async (playlist, index) => ({
         title: playlist.name,
         owner: playlist.owner.display_name || "Unknown",
         tracks: playlist.tracks.total,
         id: playlist.id,
         uri: playlist.uri,
+        index,
         snapshot_id: playlist.snapshot_id,
         thumbnail_url: await getEncodedImage(playlist.images[0]?.url) || "",
       })));
@@ -82,6 +83,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       owner: "Unknown",
       tracks: 0,
       id: "-1",
+      index,
       snapshot_id: "",
       uri: "spotify:collection:tracks",
       thumbnail_url: "",
@@ -114,7 +116,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
 
   async playPlaylist(playlistUri: string) {
     try {
-      await this.spotifyApi.play({ context_uri: playlistUri });
+      await this.spotifyApi.play({ context_uri: playlistUri.includes('spotify:playlist:') ? playlistUri : `spotify:playlist:${playlistUri}` });
       DeskThing.sendLog(
         `Successfully started playing playlist: ${playlistUri}`
       );
@@ -166,15 +168,16 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
     const spotifyPlaylists = playlistsResponse.items
 
     if (spotifyPlaylists) {
-      this.availablePlaylists = spotifyPlaylists.map(playlist => ({
+      this.availablePlaylists = await Promise.all(spotifyPlaylists.map(async (playlist, index) => ({
         title: playlist.name,
         owner: playlist.owner.display_name || "Unknown",
         tracks: playlist.tracks.total,
         id: playlist.id,
         uri: playlist.uri,
+        index,
         snapshot_id: playlist.snapshot_id,
-        thumbnail_url: playlist.images[0]?.url || "",
-      }));
+        thumbnail_url: await getEncodedImage(playlist.images[0]?.url || ""),
+      })))
     }
 
     await this.saveAndUpdatePlaylists();
@@ -188,6 +191,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       owner: "You",
       tracks: response.total || 0,
       id: "liked",
+      index,
       snapshot_id: response.snapshot_id,
       uri: "spotify:collection:tracks",
       thumbnail_url: await getEncodedImage(
@@ -204,6 +208,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       owner: response.owner.display_name || "Unknown",
       tracks: response.tracks.total || 0,
       id: response.id || "-1",
+      index,
       snapshot_id: response.snapshot_id || "",
       uri: response.uri || "spotify:playlist:unknown",
       thumbnail_url:
@@ -220,6 +225,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       owner: "You",
       tracks: response.total || 0,
       id: "liked",
+      index,
       snapshot_id: response.snapshot_id,
       uri: "spotify:collection:tracks",
       thumbnail_url: await getEncodedImage(
@@ -237,6 +243,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       owner: response.owner.display_name || "Unknown",
       tracks: response.tracks.total || 0,
       id: response.id || "-1",
+      index,
       snapshot_id: response.snapshot_id || "",
       uri: response.uri || "spotify:playlist:unknown",
       thumbnail_url: await getEncodedImage(
@@ -251,8 +258,8 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
   }
 
   private async sendPlaylistsToClient() {
-    this.emit('playlistsUpdate', this.presetSlots);
-    this.emit('allPlaylistsUpdate', this.availablePlaylists);
+    this.emit('presetsUpdate', this.presetSlots);
+    this.emit('playlistsUpdate', this.availablePlaylists);
   }
 
   async addCurrentToPreset(playlistIndex: number) {
@@ -273,6 +280,18 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       await this.spotifyApi.addToPlaylist(playlist.id);
       DeskThing.sendLog(
         "Successfully added track to playlist: " + playlist.title
+      );
+      await this.refreshPlaylists();
+    } catch (error) {
+      DeskThing.sendError("Failed to add track to playlist: " + error);
+    }
+  }
+
+  async addCurrentToPlaylist(playlistId: string) {
+    try {
+      await this.spotifyApi.addToPlaylist(playlistId);
+      DeskThing.sendLog(
+        "Successfully added track to playlist: " + playlistId
       );
       await this.refreshPlaylists();
     } catch (error) {

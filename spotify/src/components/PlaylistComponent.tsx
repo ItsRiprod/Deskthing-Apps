@@ -3,32 +3,29 @@ import { Playlist } from "@shared/spotifyTypes";
 import { FC, useMemo } from "react";
 import { SwipeContainer } from "@src/components/SwipeContainer";
 import { useControls } from "@src/hooks/useControls"
-import { Heart, X } from "lucide-react"
-import { usePlaylists } from "@src/hooks/usePlaylists"
+import { Heart, Pin, Plus, X } from "lucide-react"
 
 type PlaylistComponentProps = {
   playlist: Playlist;
 };
 
 export const PlaylistComponent: FC<PlaylistComponentProps> = ({ playlist }) => {
-  const { addToQueue, nextTrack, likeSong } = useControls()
-  const {  } = usePlaylists()
+  const { playPlaylist, setPlaylistToPreset, addCurrentToPlaylist } = useControls()
   const decodedImage = useMemo(
     () => playlist.thumbnail_url && DeskThing.formatImageUrl(playlist.thumbnail_url),
     [playlist.thumbnail_url]
   );
 
   const handleSwipeLeft = () => {
-    likeSong(playlist.id)
+    setPlaylistToPreset(playlist.index, playlist.id)
   };
 
   const handleSwipeRight = () => {
-    // Handle swipe right action
+    addCurrentToPlaylist(playlist.id)
   };
 
   const handleClick = () => {
-    addToQueue(playlist.id)
-    setTimeout(() => nextTrack(), 100)
+    playPlaylist(playlist.id)
   }
 
   return (
@@ -37,9 +34,9 @@ export const PlaylistComponent: FC<PlaylistComponentProps> = ({ playlist }) => {
         onSwipeLeft={handleSwipeLeft}
         onSwipeRight={handleSwipeRight}
         onTap={handleClick}
-        swipeLeftIcon={<X />}
-        swipeRightIcon={<Heart />}
-        leftTriggerColor="bg-red-500"
+        swipeLeftIcon={<Pin />}
+        swipeRightIcon={<Plus />}
+        leftTriggerColor="bg-cyan-500"
         rightTriggerColor="bg-green-500"
         className="w-full h-fit"
       >
