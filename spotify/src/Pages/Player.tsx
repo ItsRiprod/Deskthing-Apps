@@ -13,26 +13,27 @@ const Player: React.FC = () => {
   }
 
   return (
-    <div className="w-screen h-screen font-geist text-white font-semibold flex"
-    style={{backgroundColor: backgroundColor}}>
+    <div className="w-screen h-screen font-geist text-white flex"
+    style={{background: `linear-gradient(315deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 100%), ${backgroundColor}`}}>
       
-      <div className={`absolute ${panel != null ? 'animate-slide-out-left' : 'animate-slide-in-left'} transition-all h-full w-1/2 flex items-center justify-end`}>
-        <div className="w-[35vw] h-[35vw]">
+      <div className={`absolute ${panel != null ? 'animate-slide-out-left' : 'animate-slide-in-left'} transition-all h-full w-[41%] flex items-center justify-end`}>
+        <div className="aspect-square h-[36vw] max-h-full p-4">
           {currentSong.thumbnail && (
-            <img src={currentSong.thumbnail} alt={`${currentSong.album} cover`} />
+            <img className="rounded-lg drop-shadow-[0_0_30px_rgba(0,0,0,0.5)]" src={currentSong.thumbnail} alt={`${currentSong.album} cover`} />
           )}
         </div>
       </div>
 
-      <div className={`font-geist absolute ${panel === 'right' ? 'right-1/2' : panel === 'left' ? '-right-0 pl-20' : 'right-0'} transition-all w-1/2 h-full flex justify-center flex-col`}>
+      <div className={`pr-8 font-geist absolute ${panel === 'right' ? 'right-[30%]' : panel === 'left' ? 'right-0 pl-20' : 'right-0'} 
+        transition-all w-3/5 h-full flex justify-center flex-col`}>
         <div className="pl-5 h-[35vw] flex flex-col justify-center relative">
-          <p className="top-0 absolute">
+          <p className="text-[2vw] font-mono opacity-80">
             {currentSong.album}
             </p>
-          <h1 className="text-4xl">
+          <h1 className="text-[4.5vw] font-bold">
             <ScrollingText text={currentSong.track_name} fadeWidth={24} />
             </h1>
-          <h1 className="">
+          <h1 className="text-[2.5vw]">
             {currentSong.artist}
             </h1>
 
