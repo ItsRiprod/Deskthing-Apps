@@ -10,14 +10,14 @@ type SongComponentProps = {
 };
 
 export const SongComponent: FC<SongComponentProps> = ({ song }) => {
+  const { addToQueue, nextTrack, likeSong } = useControls()
   const decodedImage = useMemo(
     () => song.thumbnail && DeskThing.formatImageUrl(song.thumbnail),
     [song.thumbnail]
   );
-  const { addToQueue, nextTrack } = useControls()
 
   const handleSwipeLeft = () => {
-    // Handle swipe left action
+    likeSong(song.id)
   };
 
   const handleSwipeRight = () => {

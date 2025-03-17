@@ -2,7 +2,7 @@
 import { createContext } from 'react';
 
 export type PanelType = 'left' | 'right' | null;
-export type PanelState = 'Queue' | 'Playlists' | null;
+export type PanelState = 'Queue' | 'Playlists';
 
 export interface UIContextType {
   panel: PanelType;

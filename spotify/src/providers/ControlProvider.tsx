@@ -11,23 +11,27 @@ const DeskThing = createDeskThing<ToClientTypes, ToServerTypes>()
 export const ControlProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const playPlaylist = useCallback((playlistIndex: number) => {
       const playlistSTring = playlistIndex.toString()
-      DeskThing.send({ type: SpotifyEvent.SET, request: 'play_playlist', payload: playlistSTring });
+      DeskThing.send({ type: SpotifyEvent.PLAY, request: 'playlist', payload: playlistSTring });
     }, []);
   
-    const addToPlaylist = useCallback((playlistIndex: number) => {
-      DeskThing.send({ type: SpotifyEvent.SET, request: 'add_preset', payload: playlistIndex });
+    const addCurrentTOPreset = useCallback((playlistIndex: number) => {
+      DeskThing.send({ type: SpotifyEvent.ADD, request: 'current_to_preset', payload: playlistIndex });
+    }, []);
+  
+    const setPlaylistToPreset = useCallback((presetIndex: number, playlistId: string) => {
+      DeskThing.send({ type: SpotifyEvent.SET, request: 'preset', payload: { presetNum: presetIndex, playlistId: playlistId } });
     }, []);
   
     const setPlaylist = useCallback((playlistIndex: number) => {
-      DeskThing.send({ type: SpotifyEvent.SET, request: 'set_preset', payload: playlistIndex });
+      DeskThing.send({ type: SpotifyEvent.SET, request: 'current_to_preset', payload: playlistIndex });
     }, []);
   
     const playSong = useCallback((songId: string) => {
       DeskThing.send({ type: SongEvent.SET, request: AUDIO_REQUESTS.PLAY, payload: { id: songId } });
     }, []);
   
-    const likeSong = useCallback(() => {
-      DeskThing.send({ type: SpotifyEvent.SET, request: 'like_song' });
+    const likeSong = useCallback((id?: string) => {
+      DeskThing.send({ type: SongEvent.SET, request: AUDIO_REQUESTS.LIKE, payload: id || ''});
     }, []);
   
     const seekToPosition = useCallback((positionMs: number) => {
@@ -56,20 +60,26 @@ export const ControlProvider: React.FC<{ children: ReactNode }> = ({ children })
     }, []);
 
     const addToQueue = useCallback((songUri: string) => {
-      DeskThing.send({ type: SpotifyEvent.SET, request: 'add_queue', payload: songUri });
+      DeskThing.send({ type: SpotifyEvent.ADD, request: 'queue', payload: songUri });
+    }, []);
+
+    const removeFromQueue = useCallback((songUri: string) => {
+      DeskThing.send({ type: SpotifyEvent.REMOVE, request: 'queue', payload: songUri });
     }, []);
   
     const contextValue: ControlContextType = {
       playPlaylist,
-      addToPlaylist,
+      addToPlaylist: addCurrentTOPreset,
       setPlaylist,
       playSong,
       seekToPosition,
+      setPlaylistToPreset,
       likeSong,
       pausePlayback,
       resumePlayback,
       nextTrack,
       addToQueue,
+      removeFromQueue,
       previousTrack
     };
   

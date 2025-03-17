@@ -104,13 +104,4 @@ export class DeskthingStore {
       ]);
     });
   }
-
-  async initialize() {
-    try {
-      await this.playlistStore.initializePlaylists();
-      await this.songStore.checkForRefresh();
-    } catch (error) {
-      DeskThing.sendError(`Failed to initialize DeskthingStore: ${error}`);
-    }
-  }
 }

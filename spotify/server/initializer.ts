@@ -1,4 +1,9 @@
-import { AUDIO_REQUESTS, ServerEvent, SocketData, SongEvent } from "@deskthing/types";
+import {
+  AUDIO_REQUESTS,
+  ServerEvent,
+  SocketData,
+  SongEvent,
+} from "@deskthing/types";
 import storeProvider from "./spotify/storeProvider";
 import { setupActions } from "./setupActions";
 import { setupTasks } from "./setupTasks";
@@ -38,19 +43,28 @@ DeskThing.on(SongEvent.GET, async (data) => {
 });
 
 DeskThing.on(SpotifyEvent.GET, async (data) => {
-
   const queueStore = storeProvider.getQueueStore();
   const playlistStore = storeProvider.getPlaylistStore();
 
   switch (data.request) {
-    case "playlists":
-      const playlists = await playlistStore.getPlaylists();
+    case "playlists": {
+      const playlists = await playlistStore.getAllPlaylists();
       DeskThing.send({
         app: "spotify",
         type: "playlists",
         payload: playlists,
       });
       break;
+    }
+    case "presets": {
+      const presets = await playlistStore.getPresets();
+      DeskThing.send({
+        app: "spotify",
+        type: "presets",
+        payload: presets,
+      });
+      break;
+    }
     case "queue":
       const queue = await queueStore.getQueueData();
       if (queue) {
@@ -119,35 +133,75 @@ DeskThing.on(SpotifyEvent.SET, async (data) => {
   }
 
   const actionStore = storeProvider.getActionStore();
-  const queueStore = storeProvider.getQueueStore();
+  const songStore = storeProvider.getSongStore();
   const playlistStore = storeProvider.getPlaylistStore();
   let response;
   switch (data.request) {
     case "transfer":
       response = await actionStore.transferPlayback(data.payload);
       break;
-    case "play_playlist": // Expects playlist index
-      response = await playlistStore.playPlaylist(data.payload);
+    case "current_to_preset":
+      response = await playlistStore.addCurrentPlaylistToPreset(data.payload);
       break;
-    case "set_preset": // Expects playlist index
-      response = await playlistStore.setPlaylist(data.payload);
-      break;
-    case "add_preset": // Expects playlist index
-      response = await playlistStore.addToPlaylist(data.payload);
-      break;
-    case "add_queue": // Expects uri
-      response = await queueStore.addToQueue(data.payload);
+    case "like_song":
+      response = await songStore.likeSong(data.payload);
       break;
   }
   DeskThing.sendLog(response);
 });
+
+DeskThing.on(SpotifyEvent.ADD, async (data) => {
+  if (data == null) {
+    DeskThing.sendError("No args provided");
+    return;
+  }
+
+  const queueStore = storeProvider.getQueueStore();
+  const playlistStore = storeProvider.getPlaylistStore();
+  let response;
+  switch (data.request) {
+    case "current_to_preset": // Expects playlist index
+      response = await playlistStore.addCurrentPlaylistToPreset(data.payload);
+      break;
+    case "current_to_preset": // Expects playlist index
+      response = await playlistStore.addCurrentToPreset(data.payload);
+      break;
+    case "queue": // Expects uri
+      response = await queueStore.addToQueue(data.payload);
+      break;
+  }
+  DeskThing.sendLog(response);
+})
+
+DeskThing.on(SpotifyEvent.PLAY, async (data) => {
+  if (data == null) {
+    DeskThing.sendError("No args provided");
+    return;
+  }
+
+  const playlistStore = storeProvider.getPlaylistStore();
+  let response;
+  switch (data.request) {
+    case "playlist": // Expects playlist index
+      response = await playlistStore.playPlaylist(data.payload);
+      break;
+    case "preset": // Expects uri
+      response = await playlistStore.playPreset(data.payload);
+      break;
+  }
+  DeskThing.sendLog(response);
+})
 
 const handleCallbackData = async (data: SocketData) => {
   if (data.payload == null) {
     DeskThing.sendError("Unable to get access token");
   } else {
     const authStore = storeProvider.getAuthStore();
-    await authStore.getAccessToken(data.payload);
+    try {
+      await authStore.getAccessToken(data.payload);
+    } catch (error) {
+      DeskThing.sendError("Unable to get access token");
+    }
   }
 };
 

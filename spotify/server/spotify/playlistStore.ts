@@ -3,6 +3,8 @@ import { Playlist } from "../../shared/spotifyTypes";
 import storeProvider from "./storeProvider";
 import EventEmitter from "node:events";
 import { SpotifyStore } from "./spotifyStore"
+import { AuthStore } from "./authStore"
+import { getEncodedImage } from "../utils/imageUtils"
 
 type playlistStoreEvents = {
   playlistsUpdate: [Playlist[]];
@@ -14,13 +16,21 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
   private presetSlots: Playlist[] = [];
   private availablePlaylists: Playlist[] = [];
   private spotifyApi: SpotifyStore;
+  private spotifyAuth: AuthStore;
 
-  constructor(spotifyApi: SpotifyStore) {
+  constructor(spotifyApi: SpotifyStore, spotifyAuth: AuthStore) {
     super();
+    this.spotifyAuth = spotifyAuth;
     this.spotifyApi = spotifyApi;
+
+    this.spotifyAuth.on('authUpdate', (data) => {
+      if (data.authStatus == true) { 
+        this.initializePlaylists();
+      }
+    })
   }
 
-  async initializePlaylists() {
+  private async initializePlaylists() {
     // Set up default placeholder preset slots
     this.presetSlots = [
       this.createEmptyPlaylist(1),
@@ -30,25 +40,35 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
     ];
 
     // Fetch available playlists from Spotify
-    const spotifyPlaylists = await this.spotifyApi.getPlaylists();
-    if (spotifyPlaylists) {
-      this.availablePlaylists = spotifyPlaylists.map(playlist => ({
+    const playlistsResponse = await this.spotifyApi.getPlaylists();
+
+    if (!playlistsResponse || playlistsResponse.items.length == 0) {
+      DeskThing.sendError("No playlists found!");
+      return;
+    } else {
+      DeskThing.sendDebug(`Got ${playlistsResponse?.items.length} playlists from Spotify`);
+    }
+
+    const spotifyPlaylists = playlistsResponse.items
+
+    if (spotifyPlaylists && (spotifyPlaylists?.length || 0) > 0) {
+      this.availablePlaylists = await Promise.all(spotifyPlaylists.map(async playlist => ({
         title: playlist.name,
         owner: playlist.owner.display_name || "Unknown",
         tracks: playlist.tracks.total,
         id: playlist.id,
         uri: playlist.uri,
-        thumbnail_url: playlist.images[0]?.url || "",
-      }));
+        snapshot_id: playlist.snapshot_id,
+        thumbnail_url: await getEncodedImage(playlist.images[0]?.url) || "",
+      })));
+    } else {
+      console.log("No playlists found", spotifyPlaylists);
     }
 
-    await DeskThing.saveData({ presetSlots: this.presetSlots });
-    await this.sendPlaylistsToClient();
-    this.emit("presetsUpdate", this.presetSlots);
-    this.emit("allPlaylistsUpdate", this.availablePlaylists);
+    this.saveAndUpdatePlaylists()
   }
 
-  async getPlaylists(): Promise<Playlist[]> {
+  async getPresets(): Promise<Playlist[]> {
     return this.presetSlots;
   }
 
@@ -62,12 +82,13 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       owner: "Unknown",
       tracks: 0,
       id: "-1",
+      snapshot_id: "",
       uri: "spotify:collection:tracks",
       thumbnail_url: "",
     };
   }
 
-  async setPlaylist(playlistIndex: number) {
+  async addCurrentPlaylistToPreset(playlistIndex: number) {
     if (!this.isValidIndex(playlistIndex)) {
       DeskThing.sendError("Invalid playlist index!");
       return;
@@ -103,7 +124,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
     }
   }
 
-  async playPlaylistByIndex(index: number) {
+  async playPreset(index: number) {
     if (!this.isValidIndex(index)) {
       DeskThing.sendError(`Invalid playlist index! ${index}`);
       return;
@@ -133,7 +154,17 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
     );
 
     // Refresh available playlists
-    const spotifyPlaylists = await this.spotifyApi.getPlaylists();
+    const playlistsResponse = await this.spotifyApi.getPlaylists();
+
+    if (!playlistsResponse || playlistsResponse.items.length == 0) {
+      DeskThing.sendError("No playlists found!");
+      return;
+    } else {
+      DeskThing.sendDebug(`Got ${playlistsResponse?.items.length} playlists from Spotify`);
+    }
+
+    const spotifyPlaylists = playlistsResponse.items
+
     if (spotifyPlaylists) {
       this.availablePlaylists = spotifyPlaylists.map(playlist => ({
         title: playlist.name,
@@ -141,6 +172,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
         tracks: playlist.tracks.total,
         id: playlist.id,
         uri: playlist.uri,
+        snapshot_id: playlist.snapshot_id,
         thumbnail_url: playlist.images[0]?.url || "",
       }));
     }
@@ -156,8 +188,9 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       owner: "You",
       tracks: response.total || 0,
       id: "liked",
+      snapshot_id: response.snapshot_id,
       uri: "spotify:collection:tracks",
-      thumbnail_url: await DeskThing.encodeImageFromUrl(
+      thumbnail_url: await getEncodedImage(
         "https://t.scdn.co/images/3099b3803ad9496896c43f22fe9be8c4.png"
       ),
     };
@@ -171,10 +204,11 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       owner: response.owner.display_name || "Unknown",
       tracks: response.tracks.total || 0,
       id: response.id || "-1",
+      snapshot_id: response.snapshot_id || "",
       uri: response.uri || "spotify:playlist:unknown",
       thumbnail_url:
         playlist.thumbnail_url ||
-        (await DeskThing.encodeImageFromUrl(response.images[0]?.url)),
+        (await getEncodedImage(response.images[0]?.url)),
     };
   }
 
@@ -186,8 +220,9 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       owner: "You",
       tracks: response.total || 0,
       id: "liked",
+      snapshot_id: response.snapshot_id,
       uri: "spotify:collection:tracks",
-      thumbnail_url: await DeskThing.encodeImageFromUrl(
+      thumbnail_url: await getEncodedImage(
         "https://t.scdn.co/images/3099b3803ad9496896c43f22fe9be8c4.png"
       ),
     };
@@ -202,8 +237,9 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       owner: response.owner.display_name || "Unknown",
       tracks: response.tracks.total || 0,
       id: response.id || "-1",
+      snapshot_id: response.snapshot_id || "",
       uri: response.uri || "spotify:playlist:unknown",
-      thumbnail_url: await DeskThing.encodeImageFromUrl(
+      thumbnail_url: await getEncodedImage(
         response.images[0]?.url
       ),
     };
@@ -212,8 +248,6 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
   private async saveAndUpdatePlaylists() {
     await DeskThing.saveData({ presetSlots: this.presetSlots });
     await this.sendPlaylistsToClient();
-    this.emit("playlistsUpdate", this.presetSlots);
-    this.emit("allPlaylistsUpdate", this.availablePlaylists);
   }
 
   private async sendPlaylistsToClient() {
@@ -221,7 +255,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
     this.emit('allPlaylistsUpdate', this.availablePlaylists);
   }
 
-  async addToPlaylist(playlistIndex: number) {
+  async addCurrentToPreset(playlistIndex: number) {
     if (!this.isValidIndex(playlistIndex)) {
       DeskThing.sendError("Invalid playlist index!");
       return;

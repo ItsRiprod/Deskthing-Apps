@@ -30,6 +30,8 @@ export type ToClientTypes =
 export enum SpotifyEvent {
   GET = "get",
   SET = "set",
+  ADD = "add",
+  PLAY = "play",
   REMOVE = "remove",
 }
 
@@ -38,12 +40,22 @@ export type ToServerTypes =
   | { type: SpotifyEvent.GET; request: "playlists" }
   | { type: SpotifyEvent.GET; request: "presets" }
   | { type: SpotifyEvent.GET; request: "queue" }
+
   | { type: ServerEvent.GET; request: "refresh" }
+
   | { type: SpotifyEvent.SET; request: "transfer"; payload: string }
-  | { type: SpotifyEvent.SET; request: "play_playlist"; payload: string }
-  | { type: SpotifyEvent.SET; request: "play_preset"; payload: string }
-  | { type: SpotifyEvent.SET; request: "set_preset"; payload: number }
-  | { type: SpotifyEvent.SET; request: "add_preset"; payload: number }
+  // Sets the current playlist to the preset
+  | { type: SpotifyEvent.SET; request: "current_to_preset"; payload: number }
+  
+  | { type: SpotifyEvent.SET; request: "preset"; payload: { presetNum: number; playlistId: string } }
   | { type: SpotifyEvent.SET; request: "like_song"; payload?: string }
-  | { type: SpotifyEvent.SET; request: "add_queue"; payload: string }
+
+  // Adds the current song to preset
+  | { type: SpotifyEvent.ADD; request: "current_to_preset"; payload: number }
+  | { type: SpotifyEvent.ADD; request: "preset"; payload: string }
+  | { type: SpotifyEvent.ADD; request: "queue"; payload: string }
+
+  | { type: SpotifyEvent.PLAY; request: "preset"; payload: number }
+  | { type: SpotifyEvent.PLAY; request: "playlist"; payload: string }
+
   | { type: SpotifyEvent.REMOVE; request: "queue"; payload: string }

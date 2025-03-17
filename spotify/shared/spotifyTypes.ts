@@ -10,7 +10,8 @@ export type Playlist = {
   tracks: number
   id: string
   uri: string
-  thumbnail_url: string
+  snapshot_id: string
+  thumbnail_url: string | undefined
 }
 
 export interface Device {

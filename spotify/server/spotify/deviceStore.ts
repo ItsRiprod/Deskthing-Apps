@@ -17,7 +17,6 @@ export class DeviceStore extends EventEmitter<deviceStoreEvents> {
   constructor(spotifyApi: SpotifyStore) {
     super();
     this.spotifyApi = spotifyApi;
-    this.refreshDevices()
   }
 
   async addDevicesFromPlayback(playback: PlayerResponse) {

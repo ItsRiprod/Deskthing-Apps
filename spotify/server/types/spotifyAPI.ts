@@ -1,4 +1,4 @@
-import { Device } from "@shared/spotifyTypes"
+import { Device } from "@shared/spotifyTypes";
 
 export interface ExternalUrls {
   spotify: string;
@@ -225,23 +225,27 @@ export interface Paging<T> {
   total: number;
   items: T[];
 }
-
 export interface PlaylistResponse {
   collaborative: boolean;
   description: string;
   external_urls: ExternalUrls;
-  followers: Followers;
   href: string;
   id: string;
   images: Image[];
   name: string;
   owner: User;
+  primary_color: string | null;
   public: boolean;
   snapshot_id: string;
-  tracks: Paging<PlaylistTrack>;
+  tracks: {
+    href: string;
+    total: number;
+  };
   type: string;
   uri: string;
 }
+
+export interface PlaylistsResponse extends Paging<PlaylistResponse> {}
 
 export interface QueueResponse {
   currently_playing: Track | Episode | null;

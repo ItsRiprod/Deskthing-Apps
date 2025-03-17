@@ -30,7 +30,7 @@ export class ActionStore {
       switch (action.id) {
         case "set_playlist":
           if (typeof action.value === "number") {
-            await this.playlistStore.setPlaylist(action.value);
+            await this.playlistStore.addCurrentPlaylistToPreset(action.value);
           } else {
             DeskThing.sendError("Invalid Playlist Index");
           }
@@ -38,7 +38,7 @@ export class ActionStore {
 
         case "play_playlist":
           if (typeof action.value === "number") {
-            await this.playlistStore.playPlaylistByIndex(action.value);
+            await this.playlistStore.playPreset(action.value);
           } else if (typeof action.value === "string") {
             await this.playlistStore.playPlaylist(action.value);
           } else {

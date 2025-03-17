@@ -23,7 +23,7 @@ export class StoreProvider {
   private constructor() {
     this.authStore = new AuthStore()
     this.spotifyApi = new SpotifyStore(this.authStore)
-    this.playlistStore = new PlaylistStore(this.spotifyApi)
+    this.playlistStore = new PlaylistStore(this.spotifyApi, this.authStore)
     this.deviceStore = new DeviceStore(this.spotifyApi)
     this.songStore = new SongStore(this.spotifyApi, this.deviceStore)
     this.actionStore = new ActionStore(
@@ -70,15 +70,6 @@ export class StoreProvider {
 
   public getQueueStore(): QueueStore {
     return this.queueStore
-  }
-
-  public async initialize() {
-    try {
-      await this.playlistStore.initializePlaylists()
-      DeskThing.sendLog('Store Provider initialized successfully')
-    } catch (error) {
-      DeskThing.sendError(`Failed to initialize Store Provider: ${error}`)
-    }
   }
 }
 

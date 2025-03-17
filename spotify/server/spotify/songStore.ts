@@ -35,12 +35,21 @@ export class SongStore extends EventEmitter<songStoreEvents> {
   }
 
   async getCurrentPlayback(): Promise<PlayerResponse | undefined> {
-    const currentPlayback = await this.spotifyApi.getCurrentPlayback();
-    if (!currentPlayback) return undefined;
-
-    this.deviceStore.addDevicesFromPlayback(currentPlayback);
-    this.emit("rawSongUpdate", currentPlayback);
-    return currentPlayback;
+    try {
+      const currentPlayback = await this.spotifyApi.getCurrentPlayback();
+      if (!currentPlayback) return undefined;
+      
+      this.deviceStore.addDevicesFromPlayback(currentPlayback);
+      this.emit("rawSongUpdate", currentPlayback);
+      return currentPlayback;
+    } catch (error) {
+      if (!(error instanceof Error)) {
+        DeskThing.sendError(`Error getting current playback: ${error}`);
+        return undefined;
+      }
+      DeskThing.sendError(`Error getting current playback: ${error.message}`);
+      return undefined;
+    }
   }
 
   async checkLiked(id: string): Promise<boolean> {
@@ -69,7 +78,7 @@ export class SongStore extends EventEmitter<songStoreEvents> {
     try {
       const playback = await this.getCurrentPlayback();
       if (!playback) {
-        DeskThing.sendError("Unable to get current playback");
+        DeskThing.sendWarning("Unable to get current playback (is anything playing?)");
         return;
       }
 
