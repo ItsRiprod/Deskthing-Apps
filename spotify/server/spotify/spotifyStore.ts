@@ -341,7 +341,7 @@ export class SpotifyStore {
   }
 
   async getPlaylists(): Promise<PlaylistsResponse | undefined> {
-    const url = `https://api.spotify.com/v1/me/playlists`;
+    const url = `https://api.spotify.com/v1/me/playlists?limit=20`;
     return this.makeRequest("get", url);
   }
 }

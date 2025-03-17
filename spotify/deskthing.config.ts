@@ -15,7 +15,7 @@ export default defineConfig({
       logging: {
         level: "debug",
         prefix: "[DeskThing Client]",
-        enableRemoteLogging: true,
+        enableRemoteLogging: false,
       },
       clientPort: 3000,
       viteLocation: "http://localhost",
