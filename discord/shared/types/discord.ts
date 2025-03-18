@@ -48,7 +48,7 @@ export interface ChatMessage {
   }
 
 export interface ChatStatus {
-  isExpanded: boolean;
+  isLoading?: boolean;
   currentChannelId: string | null;
   messages: ChatMessage[];
   typingUsers: string[];

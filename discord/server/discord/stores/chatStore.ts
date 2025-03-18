@@ -1,9 +1,10 @@
 import { DeskThing } from "@deskthing/server";
 import { Channel, MessageObject, RPCCommands, RPCEvents } from "../types/discordApiTypes";
 import { getEncodedImage, ImageType } from "../utils/imageFetch";
-import { ChatMessage, ChatStatus } from "@shared/types/discord";
+import { ChatMessage, ChatStatus } from "../../../shared/types/discord";
 import { EventEmitter } from "node:events";
 import { DiscordRPCStore } from "./rpcStore";
+import { GuildListManager } from "./guildStore"
 
 type chatStatusEvents = {
   update: [ChatStatus];
@@ -11,7 +12,7 @@ type chatStatusEvents = {
 
 export class ChatStatusManager extends EventEmitter<chatStatusEvents> {
   private currentStatus: ChatStatus = {
-    isExpanded: false,
+    isLoading: false,
     currentChannelId: null,
     messages: [],
     typingUsers: [],
@@ -19,10 +20,13 @@ export class ChatStatusManager extends EventEmitter<chatStatusEvents> {
   private debounceTimeoutId: NodeJS.Timeout | null = null;
   private typingUserTimeouts: Map<string, NodeJS.Timeout> = new Map();
   private rpc: DiscordRPCStore;
+  private currentGuildId: string | null = null;
+  private guildStore: GuildListManager
 
-  constructor(rpc: DiscordRPCStore) {
+  constructor(rpc: DiscordRPCStore, guildStore: GuildListManager) {
     super();
     this.rpc = rpc;
+    this.guildStore = guildStore;
     this.setupEventListeners();
   }
 
@@ -37,21 +41,29 @@ export class ChatStatusManager extends EventEmitter<chatStatusEvents> {
           });
         }
       }
-    );
+    )
+
+    this.guildStore.on("guildSelected", (guildId) => {
+      if (guildId != this.currentGuildId) {
+        this.updateChannelId(null);
+      }
+    });
   }
 
   public updateChannelId(channelId: string | null) {
-    this.currentStatus.currentChannelId = channelId;
-    if (!channelId) {
+    if (!channelId || channelId != this.currentStatus.currentChannelId) {
       this.currentStatus.messages = [];
       this.currentStatus.typingUsers = [];
+      this.currentStatus.isLoading = true;
     }
+    this.currentStatus.currentChannelId = channelId;
+
     DeskThing.sendLog(`Chat channel ID updated: ${channelId || "None"}`);
     this.debounceUpdateClient();
   }
 
   public setChatExpand(isExpanded: boolean) {
-    this.currentStatus.isExpanded = isExpanded;
+    this.currentStatus.isLoading = isExpanded;
     DeskThing.sendLog(`Chat expand status: ${isExpanded}`);
     this.debounceUpdateClient();
   }
@@ -79,7 +91,6 @@ export class ChatStatusManager extends EventEmitter<chatStatusEvents> {
     if (this.currentStatus.messages.some((m) => m.id === message.id)) {
       return;
     }
-    console.log(message);
     const chatMessage: ChatMessage = {
       id: message.id,
       content: message.content || "No text content",
@@ -119,15 +130,16 @@ export class ChatStatusManager extends EventEmitter<chatStatusEvents> {
   public setupNewChannel = async (channel: Channel) => {
     this.updateChannelId(channel.id);
     channel?.messages?.forEach(async (message) => {
-      DeskThing.sendLog("Adding new message" + message.content);
       await this.addNewMessage(message);
     });
+
+    this.currentStatus.isLoading = false
 
     await this.rpc.subscribe(RPCEvents.MESSAGE_CREATE, channel.id);
     // await this.rpc.subscribe(RPCEvents.TYPING_START, channel.id);
     // await this.rpc.subscribe(RPCEvents.TYPING_STOP, channel.id);
   };
-
+  
   async selectTextChannel(channelId: string | undefined | null) {
     if (channelId) {
       const channel = (await this.rpc.request(RPCCommands.GET_CHANNEL, {
@@ -165,7 +177,7 @@ export class ChatStatusManager extends EventEmitter<chatStatusEvents> {
     }
 
     this.currentStatus = {
-      isExpanded: false,
+      isLoading: true,
       currentChannelId: null,
       messages: [],
       typingUsers: [],

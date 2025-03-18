@@ -606,16 +606,17 @@ export interface WelcomeScreen {
 }
 
   export interface GetGuildsData {
-    guilds: Array<{
-      id: string
-      name: string
-    }>
+    guilds: Array<GetGuildData>
   }
 
   export interface GetGuildData {
     id: string
     name: string
     icon_url: string | null
+  }
+
+  export interface GetChannelsData {
+    channels: Channel[]
   }
 
   export interface GetGuildResponse {

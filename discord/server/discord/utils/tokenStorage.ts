@@ -21,7 +21,7 @@ export class TokenStorage {
   async getToken(): Promise<string | null> {
     try {
       const data = await DeskThing.getData();
-      return data?.[this.TOKEN_KEY] || null;
+      return data?.[this.TOKEN_KEY] as string || null;
     } catch (error) {
       console.error("Failed to retrieve Discord token:", error);
       return null;

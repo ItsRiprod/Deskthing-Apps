@@ -85,6 +85,11 @@ export const getEncodedImage = async (imageHash?: string | null, imageType?: Ima
 }): Promise<string | undefined> => {
     if (!imageHash || !imageType) return undefined
     const imageUrl = getImageFromHash(imageHash, imageType, id, options)
+    return await getEncodedImageURL(imageUrl)
+}
+
+export const getEncodedImageURL = async (imageUrl: string) => {
+    if (!imageUrl) return undefined
     if (process.env.DESKTHING_ENV == 'development') {
         return imageUrl
     } else {

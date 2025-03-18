@@ -40,33 +40,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
     ];
 
     // Fetch available playlists from Spotify
-    const playlistsResponse = await this.spotifyApi.getPlaylists();
-
-    if (!playlistsResponse || playlistsResponse.items.length == 0) {
-      DeskThing.sendError("No playlists found!");
-      return;
-    } else {
-      DeskThing.sendDebug(`Got ${playlistsResponse?.items.length} playlists from Spotify`);
-    }
-
-    const spotifyPlaylists = playlistsResponse.items
-
-    if (spotifyPlaylists && (spotifyPlaylists?.length || 0) > 0) {
-      this.availablePlaylists = await Promise.all(spotifyPlaylists.map(async (playlist, index) => ({
-        title: playlist.name,
-        owner: playlist.owner.display_name || "Unknown",
-        tracks: playlist.tracks.total,
-        id: playlist.id,
-        uri: playlist.uri,
-        index,
-        snapshot_id: playlist.snapshot_id,
-        thumbnail_url: await getEncodedImage(playlist.images[0]?.url) || "",
-      })));
-    } else {
-      console.log("No playlists found", spotifyPlaylists);
-    }
-
-    this.saveAndUpdatePlaylists()
+    await this.refreshPlaylists();
   }
 
   async getPresets(): Promise<Playlist[]> {

@@ -32,6 +32,7 @@ export const PresetComponent: FC<PresetComponentProps> = ({ preset }) => {
   };
 
   const handleClick = () => {
+    if (preset.id == '-1') return
     playPreset(preset.index)
   }
 

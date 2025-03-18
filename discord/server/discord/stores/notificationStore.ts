@@ -1,7 +1,7 @@
 import { DeskThing } from "@deskthing/server";
 import { MessageObject, NotificationCreate, RPCEvents } from "../types/discordApiTypes";
 import { getEncodedImage, ImageType } from "../utils/imageFetch";
-import { Notification, NotificationStatus } from "@shared/types/discord";
+import { Notification, NotificationStatus } from "../../../shared/types/discord";
 import { DiscordRPCStore } from "./rpcStore";
 import { EventEmitter } from "node:events"
 

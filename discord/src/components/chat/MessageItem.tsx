@@ -21,7 +21,7 @@ export default function MessageItem({ message }: Props): JSX.Element {
             {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
-        <p className="text-sm text-gray-300">{message.content}</p>
+        <p className="text-sm text-gray-50 break-all">{message.content}</p>
       </div>
     </div>
   );

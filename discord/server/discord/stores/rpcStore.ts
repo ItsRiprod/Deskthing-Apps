@@ -8,12 +8,12 @@ import {
   RPCEvents,
   VoiceStateCreate,
 } from "../types/discordApiTypes";
-import { CallParticipant } from "@shared/types/discord";
+import { CallParticipant } from "../../../shared/types/discord";
 import { getEncodedImage, ImageType } from "../utils/imageFetch";
 import { EventEmitter } from "node:events";
 
 type RPCEventTypes = {
-  [RPCEvents.READY]: { user: User };
+  [RPCEvents.READY]: { user: User | undefined };
   [RPCEvents.ERROR]: { code: number; message: string };
   [RPCEvents.GUILD_STATUS]: { guild: Guild };
   [RPCEvents.GUILD_CREATE]: Guild;
@@ -42,6 +42,7 @@ type RPCEmitterTypes = {
 } & {
   newListener: [event: string | symbol, listener: (channelId?: string) => void];
   removeListener: [event: string | symbol, listener: (...args: any[]) => void];
+  authenticated: [{ authStatus: boolean }];
 };
 
 type ActualClient = Client & {
@@ -60,7 +61,7 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
   private subscriptions: Record<string, Subscription & { channelId?: string }> =
     {};
   private eventHandlers: Record<string, Set<EventCallback>> = {};
-  public user: CallParticipant | null = null;
+  public user: CallParticipant | undefined = undefined;
   private loggingInID: string | undefined;
 
   constructor() {
@@ -167,6 +168,7 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
         client.on("ready", async () => {
           this.rpcClient = client as ActualClient;
           this._isConnected = true;
+          this.emit(RPCEvents.READY, { user: client.user });
           DeskThing.sendLog("Connected to Discord RPC");
           resolve();
         });
@@ -331,7 +333,7 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
     });
     await this.updateUser();
     await this.resubscribeAll();
-
+    this.emit('authenticated', { authStatus: true })
     return response;
   };
 

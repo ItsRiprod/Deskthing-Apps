@@ -1,7 +1,14 @@
-import { DeskThing } from "@deskthing/server";
+import { createDeskThing } from "@deskthing/server";
 import { AppSettingIDs } from "./discord/types/deskthingTypes";
 import StoreProvider from "./storeProvider";
-import { ServerEvent } from "@deskthing/types"
+import { ServerEvent } from "@deskthing/types";
+import {
+  DiscordEvents,
+  ToClientTypes,
+  ToServerTypes,
+} from "../shared/types/transit";
+
+const DeskThing = createDeskThing<ToServerTypes, ToClientTypes>();
 
 export const initializeDiscord = async () => {
   const settings = await DeskThing.getSettings();
@@ -37,45 +44,78 @@ export const initializeDiscord = async () => {
   }
 };
 
-DeskThing.on(ServerEvent.GET, async (socketData) => {
-    switch (socketData.request) {
-      case 'call': {
-        const callStore = StoreProvider.getCallStatus()
-        const callStatus = callStore.getStatus()
+DeskThing.on(DiscordEvents.GET, async (socketData) => {
+  const callStore = StoreProvider.getCallStatus();
+  const chatStore = StoreProvider.getChatStatus();
+  const notificationStore = StoreProvider.getNotificationStatus();
+  const guildStore = StoreProvider.getGuildList();
+
+  switch (socketData.request) {
+    case "call":
+      {
+        const callStatus = callStore.getStatus();
         DeskThing.send({
-          type: 'call',
+          type: DiscordEvents.CALL,
           payload: callStatus,
-          request: 'set',
-        })
+          request: "set",
+        });
       }
-      case 'chat': {
-        const chatStore = StoreProvider.getChatStatus()
-        const chatStatus = chatStore.getStatus()
+      break;
+    case "chat":
+      {
+        const chatStatus = chatStore.getStatus();
         DeskThing.send({
-          type: 'chat',
+          type: DiscordEvents.CHAT,
           payload: chatStatus,
-          request: 'set',
-        })
+          request: "set",
+        });
       }
-      case 'notification': {
-        const notificationStore = StoreProvider.getNotificationStatus()
-        const notificationStatus = notificationStore.getStatus()
+      break;
+    case "notification":
+      {
+        const notificationStatus = notificationStore.getStatus();
         DeskThing.send({
-          type: 'notification',
+          type: DiscordEvents.NOTIFICATION,
           payload: notificationStatus,
-          request: 'set',
-        })
+          request: "set",
+        });
       }
-      case 'guildList': {
-        const guildStore = StoreProvider.getGuildList()
-        const guildList = guildStore.getStatus()
+      break;
+    case "guildList":
+      {
+        const guildList = guildStore.getStatus();
         DeskThing.send({
-          type: 'guildList',
+          type: DiscordEvents.GUILD_LIST,
           payload: guildList,
-          request: 'set',
-        })
+          request: "set",
+        });
       }
-        default:
-        return
-    }
-  })
+      break;
+    case "refreshGuildList":
+      {
+        guildStore.refreshGuildList();
+      }
+
+      break;
+    default:
+      return;
+  }
+});
+
+DeskThing.on(DiscordEvents.SET, (socketData) => {
+  const guildStore = StoreProvider.getGuildList();
+  const chatStore = StoreProvider.getChatStatus();
+
+  switch (socketData.request) {
+    case "guild":
+      {
+        guildStore.updateSelectedGuild(socketData.payload.guildId);
+      }
+      break;
+    case "channel":
+      {
+        chatStore.selectTextChannel(socketData.payload.channelId);
+      }
+      break;
+  }
+});

@@ -1,8 +1,11 @@
-import { DeskThing } from '@deskthing/server'
+import { createDeskThing } from '@deskthing/server'
 import { CallStatusManager } from './callStore'
 import { ChatStatusManager } from './chatStore'
 import { GuildListManager } from './guildStore'
 import { NotificationStatusManager } from './notificationStore'
+import { DiscordEvents, ToClientTypes, ToServerTypes } from '../../../shared/types/transit'
+
+const DeskThing = createDeskThing<ToServerTypes, ToClientTypes>()
 
 export class DeskthingStore {
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
@@ -44,7 +47,7 @@ private debounce<T>(eventType: string, fn: (data: T) => void, delay: number = 50
     // Call store events
     this.callStore.on("update", this.debounce("callUpdate", (status) => {
       DeskThing.send({
-        type: "call",
+        type: DiscordEvents.CALL,
         payload: status,
         request: "set",
       });
@@ -52,7 +55,7 @@ private debounce<T>(eventType: string, fn: (data: T) => void, delay: number = 50
 
     this.callStore.on("speakingStateChanged", this.debounce("speakingStateChanged", (status) => {
       DeskThing.send({
-        type: "call",
+        type: DiscordEvents.CALL,
         payload: status,
         request: "update",
       });
@@ -61,7 +64,7 @@ private debounce<T>(eventType: string, fn: (data: T) => void, delay: number = 50
     // Chat store events
     this.chatStore.on("update", this.debounce("chatUpdate", (status) => {
       DeskThing.send({
-        type: "chat",
+        type: DiscordEvents.CHAT,
         payload: status,
         request: "set",
       });
@@ -69,16 +72,18 @@ private debounce<T>(eventType: string, fn: (data: T) => void, delay: number = 50
 
     // Guild store events
     this.guildStore.on("guildUpdate", this.debounce("guildUpdate", (status) => {
+      DeskThing.sendDebug('Sending updated guilds')
       DeskThing.send({
-        type: "guildList",
+        type: DiscordEvents.GUILD_LIST,
         payload: status,
         request: "set",
       });
     }))
+    
 
     this.guildStore.on("channelsUpdated", this.debounce("channelsUpdated", (channels) => {
       DeskThing.send({
-        type: "channels",
+        type: DiscordEvents.CHANNELS,
         payload: { channels },
         request: "set",
       });
@@ -87,7 +92,7 @@ private debounce<T>(eventType: string, fn: (data: T) => void, delay: number = 50
     // Notification store events
     this.notificationStore.on("statusUpdated", this.debounce("notificationStatusUpdated", (status) => {
       DeskThing.send({
-        type: "notification",
+        type: DiscordEvents.NOTIFICATION,
         payload: status,
         request: "set",
       });
@@ -95,7 +100,7 @@ private debounce<T>(eventType: string, fn: (data: T) => void, delay: number = 50
 
     this.notificationStore.on("notificationAdded", this.debounce("notificationAdded", (notification) => {
       DeskThing.send({
-        type: "notification",
+        type: DiscordEvents.NOTIFICATION,
         payload: { notification },
         request: "add",
       });
@@ -103,7 +108,7 @@ private debounce<T>(eventType: string, fn: (data: T) => void, delay: number = 50
 
     this.notificationStore.on("notificationRead", this.debounce("notificationRead", (notificationId) => {
       DeskThing.send({
-        type: "notification",
+        type: DiscordEvents.NOTIFICATION,
         payload: { notificationId },
         request: "read",
       });

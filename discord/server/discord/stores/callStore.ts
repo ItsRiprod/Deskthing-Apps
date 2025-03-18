@@ -6,7 +6,7 @@ import {
   VoiceStateCreate,
 } from "../types/discordApiTypes";
 import { getEncodedImage, ImageType } from "../utils/imageFetch";
-import { CallStatus, CallParticipant } from "@shared/types/discord";
+import { CallStatus, CallParticipant } from "../../../shared/types/discord";
 import { DiscordRPCStore } from "./rpcStore";
 import { EventEmitter } from "node:events";
 
@@ -60,6 +60,24 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
         this.emit("participantJoined", participant);
       }
     );
+
+    this.rpc.on(RPCEvents.READY, async (data) => {
+      if (!data.user) return
+
+      const participant: CallParticipant = {
+          id: data.user.id,
+          profileUrl: await getEncodedImage(
+            data.user.avatar,
+            ImageType.UserAvatar,
+            data.user.id
+          ),
+          username: data.user.username || data.user.id,
+          isDeafened: this.currentStatus.user?.isDeafened || false,
+          isMuted: this.currentStatus.user?.isMuted || false,
+          isSpeaking: false,
+        }
+      this.updateCurrentUser(participant)
+    })
 
     this.rpc.on(
       RPCEvents.VOICE_STATE_UPDATE,
@@ -146,7 +164,13 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
       }
     }
 
+    if (participant.id == this.currentStatus.user?.id) {
+      DeskThing.sendDebug('User has not changed, skipping update')
+      return
+    }
+
     this.currentStatus.user = participant;
+    this.emit("update", this.currentStatus);
   }
 
   public removeParticipant(userId: string) {

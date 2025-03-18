@@ -1,6 +1,5 @@
 import { DeskThing } from '@deskthing/server';
 import { ServerEvent } from '@deskthing/types';
-export { DeskThing } // Required export of this exact name for the server to connect
 import dotenv from 'dotenv'
 dotenv.config()
 

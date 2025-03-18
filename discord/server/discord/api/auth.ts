@@ -55,6 +55,7 @@ export class DiscordAuth {
       const token = await this.authorize();
       DeskThing.sendLog("Obtained new token, authenticating...");
       await this.authenticateWithToken(token);
+      
       this.isAuthenticating = false
     } catch (error) {
       DeskThing.sendError(`Authentication failed: ${error}`);

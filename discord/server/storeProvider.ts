@@ -30,8 +30,8 @@ export class StoreProvider {
     this.auth = new DiscordAuth(this.rpc, this.tokenStorage);
     this.callControls = new CallControls(this.rpc);
     this.callStatus = new CallStatusManager(this.rpc);
-    this.chatStatus = new ChatStatusManager(this.rpc);
     this.guildList = new GuildListManager(this.rpc);
+    this.chatStatus = new ChatStatusManager(this.rpc, this.guildList);
     this.notificationStatus = new NotificationStatusManager(this.rpc);
     this.richPresence = new RichPresence(this.rpc);
     this.deskthingStore = new DeskthingStore(this.callStatus, this.chatStatus, this.guildList, this.notificationStatus);
