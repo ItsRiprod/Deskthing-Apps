@@ -24,8 +24,8 @@ button:active {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 2px;
+  background: #555;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -33,10 +33,10 @@ button:active {
 }
 
 /* Firefox */
-* {
+/* * {
   scrollbar-width: thin;
   scrollbar-color: #888 transparent;
-}
+} */
 
 
 @tailwind base;
@@ -46,6 +46,13 @@ button:active {
 @font-face {
   font-family: 'Geist';
   src: url(/fonts/GeistVF.ttf) format('truetype');
+  font-style: normal;
+  font-weight: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist-mono';
+  src: url(/fonts/GeistMonoVF.ttf) format('truetype');
   font-style: normal;
   font-weight: normal;
   font-display: swap;
