@@ -30,7 +30,7 @@ export const SongComponent: FC<SongComponentProps> = ({ song }) => {
   }
 
   return (
-    <div className="bg-neutral-950 w-full rounded-xl overflow-hidden">
+    <div className="w-full rounded-xl overflow-hidden hover:bg-neutral-900">
       <SwipeContainer
         onSwipeLeft={handleSwipeLeft}
         onSwipeRight={handleSwipeRight}
@@ -41,7 +41,7 @@ export const SongComponent: FC<SongComponentProps> = ({ song }) => {
         rightTriggerColor="bg-green-500"
         className="w-full h-fit"
       >
-        <div className="rounded-lg bg-neutral-900 w-full flex-nowrap flex items-center">
+        <div className="rounded-lg w-full flex-nowrap flex items-center">
           {decodedImage && (
             <img
               src={decodedImage}
@@ -49,12 +49,12 @@ export const SongComponent: FC<SongComponentProps> = ({ song }) => {
               className="h-24 w-24 object-cover rounded-lg"
             />
           )}
-          <div className="flex w-full ml-2 flex-col overflow-x-hidden h-full justify-center">
+          <div className="flex w-full flex-col overflow-x-hidden h-full justify-center p-3">
             <div className="overflow-clip w-full">
-              <h1 className="text-xl text-zinc-200 text-ellipsis text-nowrap font-bold mb-2">
+              <h1 className="text-xl text-neutral-200 text-ellipsis text-nowrap overflow-hidden font-semibold">
                 {song.name}
               </h1>
-              <p className="text-gray-400 text-ellipsis overflow-y-hidden">{song.artists.join(", ")}</p>
+              <p className=" text-neutral-500 text-ellipsis text-nowrap overflow-hidden font-medium">{song.artists.join(", ")}</p>
             </div>
           </div>
         </div>

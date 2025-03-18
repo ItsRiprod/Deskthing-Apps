@@ -15,21 +15,21 @@ export const Queue = () => {
   }, [currentSong?.id]);
 
   return (
-    <div className="h-full flex flex-col w-full">
-      <div className="h-full">
-        <p className="text-xl text-zinc-500 my-5 font-geist pl-4">
+    <div className="h-full flex flex-col w-full p-4 pt-0">
+      <div className="">
+        <p className="text-xl font-bold text-neutral-500 mb-2 font-geist">
           Now Playing
         </p>
         {currentlyPlaying && (
-          <div className="max-w-full overflow-clip">
+          <div className="max-w-full overflow-clip mb-4">
             <SongComponent song={currentlyPlaying} />
           </div>
         )}
-        <p className="text-xl text-zinc-500 my-5 font-geist pl-4">Up Next</p>
+        <p className="text-xl font-bold text-neutral-500 mb-2 font-geist">Up Next</p>
       </div>
-      <div className="overflow-y-scroll w-full h-full">
+      <div className="overflow-y-scroll w-full h-full rounded-xl">
         {queue.map((song, index) => (
-          <div key={index} className="max-w-full w-full overflow-y-hidden mb-4">
+          <div key={index} className="max-w-full w-full overflow-y-hidden mb-2">
             <SongComponent song={song} />
           </div>
         ))}

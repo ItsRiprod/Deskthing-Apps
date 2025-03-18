@@ -56,12 +56,12 @@ export const PresetComponent: FC<PresetComponentProps> = ({ preset }) => {
               className="h-24 w-24 object-cover rounded-lg"
             />
           )}
-          <div className="flex w-full ml-2 flex-col overflow-x-hidden h-full justify-center">
+          <div className="flex w-full flex-col overflow-x-hidden h-full justify-center p-3">
             <div className="overflow-clip w-full">
-              <h1 className="text-xl text-zinc-200 text-ellipsis text-nowrap font-bold mb-2">
+              <h1 className="text-xl text-neutral-200 text-ellipsis text-nowrap overflow-hidden font-semibold">
                 {preset.title}
               </h1>
-              <p className="text-gray-400 text-ellipsis overflow-y-hidden">{preset.owner}</p>
+              <p className="text-neutral-500 text-ellipsis text-nowrap overflow-hidden font-medium">{preset.owner}</p>
             </div>
           </div>
         </div>

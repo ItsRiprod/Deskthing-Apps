@@ -116,7 +116,7 @@ export const SwipeContainer = ({
           style={{
             width: offset + 8,
             transform: `translateX(${-offset}px)`,
-            opacity: Math.min(Math.abs(offset) * 0.01, 1),
+            opacity: Math.min(offset * 0.01, 1),
           }}
           className={`flex absolute left-0 h-full items-center justify-center ${leftTriggerColor}`}
         >
@@ -129,7 +129,7 @@ export const SwipeContainer = ({
           style={{
             width: offset * -1 + 8,
             transform: `translateX(${offset * -1}px)`,
-            opacity: Math.min(Math.abs(offset) * 0.01, 1),
+            opacity: Math.min(offset * -0.01, 1),
           }}
           className={`flex absolute h-full right-0 items-center justify-center ${rightTriggerColor}`}
         >
