@@ -17,22 +17,41 @@ export const Queue = () => {
   return (
     <div className="h-full flex flex-col w-full p-4 pt-0">
       <div className="">
-        <p className="text-xl font-bold text-neutral-500 mb-2 font-geist">
+        <h1 className="text-xl font-bold text-neutral-500 mb-2 font-geist">
           Now Playing
-        </p>
-        {currentlyPlaying && (
+        </h1>
+        {currentlyPlaying ? (
           <div className="max-w-full overflow-clip mb-4">
             <SongComponent song={currentlyPlaying} />
           </div>
+        ) : (
+          <div className="w-full py-10 flex items-center justify-center">
+            <p className="text-xl text-neutral-500 font-geist">
+              No song playing
+            </p>
+          </div>
         )}
-        <p className="text-xl font-bold text-neutral-500 mb-2 font-geist">Up Next</p>
+        <h1 className="text-xl font-bold text-neutral-500 mb-2 font-geist">
+          Up Next
+        </h1>
       </div>
       <div className="overflow-y-scroll w-full h-full rounded-xl">
-        {queue.map((song, index) => (
-          <div key={index} className="max-w-full w-full overflow-y-hidden mb-2">
-            <SongComponent song={song} />
+        {queue.length > 0 ? (
+          queue.map((song, index) => (
+            <div
+              key={index}
+              className="max-w-full w-full overflow-y-hidden mb-2"
+            >
+              <SongComponent song={song} />
+            </div>
+          ))
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <p className="text-xl py-10 text-neutral-500 font-geist">
+              Queue is Empty
+            </p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

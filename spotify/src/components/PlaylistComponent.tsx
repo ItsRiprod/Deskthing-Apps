@@ -1,35 +1,52 @@
 import { DeskThing } from "@deskthing/client";
 import { Playlist } from "@shared/spotifyTypes";
-import { FC, useMemo } from "react";
+import { FC, useMemo, useState } from "react";
 import { SwipeContainer } from "@src/components/SwipeContainer";
-import { useControls } from "@src/hooks/useControls"
-import { Heart, Pin, Plus, X } from "lucide-react"
+import { useControls } from "@src/hooks/useControls";
+import { Heart, Pin, Plus, X } from "lucide-react";
+import Overlay from "./Overlay";
+import { AddToPresetOverlay } from "./AddToPresetOverlay";
 
 type PlaylistComponentProps = {
   playlist: Playlist;
 };
 
 export const PlaylistComponent: FC<PlaylistComponentProps> = ({ playlist }) => {
-  const { playPlaylist, setPlaylistToPreset, addCurrentToPlaylist } = useControls()
+  const { playPlaylist, setPlaylistToPreset, addCurrentToPlaylist } =
+    useControls();
+  const [addToPresets, setAddToPreset] = useState(false);
   const decodedImage = useMemo(
-    () => playlist.thumbnail_url && DeskThing.formatImageUrl(playlist.thumbnail_url),
+    () =>
+      playlist.thumbnail_url &&
+      DeskThing.formatImageUrl(playlist.thumbnail_url),
     [playlist.thumbnail_url]
   );
 
   const handleSwipeLeft = () => {
-    setPlaylistToPreset(playlist.index, playlist.id)
+    setAddToPreset(true);
   };
 
   const handleSwipeRight = () => {
-    addCurrentToPlaylist(playlist.id)
+    addCurrentToPlaylist(playlist.id);
+  };
+
+  const onAddClick = (index: number) => {
+    setAddToPreset(true);
+    setPlaylistToPreset(index, playlist.id);
   };
 
   const handleClick = () => {
-    playPlaylist(playlist.id)
-  }
+    playPlaylist(playlist.id);
+  };
 
   return (
     <div className="w-full rounded-xl overflow-hidden hover:bg-neutral-900">
+      {addToPresets && (
+        <AddToPresetOverlay
+          onClose={() => setAddToPreset(false)}
+          onPresetSelect={onAddClick}
+        />
+      )}
       <SwipeContainer
         onSwipeLeft={handleSwipeLeft}
         onSwipeRight={handleSwipeRight}
@@ -53,7 +70,9 @@ export const PlaylistComponent: FC<PlaylistComponentProps> = ({ playlist }) => {
               <h1 className="text-xl text-neutral-200 text-ellipsis text-nowrap overflow-hidden font-semibold">
                 {playlist.title}
               </h1>
-              <p className="text-neutral-500 text-ellipsis text-nowrap overflow-hidden font-medium">{playlist.owner}</p>
+              <p className="text-neutral-500 text-ellipsis text-nowrap overflow-hidden font-medium">
+                {playlist.owner}
+              </p>
             </div>
           </div>
         </div>

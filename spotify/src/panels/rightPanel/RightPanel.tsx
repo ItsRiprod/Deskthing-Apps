@@ -1,5 +1,4 @@
 import { FC } from "react"
-import { useUI } from "../../hooks/useUI"
 import { Presets } from "./Presets"
 
 type RightPanelTypes = {
@@ -8,7 +7,6 @@ type RightPanelTypes = {
 }
 
 export const RightPanel: FC<RightPanelTypes> = ({ className, clickable = true }) => {
-    const { panelState } = useUI()
 
     return (
         <div
@@ -16,7 +14,7 @@ export const RightPanel: FC<RightPanelTypes> = ({ className, clickable = true })
         style={{ pointerEvents: clickable ? 'auto' : 'none' }}
       >
         <div className="h-[72px] w-full flex items-center justify-between p-4">
-          <h1 className="font-geist text-2xl text-neutral-200 font-bold">{panelState}</h1>
+          <h1 className="font-geist text-2xl text-neutral-200 font-bold">Presets</h1>
           
         </div>
         <div className="max-h-full w-full overflow-y-hidden">

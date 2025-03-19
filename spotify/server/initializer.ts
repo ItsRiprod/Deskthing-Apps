@@ -143,6 +143,13 @@ DeskThing.on(SpotifyEvent.SET, async (data) => {
     case "current_to_preset":
       response = await playlistStore.addCurrentPlaylistToPreset(data.payload);
       break;
+    case "preset":
+      if (!data.payload.playlistId || !data.payload.presetNum) {
+        DeskThing.sendError("No playlistId or presetNum provided");
+        return;
+      }
+      response = await playlistStore.setPreset(data.payload.presetNum, { playlistURI: data.payload.playlistId });
+      break;
     case "like_song":
       response = await songStore.likeSong(data.payload);
       break;

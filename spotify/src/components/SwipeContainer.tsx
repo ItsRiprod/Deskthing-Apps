@@ -27,6 +27,7 @@ export const SwipeContainer = ({
   const startXRef = useRef(0);
   const isDraggingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const startTimeRef = useRef(0);
   const threshold = 100;
 
   // Use requestAnimationFrame for smoother updates
@@ -39,11 +40,13 @@ export const SwipeContainer = ({
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     startXRef.current = e.touches[0].clientX;
+    startTimeRef.current = Date.now();
     isDraggingRef.current = true;
   }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     startXRef.current = e.clientX;
+    startTimeRef.current = Date.now();
     isDraggingRef.current = true;
   }, []);
 
@@ -67,33 +70,44 @@ export const SwipeContainer = ({
     [updateOffset]
   );
 
-  const handleEnd = useCallback(() => {
-    if (!isDraggingRef.current) return;
+  const handleEnd = useCallback(
+    (e?: React.MouseEvent | React.TouchEvent) => {
+      if (!isDraggingRef.current) return;
 
-    if (offset > threshold && onSwipeLeft) {
-      onSwipeLeft();
-    } else if (offset < -threshold && onSwipeRight) {
-      onSwipeRight();
-    } else if (Math.abs(offset) < 10 && onTap) {
-      // Detect tap when there's minimal movement
-      onTap();
-    }
+      const endTime = Date.now();
+      const duration = endTime - startTimeRef.current;
 
-    // Animate back to center
-    if (containerRef.current) {
-      containerRef.current.style.transition = "transform 0.3s ease";
-      containerRef.current.style.transform = "translateX(0)";
-      // Reset transition after animation completes
-      setTimeout(() => {
-        if (containerRef.current) {
-          containerRef.current.style.transition = "";
-        }
-      }, 300);
-    }
+      if (e) {
+        e.preventDefault();
+        // Optional: track last event type to avoid duplicates
+      }
 
-    setOffset(0);
-    isDraggingRef.current = false;
-  }, [offset, onSwipeLeft, onSwipeRight, onTap, threshold]);
+      if (offset > threshold && onSwipeLeft) {
+        onSwipeLeft();
+      } else if (offset < -threshold && onSwipeRight) {
+        onSwipeRight();
+      } else if (Math.abs(offset) < 10 && duration < 300 && onTap) {
+        // Detect tap when there's minimal movement and duration is less than 300ms
+        onTap();
+      }
+
+      // Animate back to center
+      if (containerRef.current) {
+        containerRef.current.style.transition = "transform 0.3s ease";
+        containerRef.current.style.transform = "translateX(0)";
+        // Reset transition after animation completes
+        setTimeout(() => {
+          if (containerRef.current) {
+            containerRef.current.style.transition = "";
+          }
+        }, 300);
+      }
+
+      setOffset(0);
+      isDraggingRef.current = false;
+    },
+    [offset, onSwipeLeft, onSwipeRight, onTap, threshold]
+  );
 
   const memoChildren = useMemo(() => children, [children]);
 

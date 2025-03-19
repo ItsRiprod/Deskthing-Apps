@@ -5,6 +5,7 @@ import EventEmitter from "node:events";
 import { SpotifyStore } from "./spotifyStore"
 import { AuthStore } from "./authStore"
 import { getEncodedImage } from "../utils/imageUtils"
+import { Context } from "../types/spotifyAPI"
 
 type playlistStoreEvents = {
   playlistsUpdate: [Playlist[]];
@@ -76,15 +77,26 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       return;
     }
 
-    if (this.isLikedSongsPlaylist(currentPlayback.context)) {
-      await this.setLikedSongsPlaylist(playlistIndex - 1);
+    this.setPreset(playlistIndex, { Context: currentPlayback.context })
+  }
+  
+  async setPreset(index: number, options: { playlistURI?: string; Context?: Context }) {
+    if (options.Context && this.isLikedSongsPlaylist(options.Context)) {
+      await this.setLikedSongsPlaylist(index - 1);
     } else {
+      const uri = options.playlistURI || options.Context?.uri
+
+      if (!uri) {
+        DeskThing.sendError("No uri found in options");
+        return;
+      }
+
       await this.setRegularPlaylist(
-        playlistIndex - 1,
-        currentPlayback.context.uri
+        index - 1,
+        uri.includes('spotify:playlist:') ? uri : `spotify:playlist:${uri}`
       );
     }
-
+  
     await this.saveAndUpdatePlaylists();
   }
 

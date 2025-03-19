@@ -89,3 +89,13 @@ export interface GuildListStatus {
   guilds: GuildStatus[];
   textChannels: ChannelStatus[];
 }
+
+export type DMListStatus = {
+  selectedDMId: string | null
+  dms: DMStatus[]
+  channels: ChannelStatus[]
+}
+
+export type DMStatus = {
+  id: string
+}
