@@ -1,27 +1,42 @@
 import React, { useEffect, useState } from "react";
-import { WeatherStore } from "./stores";
-import { WeatherData } from "./stores/weatherStore";
 import Simple from "./components/Simple";
+import { createDeskThing } from "@deskthing/client";
+import { ToClientData, ToServerData, WeatherData, WeatherEvents } from "./types/weather";
+
+const DeskThing = createDeskThing<ToClientData, ToServerData>()
 
 const App: React.FC = () => {
-  const weatherStore = WeatherStore;
-  const [weatherData, setWeatherData] = useState<WeatherData | null>(
-    weatherStore.getWeatherData()
-  );
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
 
   useEffect(() => {
-    const handleWeatherData = async (data: WeatherData | null) => {
+    let invalid = false
+    
+    const removeListener = DeskThing.on('weather_data', (data) => {
+      if (invalid) return
       if (!data) {
-        console.log("No weather data available");
+        DeskThing.warn(`No weather data available`);
         return;
       }
-      console.log("Weather data updated:", data);
-      setWeatherData(data);
-    };
+      DeskThing.debug(`Weather data updated from callback`);
+      setWeatherData(data.payload);
+    });
 
-    const removeListener = weatherStore.on(handleWeatherData);
+    const fetchInitialData = async () => {
+      const weatherData = await DeskThing.fetch({ type: WeatherEvents.GET, request: 'weather_data' }, { type: 'weather_data' });
+      if (invalid) return
+      if (!weatherData) {
+        DeskThing.warn(`No weather data available`);
+        return;
+      }
+      DeskThing.debug(`Weather data updated from fetch`);
+      setWeatherData(weatherData);
+    }
+
+    fetchInitialData()
+
 
     return () => {
+      invalid = true
       removeListener();
     };
   }, []);

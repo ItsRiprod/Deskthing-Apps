@@ -1,25 +1,23 @@
 import { DeskThing } from '@deskthing/server';
-export { DeskThing } // Required export of this exact name for the server to connect
+import { AppSettings, SETTING_TYPES } from '@deskthing/types'
 
 const start = async () => {
-    let Data = await DeskThing.getData()
-    DeskThing.on('data', (newData) => {
-        // Syncs the data with the server
-        Data = newData
-        DeskThing.sendLog('New data received!' + Data)
-    })
+  initSettings()
+}
 
-    // Template Items
+const initSettings = () => {
+  const setting: AppSettings = {
+    view: {
+      label: "Record View",
+      value: 'record',
+      description: 'Choose the view that you want to be displayed',
+      type: SETTING_TYPES.SELECT,
+      options: [{ label: 'Default Vinyl', value: 'record' }, { label: 'Fullscreen', value: 'fullscreen' }, { label: 'Record Center', value: 'recordcenter' }]
+    }
+  }
 
-    // This is how to add settings (implementation may vary)
-    if (!Data?.settings?.view) {
-        DeskThing.addSettings({
-          "view": { label: "Record View", value: 'record', description: 'Choose the view that you want to be displayed', type: 'select', options: [{ label: 'Default Vinyl', value: 'record' }, { label: 'Fullscreen', value: 'fullscreen' }, { label: 'Record Center', value: 'recordcenter' }] }
-        })
-
-        // This will make Data.settings.theme.value equal whatever the user selects
-      }
-} 
+  DeskThing.initSettings(setting)
+}
 
 const stop = async () => {
     // Function called when the server is stopped

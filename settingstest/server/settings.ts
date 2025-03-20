@@ -1,4 +1,4 @@
-import { AppSettings } from '@deskthing/types'
+import { AppSettings, SETTING_TYPES } from '@deskthing/types'
 import { DeskThing } from '@deskthing/server';
 
 /**
@@ -19,13 +19,13 @@ export const setupSettings = async () => {
     image: {
       label: "Image URL",
       description: "Enter the URL or filepath to an image",
-      type: "string",
+      type: SETTING_TYPES.STRING,
       value: "",
     },
     number: {
       label: "Number Input",
       description: "Choose a number between 0 and 100",
-      type: "number",
+      type: SETTING_TYPES.NUMBER,
       value: 0,
       min: 0,
       max: 100,
@@ -33,19 +33,19 @@ export const setupSettings = async () => {
     boolean: {
       label: "Toggle Switch",
       description: "Switch between true and false",
-      type: "boolean",
+      type: SETTING_TYPES.BOOLEAN,
       value: false,
     },
     string: {
       label: "Text Input",
       description: "Enter any text value",
-      type: "string",
+      type: SETTING_TYPES.STRING,
       value: "",
     },
     select: {
       label: "Theme Selector",
       description: "Choose between dark and light themes",
-      type: "select",
+      type: SETTING_TYPES.SELECT,
       value: "dark",
       options: [
         { label: "Dark Theme", value: "dark" },
@@ -55,7 +55,7 @@ export const setupSettings = async () => {
     multiselect: {
       label: "Multiple Options",
       description: "Select one or more options from the list",
-      type: "multiselect",
+      type: SETTING_TYPES.MULTISELECT,
       value: ["option1", "option2"],
       options: [
         { label: "Option1", value: "option1" },
@@ -67,7 +67,7 @@ export const setupSettings = async () => {
     list: {
       label: "Settings List",
       description: "Select multiple items from the list",
-      type: "list",
+      type: SETTING_TYPES.LIST,
       value: ["item1", "item2"],
       options: [
         { label: "Item1", value: "item1" },
@@ -79,7 +79,7 @@ export const setupSettings = async () => {
     ranked: {
       label: "Ranked Options",
       description: "Rank the options from best to worst",
-      type: "ranked",
+      type: SETTING_TYPES.RANKED,
       value: ["option1", "option2"],
       options: [
         { label: "Option1", value: "option1" },
@@ -91,7 +91,7 @@ export const setupSettings = async () => {
     range: {
       label: "Range Slider",
       description: "Adjust the value using the slider",
-      type: "range",
+      type: SETTING_TYPES.RANGE,
       value: 50,
       min: 0,
       max: 100,
@@ -99,7 +99,7 @@ export const setupSettings = async () => {
     color: {
       label: "Color Selector",
       description: "Adjust the color using the color picker",
-      type: "color",
+      type: SETTING_TYPES.COLOR,
       value: "white", // Will end up being a HEX code. This is just the default data
     },
   };

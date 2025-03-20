@@ -1,58 +1,60 @@
 import { useEffect, useState } from "react";
-import { WeatherData } from "../stores/weatherStore";
-import { SettingsStore } from "../stores/settingsStore";
-import { DeskThing } from 'deskthing-client';  // Import DeskThing client for Spotify data
+import { createDeskThing } from '@deskthing/client';  // Import DeskThing client for Spotify data
 import { IconPinwheel } from "../assets/Icons";
+import { ToClientData, ToServerData, WeatherData } from "../types/weather"
+import { FromDeviceDataEvents, ToDeviceDataEvents } from "@deskthing/types"
+
+const DeskThing = createDeskThing<ToClientData, ToServerData>()
 
 interface WeatherProps {
   weatherData: WeatherData | null;
 }
 
 // Move getInstance() calls outside the hook to avoid redundant calls
-const deskThingClient = DeskThing.getInstance();
-const settingsStore = SettingsStore.getInstance();
 
 const Simple = ({ weatherData }: WeatherProps) => {
   // Initial time fetched from SettingsStore
-  const [time, setTime] = useState(() => {
-    return settingsStore.getTime().trim();
-  });
+  const [time, setTime] = useState<string | null>(null)
 
   // State to store the Spotify thumbnail URL, start with a placeholder image
   const [thumbnail, setThumbnail] = useState<string | null>();
 
   useEffect(() => {
-    const handleTime = async (time: string) => {
-      setTime(time.trim());
-    };
-
-    // Function to handle music updates (e.g., new song data)
-    const handleMusic = (data: any) => {
-      console.log('Music Data Received:', data);
-      if (data?.thumbnail) {
-        setThumbnail(data.thumbnail); // Set the thumbnail URL with real data when available
-      }
-    };
 
     // Request current song data when component mounts
 
     const fetchSong = () => {
-      deskThingClient.send({ app: 'client', type: 'get', request: 'song' });
+      DeskThing.send({ app: 'client', type: ToDeviceDataEvents.GET, request: 'music' });
     }
 
-    setTimeout(fetchSong, 1000);
+    const timeout = setTimeout(fetchSong, 1000);
 
 
     // Listen for updates to song data
-    const unsubscribe = deskThingClient.on('music', handleMusic);
+    const unsubscribe = DeskThing.on(FromDeviceDataEvents.MUSIC, (data) => {
+      if (data?.payload.thumbnail) {
+        setThumbnail(data.payload.thumbnail); // Set the thumbnail URL with real data when available
+      }
+    });
 
     // Set the time listener
-    const removeTimeListener = settingsStore.onTime(handleTime);
+    const removeTimeListener = DeskThing.on(FromDeviceDataEvents.TIME, (data) => {
+      if (typeof data.payload === 'string') {
+        setTime(data.payload);
+      } else {
+        const utcOffset = data.payload.timezoneOffset;
+        const utcTime = data.payload.utcTime;
+        const date = new Date(utcTime);
+        date.setMinutes(date.getMinutes() + utcOffset);
+        setTime(`${date.getUTCHours()}:${date.getUTCMinutes().toString().padStart(2, '0')}`);
+      }
+    });
 
     return () => {
       // Clean up listeners on unmount
       removeTimeListener();
       unsubscribe();
+      clearTimeout(timeout);
     };
   }, []);
 

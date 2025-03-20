@@ -17,20 +17,19 @@
   },
   "dependencies": {
     "@deskthing/client": "^0.10.7",
-    "@deskthing/server": "^0.10.10",
+    "@deskthing/server": "file:../../deskthing-app-server",
     "dotenv": "^16.4.7",
     "lucide-react": "^0.482.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@deskthing/cli": "^0.10.17",
-    "@deskthing/types": "^0.10.12",
+    "@deskthing/cli": "file:../../deskthing-emulator",
+    "@deskthing/types": "file:../../deskthing-types",
     "@eslint/js": "^9.9.0",
     "@types/node": "^22.6.1",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-legacy": "^5.4.3",
+    "@types/react": "19.0.12",
+    "@types/react-dom": "19.0.4",
     "@vitejs/plugin-react": "^4.3.1",
     "archiver": "^7.0.1",
     "autoprefixer": "^10.4.19",
@@ -41,9 +40,8 @@
     "eslint-plugin-react-refresh": "^0.4.9",
     "prettier": "^3.5.3",
     "tailwindcss": "^3.4.10",
-    "tsm": "^2.3.0",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
-    "vite": "^5.4.14"
+    "vite": "^6.2.2"
   }
 }

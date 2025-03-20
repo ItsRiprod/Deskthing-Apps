@@ -1,8 +1,8 @@
-import { WeatherData } from "../stores/weatherStore";
+import { WeatherData } from "../types/types"
 import WeatherIcon from "./WeatherIcon";
 
 interface WeatherProps {
-  weatherData: WeatherData | null;
+  weatherData: WeatherData;
 }
 
 const Retro = ({ weatherData }: WeatherProps) => {

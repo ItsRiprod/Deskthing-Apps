@@ -1,6 +1,6 @@
 import { CategoricalChartState } from 'recharts/types/chart/types';
-import { WeatherData } from '../stores/weatherStore';
 import { XAxis, YAxis, CartesianGrid, AreaChart, Area } from 'recharts';
+import { WeatherData } from '../types/types'
 
   interface GraphProps {
     weatherData: WeatherData | null;

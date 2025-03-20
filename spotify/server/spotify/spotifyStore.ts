@@ -88,104 +88,127 @@ export class SpotifyStore {
 
     // The request promise that gets added to queue
     const requestPromise: Promise<any> = (async () => {
-      // Check if there is an access token
-      if (!this.access_token) {
-        throw new Error(`Failed to obtain access token`);
-      }
-
-      // Setup headers
-      const headers = {
-        Authorization: `Bearer ${this.access_token}`,
-        "Content-Type": "application/json",
-      };
-
-      DeskThing.sendDebug("SpotifyStore: makeRequest - making request: " + url);
-
       try {
-        // Fetch the url
-        const response = await fetch(url, {
-          method,
-          headers,
-          body: data ? JSON.stringify(data) : null,
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId); // clear the abort
-
-        // If there is an error
-        if (!response.ok) {
-          DeskThing.sendDebug(
-            `SpotifyStore: makeRequest - request failed: ${response.status} ${response.statusText}`
-          );
-          if (response.status === 401 && retryCount < MAX_RETRIES) {
-            await this.authStore.refreshAccessToken();
-
-            DeskThing.sendDebug(
-              `SpotifyStore: makeRequest - Token is invalid for request. Adding to queue until there is a new token`
-            );
-
-            return this.makeRequest(method, url, data, {
-              forceRefresh: true,
-              attempt: retryCount + 1,
-            });
-          }
-
-          if (response.status === 429) {
-            const retryAfter = parseInt(response.headers.get('Retry-After') || '1', 10);
-            this.rateLimitDelay = retryAfter * 1000;
-            DeskThing.sendDebug(`Rate limited. Waiting ${retryAfter} seconds before retry.`);
-            await new Promise(resolve => setTimeout(resolve, this.rateLimitDelay));
-            return this.makeRequest(method, url, data, { 
-              forceRefresh: true, 
-              attempt: retryCount + 1 
-            });
-          }
-          throw new Error(`Request failed with status ${response.status}`);
+        // Check if there is an access token
+        if (!this.access_token) {
+          throw new Error(`Failed to obtain access token`);
         }
 
-        let responseData;
-        if (response.status !== 204) {
-          // No Content
-          const contentType = response.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            responseData = await response.json();
-          } else {
-            responseData = await response.text();
-            // Try to parse as JSON in case content-type is wrong
-            try {
-              responseData = JSON.parse(responseData);
-            } catch (e) {
-              // Keep as text if not valid JSON
-            }
-          }
-        }
-
-        // Cache the response
-        this.requestCache[cacheKey] = {
-          data: responseData,
-          timestamp: now,
+        // Setup headers
+        const headers = {
+          Authorization: `Bearer ${this.access_token}`,
+          "Content-Type": "application/json",
         };
 
-        return responseData;
-      } catch (error) {
-        clearTimeout(timeoutId) // clear the abort signal
+        DeskThing.sendDebug(
+          "SpotifyStore: makeRequest - making request: " + url
+        );
 
-        if (!(error instanceof Error)) {
+        try {
+          // Fetch the url
+          const response = await fetch(url, {
+            method,
+            headers,
+            body: data ? JSON.stringify(data) : null,
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId); // clear the abort
+
+          // If there is an error
+          if (!response.ok) {
+            DeskThing.sendDebug(
+              `SpotifyStore: makeRequest - request failed: ${response.status} ${response.statusText}`
+            );
+            if (response.status === 401 && retryCount < MAX_RETRIES) {
+              await this.authStore.refreshAccessToken();
+
+              DeskThing.sendDebug(
+                `SpotifyStore: makeRequest - Token is invalid for request. Adding to queue until there is a new token`
+              );
+
+              return this.makeRequest(method, url, data, {
+                forceRefresh: true,
+                attempt: retryCount + 1,
+              });
+            }
+
+            if (response.status === 429) {
+              const retryAfter = parseInt(
+                response.headers.get("Retry-After") || "1",
+                10
+              );
+              this.rateLimitDelay = retryAfter * 1000;
+              DeskThing.sendDebug(
+                `Rate limited. Waiting ${retryAfter} seconds before retry.`
+              );
+              await new Promise((resolve) =>
+                setTimeout(resolve, this.rateLimitDelay)
+              );
+              return this.makeRequest(method, url, data, {
+                forceRefresh: true,
+                attempt: retryCount + 1,
+              });
+            }
+            throw new Error(`Request failed with status ${response.status}`);
+          }
+
+          let responseData;
+          if (response.status !== 204) {
+            // No Content
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              responseData = await response.json();
+            } else {
+              responseData = await response.text();
+              // Try to parse as JSON in case content-type is wrong
+              try {
+                responseData = JSON.parse(responseData);
+              } catch (e) {
+                // Keep as text if not valid JSON
+              }
+            }
+          }
+
+          // Cache the response
+          this.requestCache[cacheKey] = {
+            data: responseData,
+            timestamp: now,
+          };
+
+          return responseData;
+        } catch (error) {
+          clearTimeout(timeoutId); // clear the abort signal
+
+          if (!(error instanceof Error)) {
+            DeskThing.sendError(`API request failed: ${error}`);
+            return;
+          }
+
+          if (error.name == "AbortError") {
+            DeskThing.sendDebug(
+              `SpotifyStore: makeRequest - request timed out: ${cacheKey}`
+            );
+            throw new Error("Request timed out after 30 seconds");
+          }
+
           DeskThing.sendError(`API request failed: ${error}`);
-          return;
+          // Remove failed requests from cache
+          if (this.requestQueue[cacheKey]) {
+            delete this.requestQueue[cacheKey];
+          }
+          throw error;
         }
-
-        if (error.name == 'AbortError') {
-          DeskThing.sendDebug(`SpotifyStore: makeRequest - request timed out: ${cacheKey}`);
-          throw new Error('Request timed out after 30 seconds');
-        }
-
-        DeskThing.sendError(`API request failed: ${error}`);
+      } catch {
         // Remove failed requests from cache
         if (this.requestQueue[cacheKey]) {
           delete this.requestQueue[cacheKey];
         }
-        throw error;
+
+        // Also delete cache if the cache is from this request
+        if (this.requestCache[cacheKey]?.timestamp == now) {
+          delete this.requestCache[cacheKey];
+        }
       }
     })();
 

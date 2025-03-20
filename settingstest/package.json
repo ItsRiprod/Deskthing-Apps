@@ -1,12 +1,12 @@
 {
   "name": "settingstest",
   "private": true,
-  "version": "0.10.0",
+  "version": "0.11.0",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:wrapper\"",
-    "build": "vite build && npm run build-server && node scripts/package.js",
+    "build": "deskthing package",
     "build-server": "esbuild server/index.ts --bundle --platform=node --outfile=dist/index.js",
     "setup": "node setup.js",
     "lint": "eslint .",
@@ -16,17 +16,17 @@
     "build-workers": "esbuild server/workers/*.ts --bundle --platform=node --outdir=dist/workers --format=cjs"
   },
   "dependencies": {
-    "@deskthing/client": "^0.10.3",
-    "@deskthing/server": "^0.10.3",
-    "@deskthing/types": "^0.10.6",
+    "@deskthing/client": "^0.10.8",
+    "@deskthing/server": "^0.10.11",
+    "@deskthing/types": "^0.10.13",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@deskthing/cli": "^0.10.18",
     "@eslint/js": "^9.9.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-legacy": "^5.4.3",
     "@vitejs/plugin-react": "^4.3.1",
     "archiver": "^7.0.1",
     "autoprefixer": "^10.4.19",

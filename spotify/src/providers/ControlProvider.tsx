@@ -34,36 +34,36 @@ export const ControlProvider: React.FC<{ children: ReactNode }> = ({ children })
     }, []);
   
     const playSong = useCallback((songId: string) => {
-      DeskThing.send({ type: SongEvent.SET, request: AUDIO_REQUESTS.PLAY, payload: { id: songId } });
+      DeskThing.send({ app: 'music', type: SongEvent.SET, request: AUDIO_REQUESTS.PLAY, payload: { id: songId } });
     }, []);
   
     const likeSong = useCallback((id?: string) => {
-      DeskThing.send({ type: SongEvent.SET, request: AUDIO_REQUESTS.LIKE, payload: id || ''});
+      DeskThing.send({ app: 'music', type: SongEvent.SET, request: AUDIO_REQUESTS.LIKE, payload: id || ''});
     }, []);
   
     const seekToPosition = useCallback((positionMs: number) => {
       DeskThing.send({ 
         type: SongEvent.SET, 
         request: AUDIO_REQUESTS.SEEK, 
-        app: 'client',
+        app: 'music',
         payload: positionMs 
       });
     }, []);
   
     const pausePlayback = useCallback(() => {
-      DeskThing.send({ type: SongEvent.SET, request: AUDIO_REQUESTS.PAUSE });
+      DeskThing.send({ app: 'music', type: SongEvent.SET, request: AUDIO_REQUESTS.PAUSE });
     }, []);
   
     const resumePlayback = useCallback(() => {
-      DeskThing.send({ type: SongEvent.SET, request: AUDIO_REQUESTS.PLAY });
+      DeskThing.send({ app: 'music', type: SongEvent.SET, request: AUDIO_REQUESTS.PLAY });
     }, []);
   
     const nextTrack = useCallback(() => {
-      DeskThing.send({ type: SongEvent.SET, request: AUDIO_REQUESTS.NEXT });
+      DeskThing.send({ app: 'music', type: SongEvent.SET, request: AUDIO_REQUESTS.NEXT });
     }, []);
   
     const previousTrack = useCallback(() => {
-      DeskThing.send({ type: SongEvent.SET, request: AUDIO_REQUESTS.PREVIOUS });
+      DeskThing.send({ app: 'music', type: SongEvent.SET, request: AUDIO_REQUESTS.PREVIOUS });
     }, []);
 
     const addToQueue = useCallback((songUri: string) => {

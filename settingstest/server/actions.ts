@@ -39,7 +39,7 @@ DeskThing.on(ServerEvent.ACTION, (data) => {
     switch (data.payload.id) {
         case 'settingAction':
             DeskThing.sendLog('Action settingAction was pressed!')
-            if (data.payload.icon == 'WandIcon') {
+            if ('version' in data.payload && data.payload.icon == 'WandIcon') {
                 DeskThing.updateIcon('settingIcon', 'WandIcon2')
             } else {
                 DeskThing.updateIcon('settingIcon', 'WantIcon')

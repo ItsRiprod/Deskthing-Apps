@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@deskthing/client": "^0.10.7",
-    "@deskthing/server": "^0.10.10",
+    "@deskthing/server": "file:../../deskthing-app-server",
     "discord-interactions": "^4.0.0",
     "discord-rpc": "^4.0.1",
     "dotenv": "^16.4.7",
@@ -25,7 +25,7 @@
     "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
-    "@deskthing/cli": "^0.10.17",
+    "@deskthing/cli": "file:../../deskthing-emulator",
     "@deskthing/types": "^0.10.12",
     "@eslint/js": "^9.17.0",
     "@types/discord-rpc": "^4.0.9",

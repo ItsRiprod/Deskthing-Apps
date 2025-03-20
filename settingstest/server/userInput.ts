@@ -13,7 +13,7 @@ export const userInput = async (): Promise<void> => {
   const Data = await DeskThing.getData();
 
   // First check if the user has already been prompted
-  if (!Data?.user_input || !Data?.second_user_input) {
+  if (!Data || !Data?.user_input || !Data?.second_user_input) {
     // Define the scopes of the request
     const requestScopes: AuthScopes = {
       user_input: {
@@ -33,7 +33,7 @@ export const userInput = async (): Promise<void> => {
 
     // Use this to get the data. It will return the callback with the user data that was inputted
     DeskThing.getUserInput(requestScopes, async (data) => {
-      if (data.payload.user_input && data.payload.second_user_input) {
+      if (data?.payload && data.payload.user_input && data.payload.second_user_input) {
         // You can either save the returned data to your data object or do something with it
         DeskThing.saveData(data.payload);
       } else {

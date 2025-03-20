@@ -5,17 +5,20 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && npm run build-server",
-    "build-server": "esbuild server/index.ts --bundle --platform=node --outdir=dist/",
+    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:wrapper\"",
+    "build": "vite build && npm run build-server && node scripts/package.js",
+    "build-server": "esbuild server/index.ts --bundle --platform=node --outfile=dist/index.js",
     "setup": "node setup.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:vite": "vite",
+    "dev:wrapper": "npx @deskthing/cli dev",
+    "build-workers": "esbuild server/workers/*.ts --bundle --platform=node --outdir=dist/workers --format=cjs"
   },
   "dependencies": {
-    "@deskthing/client": "^0.10.3",
-    "@deskthing/server": "^0.10.3",
-    "@deskthing/types": "^0.10.6",
+    "@deskthing/client": "^0.10.8",
+    "@deskthing/server": "^0.10.11",
+    "@deskthing/types": "^0.10.13",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

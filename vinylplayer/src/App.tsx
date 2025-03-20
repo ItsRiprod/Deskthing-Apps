@@ -1,43 +1,43 @@
 import React, { useEffect, useState } from 'react'
-import { Settings } from 'deskthing-client/dist/types'
 import Record from './views/Record'
 import Fullscreen from './views/Fullscreen'
 import RecordCenter from './views/RecordCenter'
-import { AppSettings, SocketData } from '@deskthing/types'
+import { AppSettings, FromDeviceDataEvents } from '@deskthing/types'
 import { DeskThing } from '@deskthing/client'
 
 const App: React.FC = () => {
-    const [currentView, setCurrentview] = useState('record')
-    const deskthing = DeskThing.getInstance()
+    const [currentView, setCurrentView] = useState('record')
 
     useEffect(() => {
-        const onSettings = async (data: SocketData) => {
+        let invalid = false
+
+        const listener = DeskThing.on(FromDeviceDataEvents.SETTINGS, async (data) => {
+            if (invalid) return
             const settings = data.payload as AppSettings
             console.log('Received data from the server!')
             console.log(data)
             if (settings.view.value) {
                 const currentView = settings.view.value
-                setCurrentview(currentView as string)
+                setCurrentView(currentView as string)
             }
-        }
-        
-        const listener = deskthing.on('settings', onSettings)
+        })
         
         const getSettings = async () => {
-            const settings = await deskthing.getSettings()
+            const settings = await DeskThing.getSettings()
+            if (invalid) return
             if (settings) {
                 if (settings.view.value) {
                     const currentView = settings.view.value
-                    setCurrentview(currentView as string)
+                    setCurrentView(currentView as string)
                 }
             } else {
                 console.log('Attempted to get settings too quick - none found')
                 await new Promise((resolve) => setTimeout(resolve, 1000))
-                const settings = await deskthing.getSettings()
+                const settings = await DeskThing.getSettings()
                 if (settings) {
                     if (settings.view.value) {
                         const currentView = settings.view.value
-                        setCurrentview(currentView as string)
+                        setCurrentView(currentView as string)
     
                         }
                 }
@@ -48,6 +48,7 @@ const App: React.FC = () => {
 
         return () => {
             listener()
+            invalid = true
         }
 
     })

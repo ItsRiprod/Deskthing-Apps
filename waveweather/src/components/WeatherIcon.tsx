@@ -1,5 +1,5 @@
 import React from 'react';
-import { WeatherData } from '../stores/weatherStore';
+import { WeatherData } from '../types/weather';
 import { IconWeather } from '../assets/Icons';
 
 interface WeatherIconProps {

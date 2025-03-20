@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { WeatherData } from "../stores/weatherStore";
+import { WeatherData } from "../types/types";
 import Graph from "./Graph";
 
 interface WeatherProps {
-  weatherData: WeatherData | null;
+  weatherData: WeatherData;
 }
 
 const Weather = ({ weatherData }: WeatherProps) => {

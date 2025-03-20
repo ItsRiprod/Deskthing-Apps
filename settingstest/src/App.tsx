@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { DeskThing } from '@deskthing/client'
-import { SocketData } from 'deskthing-client/dist/types'
+import { SocketData } from '@deskthing/types'
 
 const App: React.FC = () => {
     const [color, setColor] = useState('')

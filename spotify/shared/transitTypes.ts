@@ -1,9 +1,9 @@
-import { ServerEvent } from "@deskthing/types";
+import { SEND_TYPES, ServerEvent } from "@deskthing/types";
 import { Device, Playlist, SongQueue, SpotifySongData } from "./spotifyTypes";
 
 export type ToClientTypes =
   | {
-      type: "song";
+      type: SEND_TYPES.SONG;
       payload: SpotifySongData | { thumbnail: string };
     }
   | {

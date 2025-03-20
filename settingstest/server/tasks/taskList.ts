@@ -1,4 +1,4 @@
-import { STEP_TYPES, TaskList } from '@deskthing/types';
+import { SETTING_TYPES, STEP_TYPES, TaskList } from '@deskthing/types';
 
 export const taskList: TaskList = {
     settingTask: {
@@ -52,7 +52,7 @@ export const taskList: TaskList = {
                 type: STEP_TYPES.SETTING,
                 label: "Setting Step",
                 completed: false,
-                setting: { type: 'color', value: '#000000', label: 'Color', description: 'Select a color' }
+                setting: { type: SETTING_TYPES.COLOR, value: '#000000', label: 'Color', description: 'Select a color' }
             },
             step7: {
                 id: "step7",
@@ -85,7 +85,7 @@ export const taskList: TaskList = {
                 type: STEP_TYPES.SETTING,
                 label: "Setting Step",
                 completed: false,
-                setting: { type: 'color', value: '#000000', label: 'Color', description: 'Select a color' }
+                setting: { type: SETTING_TYPES.COLOR, value: '#000000', label: 'Color', description: 'Select a color' }
             },
         }
     },

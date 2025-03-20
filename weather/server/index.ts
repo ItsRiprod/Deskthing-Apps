@@ -1,53 +1,77 @@
-import { DeskThing as DK, SocketData } from "deskthing-server";
-const DeskThing = DK.getInstance();
-export { DeskThing }; // Required export of this exact name for the server to connect
+import {
+  AppSettings,
+  ServerEvent,
+  SETTING_TYPES,
+} from "@deskthing/types";
+import { createDeskThing } from "@deskthing/server";
 import WeatherService from "./weather";
+import { ToClientData, ToServerData, ViewOptions, WeatherEvents } from "./types"
+
+const DeskThing = createDeskThing<ToServerData, ToClientData>()
+
 
 const start = async () => {
-  const weather = WeatherService.getInstance();
-  let Data = await DeskThing.getData();
-  DeskThing.on("data", (newData) => {
-    // Syncs the data with the server
-    Data = newData;
-    if (Data) {
-      console.log("Data updating");
-      weather.updateData(Data);
-    }
-  });
+  setupSettings();
 
-  // This is how to add settings (implementation may vary)
-  if (!Data?.settings?.temp_unit || !Data?.settings?.speed_unit || !Data?.settings?.latitude || !Data?.settings?.longitude ) {
-    setupSettings()
-  }
-
-
-  const handleGet = async (request: SocketData) => {
-    if (request.request === "weather_data") {
-      const weatherData = await weather.getWeather();
-      if (weatherData) {
-        DeskThing.sendDataToClient({type: "weather_data", payload: weatherData});
-      } else {
-        console.log("Error getting weather data");
-      }
-    }
-  };
-  
-  DeskThing.on("get", handleGet);
-  const stop = async () => {
-    weather.stop()
-  };
-  DeskThing.on("stop", stop);
 };
 
+
+DeskThing.on(WeatherEvents.GET, async (request) => {
+  if (request.request === "weather_data") {
+    DeskThing.sendLog("Getting weather data");
+    const weatherData = await WeatherService.getWeather();
+    if (weatherData) {
+      DeskThing.send({ type: "weather_data", payload: weatherData });
+    } else {
+      console.log("Error getting weather data");
+    }
+  } else if (request.request === "view") {
+    const settings = await DeskThing.getSettings()
+    if (settings?.view.type == SETTING_TYPES.SELECT) {
+      DeskThing.send({ type: "view", payload: settings?.view.value as ViewOptions });
+    }
+  }
+});
+
+DeskThing.on(ServerEvent.SETTINGS, (socketData) => {
+  // Syncs the data with the server
+  if (socketData) {
+    DeskThing.sendDebug("Settings updating");
+    WeatherService.updateData(socketData.payload);
+
+    if (socketData?.payload.view.type == SETTING_TYPES.SELECT) {
+      DeskThing.sendDebug(`View updated to ${socketData.payload.view.value}`);
+      DeskThing.send({ type: "view", payload: socketData.payload.view.value as ViewOptions });
+    }
+  }
+});
+
+
 const setupSettings = async () => {
-  const response = await fetch('http://ip-api.com/json/?fields=lat,lon');
-  const { lat, lon } = await response.json();
+  let latitude: number = 0, longitude: number = 0;
   
-  DeskThing.addSettings({
+  try {
+
+    const response = await fetch("http://ip-api.com/json/?fields=lat,lon");
+    
+    
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    } else {
+      const { lat, lon } = await response.json();
+      latitude = lat;
+      longitude = lon;
+      DeskThing.sendDebug(`Latitude: ${latitude}, Longitude: ${longitude}`);
+    }
+  } catch (error) {
+    DeskThing.sendWarning("Error getting location: " + (error instanceof Error ? error.message : error));
+  }
+
+  const settings: AppSettings = {
     temp_unit: {
       label: "Temperature Unit",
       value: "f",
-      type: 'select',
+      type: SETTING_TYPES.SELECT,
       options: [
         { label: "Fahrenheit", value: "f" },
         { label: "Celsius", value: "c" },
@@ -56,7 +80,8 @@ const setupSettings = async () => {
     speed_unit: {
       label: "Wind Speed Unit",
       value: "mph",
-      type: 'select',
+      placeholder: "mph",
+      type: SETTING_TYPES.SELECT,
       options: [
         { label: "Miles Per Hour", value: "mph" },
         { label: "Kilometers Per Hour", value: "kmh" },
@@ -64,22 +89,46 @@ const setupSettings = async () => {
     },
     latitude: {
       label: "Latitude",
-      value: lat,
-      description: 'The latitude of the location you want to get weather data for. Can be found on google maps.',
-      type: 'number',
+      value: latitude,
+      description:
+        "The latitude of the location you want to get weather data for. Can be found on google maps.",
+      type: SETTING_TYPES.NUMBER,
       min: -180,
       max: 180,
     },
     longitude: {
       label: "Longitude",
-      description: 'The longitude of the location you want to get weather data for. Can be found on google maps.',
-      value: lon,
-      type: 'number',
+      description:
+        "The longitude of the location you want to get weather data for. Can be found on google maps.",
+      value: longitude,
+      type: SETTING_TYPES.NUMBER,
       min: -180,
       max: 180,
-    }
-  });
-}
+    },
+    view: {
+      label: "View",
+      description:
+        "The longitude of the location you want to get weather data for. Can be found on google maps.",
+      value: ViewOptions.SIMPLE,
+      type: SETTING_TYPES.SELECT,
+      options: [
+        { label: "Graph", value: ViewOptions.GRAPH },
+        { label: "Retro", value: ViewOptions.RETRO },
+        { label: "Simple", value: ViewOptions.SIMPLE },
+      ]
+    },
+  };
+
+
+  DeskThing.initSettings(settings);
+};
+
+
+const stop = async () => {
+  WeatherService.stop();
+};
+DeskThing.on("stop", stop);
+
 
 // Main Entrypoint of the server
 DeskThing.on("start", start);
