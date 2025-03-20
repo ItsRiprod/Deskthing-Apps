@@ -1,0 +1,24 @@
+{
+  "name": "deskthing-apps",
+  "version": "0.11.0",
+  "description": "A utility package for building all of the apps ",
+  "homepage": "https://github.com/ItsRiprod/Deskthing-Apps#readme",
+  "bugs": {
+    "url": "https://github.com/ItsRiprod/Deskthing-Apps/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ItsRiprod/Deskthing-Apps.git"
+  },
+  "license": "ISC",
+  "author": "Riprod",
+  "type": "module",
+  "main": "scripts/dist/index.js",
+  "scripts": {
+    "package": "npm run build:compile && npm run start",
+    "build:compile": "tsc",
+    "start": "node scripts/dist/index.js"  },
+  "devDependencies": {
+    "@types/node": "^22.13.10"
+  }
+}
