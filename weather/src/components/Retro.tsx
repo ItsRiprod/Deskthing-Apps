@@ -1,8 +1,9 @@
-import { WeatherData } from "../types/types"
+import { TemperatureTypes, WeatherData } from "../types/types"
 import WeatherIcon from "./WeatherIcon";
 
 interface WeatherProps {
   weatherData: WeatherData;
+  tempType: TemperatureTypes;
 }
 
 const Retro = ({ weatherData }: WeatherProps) => {

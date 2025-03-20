@@ -5,7 +5,7 @@ import {
 } from "@deskthing/types";
 import { createDeskThing } from "@deskthing/server";
 import WeatherService from "./weather";
-import { ToClientData, ToServerData, ViewOptions, WeatherEvents } from "./types"
+import { TemperatureTypes, ToClientData, ToServerData, ViewOptions, WeatherEvents } from "./types"
 
 const DeskThing = createDeskThing<ToServerData, ToClientData>()
 
@@ -30,6 +30,11 @@ DeskThing.on(WeatherEvents.GET, async (request) => {
     if (settings?.view.type == SETTING_TYPES.SELECT) {
       DeskThing.send({ type: "view", payload: settings?.view.value as ViewOptions });
     }
+  } else if (request.request === "temp_type") {
+    const settings = await DeskThing.getSettings()
+    if (settings?.temp_type.type == SETTING_TYPES.SELECT) {
+      DeskThing.send({ type: "temp_type", payload: settings?.temp_type.value as TemperatureTypes });
+    }
   }
 });
 
@@ -42,6 +47,11 @@ DeskThing.on(ServerEvent.SETTINGS, (socketData) => {
     if (socketData?.payload.view.type == SETTING_TYPES.SELECT) {
       DeskThing.sendDebug(`View updated to ${socketData.payload.view.value}`);
       DeskThing.send({ type: "view", payload: socketData.payload.view.value as ViewOptions });
+    }
+
+    if (socketData?.payload.temp_type.type == SETTING_TYPES.SELECT) {
+      DeskThing.sendDebug(`Temp type updated to ${socketData.payload.temp_type.value}`);
+      DeskThing.send({ type: "temp_type", payload: socketData.payload.temp_type.value as TemperatureTypes });
     }
   }
 });
@@ -108,13 +118,24 @@ const setupSettings = async () => {
     view: {
       label: "View",
       description:
-        "The longitude of the location you want to get weather data for. Can be found on google maps.",
+        "What the weather UI should be",
       value: ViewOptions.SIMPLE,
       type: SETTING_TYPES.SELECT,
       options: [
         { label: "Graph", value: ViewOptions.GRAPH },
         { label: "Retro", value: ViewOptions.RETRO },
         { label: "Simple", value: ViewOptions.SIMPLE },
+      ]
+    },
+    temp_type: {
+      label: "Temperature Type",
+      description:
+        "The type of temperature to display",
+      value: "apparentTemperature",
+      type: SETTING_TYPES.SELECT,
+      options: [
+        { label: "Apparent Temperature", value: TemperatureTypes.APPARENT_TEMPERATURE },
+        { label: "Actual Temperature", value: TemperatureTypes.TEMPERATURE_2M },
       ]
     },
   };

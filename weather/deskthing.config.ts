@@ -23,7 +23,8 @@ export default defineConfig({
       editCooldownMs: 1000,
       mockData: {
         settings: {
-          view: 'simple'
+          view: 'simple',
+          temp_type: "temperature2m",
         }
       }
     },

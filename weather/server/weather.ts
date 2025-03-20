@@ -30,14 +30,21 @@ class WeatherService {
 
   private async updateWeather() {
     DeskThing.sendDebug("Updating weather data...");
-    
-    if (!this.latitude || !this.longitude || this.latitude == "0" || this.longitude == "0") {
-        DeskThing.sendWarning("No latitude or longitude set! Not updating weather data");
-        return
+
+    if (
+      !this.latitude ||
+      !this.longitude ||
+      this.latitude == "0" ||
+      this.longitude == "0"
+    ) {
+      DeskThing.sendWarning(
+        "No latitude or longitude set! Not updating weather data"
+      );
+      return;
     }
-    
+
     DeskThing.sendDebug("Updating weather data...");
-    
+
     const params = {
       latitude: this.latitude,
       longitude: this.longitude,
@@ -186,7 +193,6 @@ class WeatherService {
       const new_temp_unit = (data.temp_unit.value as string) || "f";
       const new_longitude = (data.longitude.value as string) || "0";
       const new_latitude = (data.latitude.value as string) || "0";
-
       const changes =
         new_speed_unit !== this.speed_unit ||
         new_temp_unit !== this.temp_unit ||
@@ -199,14 +205,14 @@ class WeatherService {
       this.latitude = new_latitude;
 
       if (changes) {
-          DeskThing.sendDebug(
-            `New values for weather data: ${this.speed_unit}, ${this.temp_unit}, ${this.longitude}, ${this.latitude}`
-          );
-          this.updateWeather();
-        } else {
-          DeskThing.sendDebug(
-            `No settings changed: ${this.speed_unit}, ${this.temp_unit}, ${this.longitude}, ${this.latitude}`
-          );
+        DeskThing.sendDebug(
+          `New values for weather data: ${this.speed_unit}, ${this.temp_unit}, ${this.longitude}, ${this.latitude}`
+        );
+        this.updateWeather();
+      } else {
+        DeskThing.sendDebug(
+          `No settings changed: ${this.speed_unit}, ${this.temp_unit}, ${this.longitude}, ${this.latitude}`
+        );
       }
     } catch (error) {
       DeskThing.sendLog("Error updating weather data: " + error);

@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { WeatherData } from "../types/types";
+import { TemperatureTypes, WeatherData } from "../types/types";
 import Graph from "./Graph";
 
 interface WeatherProps {
   weatherData: WeatherData;
+  tempType: TemperatureTypes;
 }
 
-const Weather = ({ weatherData }: WeatherProps) => {
+const Weather = ({ weatherData, tempType }: WeatherProps) => {
   const [selectedTimeIndex, setSelectedTimeIndex] = useState<number>(0);
   const [isManualSelection, setIsManualSelection] = useState<boolean>(false);
 
@@ -46,7 +47,7 @@ const Weather = ({ weatherData }: WeatherProps) => {
   const getTemperatureForSelectedTime = () => {
     if (!weatherData) return null;
     
-    return weatherData.hourly.temperature2m[selectedTimeIndex] || null;
+    return weatherData.hourly[tempType][selectedTimeIndex] || null;
   };
 
   const handleTimeSelect = (index: number) => {

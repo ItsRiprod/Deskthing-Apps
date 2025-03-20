@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import WeatherIcon from "./WeatherIcon";
-import { WeatherData } from "../types/types";
+import { TemperatureTypes, WeatherData } from "../types/types";
 import { FromDeviceDataEvents } from "@deskthing/types";
 import { DeskThing } from "@deskthing/client";
 
 interface WeatherProps {
   weatherData: WeatherData;
+  tempType: TemperatureTypes;
 }
 
-const Simple = ({ weatherData }: WeatherProps) => {
+const Simple = ({ weatherData, tempType }: WeatherProps) => {
   const [time, setTime] = useState<null | string>(null);
 
   useEffect(() => {
@@ -41,7 +42,7 @@ const Simple = ({ weatherData }: WeatherProps) => {
       <div className="flex justify-between w-full items-center">
         <div>
           <p>
-            {Math.round(weatherData.current.temperature2m) +
+            {Math.round(weatherData.current[tempType]) +
               "°" +
               weatherData.tempUnit.toUpperCase()}
           </p>

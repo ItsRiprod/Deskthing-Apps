@@ -1,4 +1,3 @@
-
 export type WeatherData = {
   hourly: {
     time: Date[];
@@ -19,54 +18,72 @@ export type WeatherData = {
     uvIndex: number[] | Float32Array;
   };
   current: {
-      time: Date;
-      temperature2m: number;
-      relativeHumidity2m: number;
-      apparentTemperature: number;
-      isDay: number;
-      precipitation: number;
-      rain: number;
-      cloudCover: number;
-      windSpeed10m: number;
-      windDirection10m: number;
-      windGusts10m: number;
-    };
-    daily: {
-      time: Date[];
-      temperature2mMax: number[] | Float32Array;
-      temperature2mMin: number[] | Float32Array;
-      precipitationProbabilityMean: number[] | Float32Array;
-    };
-  tempUnit: string
-  speedUnit: string
-  longitude: string
-  latitude: string
+    time: Date;
+    temperature2m: number;
+    relativeHumidity2m: number;
+    apparentTemperature: number;
+    isDay: number;
+    precipitation: number;
+    rain: number;
+    cloudCover: number;
+    windSpeed10m: number;
+    windDirection10m: number;
+    windGusts10m: number;
+  };
+  daily: {
+    time: Date[];
+    temperature2mMax: number[] | Float32Array;
+    temperature2mMin: number[] | Float32Array;
+    precipitationProbabilityMean: number[] | Float32Array;
+  };
+  tempUnit: string;
+  speedUnit: string;
+  longitude: string;
+  latitude: string;
 };
 
 export enum ViewOptions {
-GRAPH = 'graph',
-RETRO = 'retro',
-SIMPLE = 'simple',
+  GRAPH = "graph",
+  RETRO = "retro",
+  SIMPLE = "simple",
 }
 
 export enum WeatherEvents {
-GET = 'get',
+  GET = "get",
 }
 
-export type ToClientData = | {
-  type: 'weather_data',
-  payload: WeatherData
-} | {
-type: 'view',
-payload: ViewOptions
+export enum TemperatureTypes {
+  APPARENT_TEMPERATURE = "apparentTemperature",
+  TEMPERATURE_2M = "temperature2m",
 }
 
-export type ToServerData = | {
-  type: WeatherEvents.GET,
-  request: 'weather_data',
-  payload?: string
-} | {
-type: WeatherEvents.GET,
-request: 'view',
-payload?: string
-}
+export type ToClientData =
+  | {
+      type: "weather_data";
+      payload: WeatherData;
+    }
+  | {
+      type: "view";
+      payload: ViewOptions;
+    }
+  | {
+      type: "temp_type";
+      payload: TemperatureTypes
+    };
+
+export type ToServerData =
+  | {
+      type: WeatherEvents.GET;
+      request: "weather_data";
+      payload?: string;
+    }
+  | {
+      type: WeatherEvents.GET;
+      request: "view";
+      payload?: string;
+    }
+  | {
+      type: WeatherEvents.GET;
+      request: "temp_type";
+      payload?: string;
+    };

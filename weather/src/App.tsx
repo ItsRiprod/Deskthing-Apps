@@ -4,6 +4,7 @@ import Retro from "./components/Retro";
 import Simple from "./components/Simple";
 import { createDeskThing } from "@deskthing/client";
 import {
+    TemperatureTypes,
   ToClientData,
   ToServerData,
   ViewOptions,
@@ -18,6 +19,7 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewOptions>(
     ViewOptions.SIMPLE
   );
+  const [tempType, setTempType] = useState<TemperatureTypes>(TemperatureTypes.APPARENT_TEMPERATURE);
 
   useEffect(() => {
     let invalid = false;
@@ -29,6 +31,7 @@ const App: React.FC = () => {
         return;
       }
       DeskThing.debug(`Weather data updated from callback`);
+      console.log(data.payload)
       setWeatherData(data.payload);
     });
 
@@ -38,8 +41,18 @@ const App: React.FC = () => {
         DeskThing.warn(`No weather data available`);
         return;
       }
-      DeskThing.debug(`Weather data updated from callback`);
+      DeskThing.debug(`View data updated from callback`);
       setCurrentView(data.payload);
+    });
+
+    const removeTempTypeListener = DeskThing.on("temp_type", (data) => {
+      if (invalid) return;
+      if (!data) {
+        DeskThing.warn(`No weather data available`);
+        return;
+      }
+      DeskThing.debug(`Temp type updated from callback`);
+      setTempType(data.payload);
     });
 
     const fetchInitialData = async () => {
@@ -71,6 +84,19 @@ const App: React.FC = () => {
           setCurrentView(socketData);
         }
       );
+      DeskThing.fetch(
+        { type: WeatherEvents.GET, request: "temp_type" },
+        { type: "temp_type" },
+        (callback) => {
+          if (invalid) return;
+          if (!callback) {
+            DeskThing.warn(`No weather data available`);
+            return;
+          }
+          DeskThing.debug(`Temp type updated from fetch`);
+          setTempType(callback);
+        }
+      );
     };
 
     fetchInitialData();
@@ -79,6 +105,7 @@ const App: React.FC = () => {
       invalid = true;
       removeWeatherListener();
       removeViewListener();
+      removeTempTypeListener();
     };
   }, []);
 
@@ -97,7 +124,7 @@ const App: React.FC = () => {
     <div className="bg-slate-800 w-screen h-screen flex justify-center items-center">
       {weatherData ? (
         CurrentViewElement ? (
-          <CurrentViewElement weatherData={weatherData} />
+          <CurrentViewElement weatherData={weatherData} tempType={tempType} />
         ) : (
           <div className="font-HelveticaNeue w-full h-full bg-zinc-700 text-white p-24 text-7xl flex justify-center items-center">
             Unknown View {currentView}
