@@ -7,7 +7,7 @@ import { AuthStore } from "./authStore";
 import { ToClientTypes, ToServerTypes } from "../../shared/transitTypes";
 import { DeviceStore } from "./deviceStore";
 import { SpotifySettingIDs } from "../setupSettings";
-import { SEND_TYPES } from "@deskthing/types"
+import { APP_REQUESTS } from "@deskthing/types"
 
 const DeskThing = createDeskThing<ToServerTypes, ToClientTypes>();
 
@@ -39,15 +39,16 @@ export class DeskthingStore {
       );
       DeskThing.send({
         app: "client",
-        type: SEND_TYPES.SONG,
+        type: APP_REQUESTS.SONG,
         payload: songData,
       })
+      DeskThing.sendSong(songData)
     })
 
     this.songStore.on("thumbnailUpdate", (thumbnail: string) => {
       DeskThing.send({
         app: "client",
-        type: SEND_TYPES.SONG,
+        type: APP_REQUESTS.SONG,
         payload: { thumbnail },
       });
     });

@@ -23,7 +23,7 @@ export const taskList: TaskList = {
                 label: "Action Step",
                 completed: false,
                 strict: true,
-                action: 'testAction'
+                action: { id: 'testAction', source: 'settingstest'  } 
             },
             step3: {
                 id: "step3",
@@ -45,7 +45,7 @@ export const taskList: TaskList = {
                 type: STEP_TYPES.SETTING,
                 label: "Setting Step",
                 completed: false,
-                setting: "multiselect" // the ID of a setting in ./settings.ts
+                setting: { id: "multiselect" } // the ID of a setting in ./settings.ts
             },
             step6: {
                 id: "step6",
@@ -60,7 +60,7 @@ export const taskList: TaskList = {
                 label: "Task Step",
                 completed: false,
                 strict: true,
-                taskId: "settingDependantTask"
+                taskReference: { id: "settingDependantTask" }
             },
             step8: {
                 id: "step8",

@@ -1,6 +1,6 @@
 
 import { DeskThing } from "@deskthing/server"
-import { ServerEvent, Step, STEP_TYPES, Task } from "@deskthing/types"
+import { DESKTHING_EVENTS, ServerEvent, Step, STEP_TYPES, Task } from "@deskthing/types"
 import { SpotifySettingIDs } from "./setupSettings"
 
 export const setupTasks = () => {
@@ -29,7 +29,7 @@ export const setupTasks = () => {
                     instructions: 'Copy the Client ID from your Spotify Application',
                     completed: false,
                     strict: true,
-                    setting: SpotifySettingIDs.CLIENT_ID
+                    setting: { id: SpotifySettingIDs.CLIENT_ID }
                 },
                 client_secret: {
                     type: STEP_TYPES.SETTING,
@@ -38,7 +38,7 @@ export const setupTasks = () => {
                     instructions: 'Copy the Client Secret from your Spotify Application',
                     completed: false,
                     strict: true,
-                    setting: SpotifySettingIDs.CLIENT_SECRET
+                    setting: { id: SpotifySettingIDs.CLIENT_SECRET }
                 },
                 setup_redirect: {
                     type: STEP_TYPES.SETTING,
@@ -47,7 +47,7 @@ export const setupTasks = () => {
                     instructions: 'Set the Redirect URI to deskthing://a?app=spotify in your Spotify Application settings',
                     completed: false,
                     strict: true,
-                    setting: SpotifySettingIDs.REDIRECT_URI
+                    setting: { id: SpotifySettingIDs.REDIRECT_URI }
                 },
                 finish_auth: {
                     type: STEP_TYPES.EXTERNAL,
@@ -64,7 +64,7 @@ export const setupTasks = () => {
 const handleStepUpdate = (step: Step) => {}
 const handleTaskUpdate = (task: Task) => {}
 
-DeskThing.on(ServerEvent.TASKS, (taskData) => {
+DeskThing.on(DESKTHING_EVENTS.TASKS, (taskData) => {
     switch (taskData.request) {
         case 'step':
             handleStepUpdate(taskData.payload)

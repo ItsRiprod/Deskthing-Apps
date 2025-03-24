@@ -1,5 +1,5 @@
 import { createDeskThing } from "@deskthing/client"
-import { SongData, SocketData } from "@deskthing/types"
+import { SongData, SocketData, DEVICE_CLIENT } from "@deskthing/types"
 import { ToClientTypes, ToServerTypes } from "@shared/transitTypes"
 import { MusicContextType, MusicContext } from "@src/contexts/MusicContext"
 import { ReactNode, useState, useRef, useCallback, useEffect } from "react"
@@ -69,7 +69,7 @@ export const MusicProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   
     useEffect(() => {
       const listeners = [
-        DeskThing.on("music", handleMusic)
+        DeskThing.on(DEVICE_CLIENT.MUSIC, handleMusic)
       ];
   
       DeskThing.getMusic().then(songData => {

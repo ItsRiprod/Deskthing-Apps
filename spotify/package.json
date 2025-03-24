@@ -16,7 +16,7 @@
     "build-workers": "esbuild server/workers/*.ts --bundle --platform=node --outdir=dist/workers --format=cjs"
   },
   "dependencies": {
-    "@deskthing/client": "^0.10.7",
+    "@deskthing/client": "file:../../deskthing-app-client",
     "@deskthing/server": "file:../../deskthing-app-server",
     "dotenv": "^16.4.7",
     "lucide-react": "^0.482.0",

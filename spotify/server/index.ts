@@ -1,4 +1,4 @@
-import { ServerEvent } from '@deskthing/types'
+import { DESKTHING_EVENTS } from '@deskthing/types'
 import { DeskThing } from '@deskthing/server'
 import { initialize } from './initializer'
 
@@ -9,4 +9,4 @@ const start = async () => {
 }
 
 
-DeskThing.on(ServerEvent.START, start)
+DeskThing.on(DESKTHING_EVENTS.START, start)

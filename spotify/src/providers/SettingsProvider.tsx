@@ -1,5 +1,5 @@
 import { createDeskThing } from "@deskthing/client"
-import { AppSettings } from "@deskthing/types"
+import { AppSettings, DEVICE_CLIENT } from "@deskthing/types"
 import { ToClientTypes, ToServerTypes } from "@shared/transitTypes"
 import { SettingsContext } from "@src/contexts/SettingsContext"
 import { ReactNode, useEffect, useState } from "react"
@@ -13,7 +13,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({
     const [settings, setSettings] = useState<AppSettings | undefined>(undefined);
   
     useEffect(() => {
-      const listener = DeskThing.on('', (data) => {
+      const listener = DeskThing.on(DEVICE_CLIENT.SETTINGS, (data) => {
         const settingsData = data.payload;
         setSettings(settingsData);
       });

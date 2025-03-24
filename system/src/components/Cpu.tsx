@@ -1,125 +1,119 @@
-import React, { useEffect, useState } from 'react';
-import LineGraph from './LineGraph';
-import ProcessStore, { ProcessData } from '../stores/ProcessStore';
+import React, { useEffect, useState } from "react";
+import LineGraph from "./LineGraph";
+import ProcessStore from "../stores/ProcessStore";
+import { SystemData } from "@shared/types";
 
 const Cpu: React.FC = () => {
-  const [processData, setProcessData] = useState<ProcessData>();
+  const [processData, setProcessData] = useState<SystemData>();
 
-    useEffect(() => {
-      const unsubscribe = ProcessStore.on((data) => {
-        setProcessData(data);
-      });
-  
-      return () => {
-        unsubscribe();
-      };
-    }, []);
+  useEffect(() => {
+    const unsubscribe = ProcessStore.on((data) => {
+      setProcessData(data);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
   return (
     <div className="w-screen h-screen bg-black flex flex-col text-white p-4">
-      <p className="text-5xl font-semibold w-full justify-center content-center items-center text-center">CPU</p>
+      <p className="text-5xl font-semibold w-full justify-center content-center items-center text-center">
+        CPU
+      </p>
       <div className="flex flex-wrap h-full">
-      {processData?.memUsage && (
-  <Graph
-    title="Memory Usage"
-    usage={processData.memUsage / 1073741824}
-    display={`${(processData.memUsage / 1073741824).toFixed(2)} GiB`}
-  />
-)}
+        {processData?.ram?.usage && (
+          <Graph
+            title="Memory Usage"
+            usage={processData.ram.usage / 1073741824}
+            display={`${(processData.ram.usage / 1073741824).toFixed(2)} GiB`}
+          />
+        )}
 
-{processData?.cpuLoad && (
-  <Graph
-    title="CPU Usage"
-    usage={processData.cpuLoad * 0.01}
-    display={`${Math.round(processData.cpuLoad)}%`}
-  />
-)}
+        {processData?.cpu?.load && (
+          <Graph
+            title="CPU Usage"
+            usage={processData.cpu.load * 0.01}
+            display={`${Math.round(processData.cpu.load)}%`}
+          />
+        )}
 
-{processData?.cpuTemp && (
-  <Graph
-    title="CPU Temperature"
-    usage={processData.cpuTemp}
-    display={`${processData.cpuTemp}°C`}
-  />
-)}
+        {processData?.cpu?.temp && (
+          <Graph
+            title="CPU Temperature"
+            usage={processData.cpu.temp}
+            display={`${processData.cpu.temp}°C`}
+          />
+        )}
 
-{processData?.gpuTemp && (
-  <Graph
-    title="GPU Temperature"
-    usage={processData.gpuTemp}
-    display={`${processData.gpuTemp}°C`}
-  />
-)}
+        {processData?.gpu?.temp && (
+          <Graph
+            title="GPU Temperature"
+            usage={processData.gpu.temp}
+            display={`${processData.gpu.temp}°C`}
+          />
+        )}
 
-{processData?.gpuUsage && (
-  <Graph
-    title="GPU Usage"
-    usage={processData.gpuUsage}
-    display={`${Math.ceil(processData.gpuUsage * 100)}%`}
-  />
-)}
+        {processData?.gpu?.usage && (
+          <Graph
+            title="GPU Usage"
+            usage={processData.gpu.usage}
+            display={`${Math.ceil(processData.gpu.usage * 100)}%`}
+          />
+        )}
 
-{processData?.uploadSpeed && (
-  <Graph
-    title="Upload Speed"
-    usage={processData.uploadSpeed  / 1048576}
-    display={`${(processData.uploadSpeed / 1048576).toFixed(2)} MB/s`}
-  />
-)}
+        {processData?.network?.upload && (
+          <Graph
+            title="Upload Speed"
+            usage={processData.network.upload / 1048576}
+            display={`${(processData.network.upload / 1048576).toFixed(
+              2
+            )} MB/s`}
+          />
+        )}
 
-{processData?.downloadSpeed && (
-  <Graph
-    title="Download Speed"
-    usage={processData.downloadSpeed / 1048576} // Convert bytes to MB
-    display={`${(processData.downloadSpeed / 1048576).toFixed(2)} MB/s`} // Convert bytes to MB and format to 2 decimal places
-  />
-)}
+        {processData?.network?.download && (
+          <Graph
+            title="Download Speed"
+            usage={processData.network.download / 1048576}
+            display={`${(processData.network.download / 1048576).toFixed(
+              2
+            )} MB/s`}
+          />
+        )}
 
-{processData?.diskRead && (
-  <Graph
-    title="Disk Read Speed"
-    usage={processData.diskRead / 1048576}
-    display={`${(processData.diskRead / 1048576).toFixed(2)} MB/s`}
-  />
-)}
+        {processData?.network?.ping && (
+          <Graph
+            title="Ping Time"
+            usage={processData.network.pingTime}
+            display={`${processData.network.pingTime} ms`}
+          />
+        )}
 
-{processData?.diskWrite && (
-  <Graph
-    title="Disk Write Speed"
-    usage={processData.diskWrite}
-    display={`${processData.diskWrite} MB/s`}
-  />
-)}
+        {processData?.processes?.count && (
+          <Graph
+            title="Total Number of Processes"
+            usage={processData.processes.count}
+            display={`${processData.processes.count}`}
+          />
+        )}
 
-{processData?.ping && (
-  <Graph
-    title="Ping Time"
-    usage={processData.pingTime}
-    display={`${processData.pingTime} ms`}
-  />
-)}
-
-{processData?.processCount && (
-  <Graph
-    title="Total Number of Processes"
-    usage={processData.processCount}
-    display={`${processData.processCount}`}
-  />
-)}
-
-{processData?.activeProcesses && (
-  <Graph
-    title="Active Processes"
-    usage={processData.activeProcesses}
-    display={`${processData.activeProcesses}`}
-  />
-)}
+        {processData?.processes?.active && (
+          <Graph
+            title="Active Processes"
+            usage={processData.processes.active}
+            display={`${processData.processes.active}`}
+          />
+        )}
       </div>
     </div>
   );
 };
 
-
-const Graph: React.FC<{  title: string; usage: number; display: string }> = ({ usage, title, display }) => {
+const Graph: React.FC<{ title: string; usage: number; display: string }> = ({
+  usage,
+  title,
+  display,
+}) => {
   return (
     <div className="relative w-1/4 border">
       <p className="absolute right-0 text-3xl font-bold">{display}</p>
@@ -132,6 +126,5 @@ const Graph: React.FC<{  title: string; usage: number; display: string }> = ({ u
     </div>
   );
 };
-
 
 export default Cpu;

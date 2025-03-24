@@ -8,7 +8,18 @@
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "noImplicitAny": false,
-    "noEmit": true
+    "noEmit": true,
+
+    "baseUrl": ".",
+
+    "paths": {
+      "@shared/*": ["./shared/*"],
+      "@server/*": ["./server/*"]
+    }
   },
-  "include": ["vite.config.ts"]
+  "include": ["server", "shared"],
+
+  "references": [
+    { "path": "./tsconfig.shared.json" }
+  ]
 }

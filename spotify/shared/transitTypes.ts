@@ -1,14 +1,17 @@
-import { SEND_TYPES, ServerEvent } from "@deskthing/types";
+import { APP_REQUESTS } from "@deskthing/types";
 import { Device, Playlist, SongQueue, SpotifySongData } from "./spotifyTypes";
+
 
 export type ToClientTypes =
   | {
-      type: SEND_TYPES.SONG;
+      type: APP_REQUESTS.SONG;
       payload: SpotifySongData | { thumbnail: string };
+      request?: string
     }
-  | {
+    | {
       type: "playlists";
       payload: Playlist[];
+      request?: string
     }
   | {
       type: "presets";
@@ -36,12 +39,12 @@ export enum SpotifyEvent {
 }
 
 export type ToServerTypes =
-  | { type: ServerEvent.GET; request: "song" }
+  | { type: SpotifyEvent.GET; request: "song" }
   | { type: SpotifyEvent.GET; request: "playlists" }
   | { type: SpotifyEvent.GET; request: "presets" }
   | { type: SpotifyEvent.GET; request: "queue" }
 
-  | { type: ServerEvent.GET; request: "refresh" }
+  | { type: SpotifyEvent.GET; request: "refresh" }
 
   | { type: SpotifyEvent.SET; request: "transfer"; payload: string }
   // Sets the current playlist to the preset

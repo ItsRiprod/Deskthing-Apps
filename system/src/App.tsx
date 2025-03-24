@@ -1,20 +1,21 @@
 import React, { useEffect, useState } from 'react'
-import { AppSettings, DeskThing } from 'deskthing-client'
 import Default from './components/Default'
 import Cpu from './components/Cpu'
+import { SystemDataEvents, ToAppData, ToClientData, ViewOptions } from '@shared/types'
+import { createDeskThing } from '@deskthing/client'
+
+const DeskThing = createDeskThing<ToClientData, ToAppData>()
 
 const App: React.FC = () => {
-    const [currentView, setCurrentview] = useState('default')
+    const [currentView, setCurrentView] = useState<ViewOptions>(ViewOptions.DEFAULT)
 
     useEffect(() => {
-        const onSettings = async (data: AppSettings) => {
-            if (data.view.value) {
-                const currentView = data.view.value
-                setCurrentview(currentView as string)
-            }
-        }
         
-        const listener = DeskThing.getInstance().on('settings', onSettings)
+        const listener = DeskThing.on(SystemDataEvents.VIEW, async (data) => {            
+            if (data.payload) {
+                setCurrentView(data.payload)
+            }
+        })
 
         return () => {
             listener()
@@ -24,9 +25,9 @@ const App: React.FC = () => {
 
     const renderView = () => {
         switch (currentView) {
-            case 'default':
+            case ViewOptions.DEFAULT:
                 return <Default />
-            case 'gpu':
+            case ViewOptions.GPU:
                 return <Cpu />
             default:
                 return <div className="text-white">Unknown View</div>

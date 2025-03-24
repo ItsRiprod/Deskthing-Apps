@@ -115,7 +115,7 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
 
       DeskThing.openUrl(auth_url);
 
-      DeskThing.scheduleTask(async () => {
+      DeskThing.setInterval(async () => {
         // Wait 10 seconds for the user to potentially respond
         await new Promise((resolve) => setTimeout(resolve, 10000));
         this.is_logging_in = false;

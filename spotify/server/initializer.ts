@@ -1,6 +1,6 @@
 import {
   AUDIO_REQUESTS,
-  ServerEvent,
+  DESKTHING_EVENTS,
   SocketData,
   SongEvent,
 } from "@deskthing/types";
@@ -212,4 +212,4 @@ const handleCallbackData = async (data: SocketData) => {
   }
 };
 
-DeskThing.on(ServerEvent.CALLBACK_DATA, handleCallbackData);
+DeskThing.on(DESKTHING_EVENTS.CALLBACK_DATA, handleCallbackData);

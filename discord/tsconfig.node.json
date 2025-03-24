@@ -20,7 +20,7 @@
       "@shared/*": ["./shared/*"]
     }
   },
-  "include": ["server"],
+  "include": ["server/**/*"],
   "references": [
     { "path": "./tsconfig.shared.json" }
   ]

@@ -1,4 +1,4 @@
-import { Action, EventMode, ServerEvent } from '@deskthing/types'
+import { Action, EventMode, DESKTHING_EVENTS } from '@deskthing/types'
 import { DeskThing } from '@deskthing/server'
 
 export const setupActions = () => {
@@ -35,7 +35,7 @@ export const setupActions = () => {
     DeskThing.registerAction(Action)
 }
 
-DeskThing.on(ServerEvent.ACTION, (data) => {
+DeskThing.on(DESKTHING_EVENTS.ACTION, (data) => {
     switch (data.payload.id) {
         case 'settingAction':
             DeskThing.sendLog('Action settingAction was pressed!')

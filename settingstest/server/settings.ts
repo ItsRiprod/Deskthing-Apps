@@ -17,12 +17,14 @@ export const setupSettings = async () => {
   // Defined the settings object. SettingsType is an interface of any setting type. This sets up the key-value pair of settings
   const Settings: AppSettings = {
     image: {
+      id: 'image',
       label: "Image URL",
       description: "Enter the URL or filepath to an image",
       type: SETTING_TYPES.STRING,
       value: "",
     },
     number: {
+      id: 'number',
       label: "Number Input",
       description: "Choose a number between 0 and 100",
       type: SETTING_TYPES.NUMBER,
@@ -31,18 +33,21 @@ export const setupSettings = async () => {
       max: 100,
     },
     boolean: {
+      id: 'boolean',
       label: "Toggle Switch",
       description: "Switch between true and false",
       type: SETTING_TYPES.BOOLEAN,
       value: false,
     },
     string: {
+      id: 'string',
       label: "Text Input",
       description: "Enter any text value",
       type: SETTING_TYPES.STRING,
       value: "",
     },
     select: {
+      id: 'select',
       label: "Theme Selector",
       description: "Choose between dark and light themes",
       type: SETTING_TYPES.SELECT,
@@ -53,6 +58,7 @@ export const setupSettings = async () => {
       ],
     },
     multiselect: {
+      id: 'multiselect',
       label: "Multiple Options",
       description: "Select one or more options from the list",
       type: SETTING_TYPES.MULTISELECT,
@@ -65,6 +71,7 @@ export const setupSettings = async () => {
       ],
     },
     list: {
+      id: 'list',
       label: "Settings List",
       description: "Select multiple items from the list",
       type: SETTING_TYPES.LIST,
@@ -77,6 +84,7 @@ export const setupSettings = async () => {
       ],
     },
     ranked: {
+      id: 'ranked',
       label: "Ranked Options",
       description: "Rank the options from best to worst",
       type: SETTING_TYPES.RANKED,
@@ -89,6 +97,7 @@ export const setupSettings = async () => {
       ],
     },
     range: {
+      id: 'range',
       label: "Range Slider",
       description: "Adjust the value using the slider",
       type: SETTING_TYPES.RANGE,
@@ -97,6 +106,7 @@ export const setupSettings = async () => {
       max: 100,
     },
     color: {
+      id: 'color',
       label: "Color Selector",
       description: "Adjust the color using the color picker",
       type: SETTING_TYPES.COLOR,

@@ -1,5 +1,5 @@
 import { DeskThing } from "@deskthing/server"
-import { ServerEvent, SETTING_TYPES } from "@deskthing/types"
+import { DESKTHING_EVENTS, SETTING_TYPES } from "@deskthing/types"
 import storeProvider from "./spotify/storeProvider"
 
 export enum SpotifySettingIDs {
@@ -14,30 +14,35 @@ export enum SpotifySettingIDs {
 export const setupSettings = () => {
     DeskThing.initSettings({
       [SpotifySettingIDs.CLIENT_ID]: {
+        id: SpotifySettingIDs.CLIENT_ID,
         type: SETTING_TYPES.STRING,
         description: "You can get your Spotify Client ID from the Spotify Developer Dashboard. You must create a new application and then under 'Client ID' Copy and paste that into this field.",
         label: "Spotify Client ID",
         value: "",
       },
       [SpotifySettingIDs.CLIENT_SECRET]: {
+        id: SpotifySettingIDs.CLIENT_SECRET,
         type: SETTING_TYPES.STRING,
         description: "You can get your Spotify Client Secret from the Spotify Developer Dashboard. You must create a new application and then under 'View Client Secret', Copy and paste that into this field.",
         label: "Spotify Client Secret", 
         value: "",
       },
       [SpotifySettingIDs.REDIRECT_URI]: {
+        id: SpotifySettingIDs.REDIRECT_URI,
         type: SETTING_TYPES.STRING,
         description: "Set the Spotify Redirect URI to deskthing://a?app=spotify and then click 'Save'",
         label: "Redirect URL",
         value: "deskthing://a?app=spotify",
       },
       [SpotifySettingIDs.CHANGE_SOURCE]: {
+        id: SpotifySettingIDs.CHANGE_SOURCE,
         type: SETTING_TYPES.BOOLEAN,
         description: "Switch Output on Select",
         label: "Switch Output on Select",
         value: true,
       },
       [SpotifySettingIDs.OUTPUT_DEVICE]: {
+        id: SpotifySettingIDs.OUTPUT_DEVICE,
         type: SETTING_TYPES.SELECT,
         description: "Select Output Device",
         label: "Output Device",
@@ -50,6 +55,7 @@ export const setupSettings = () => {
         ]
       },
       [SpotifySettingIDs.TRANSFER_PLAYBACK_ON_ERROR]: {
+        id: SpotifySettingIDs.TRANSFER_PLAYBACK_ON_ERROR,
         type: SETTING_TYPES.BOOLEAN,
         description: "Transfer Playback on Error",
         label: "Transfer Playback on Error",
@@ -58,7 +64,7 @@ export const setupSettings = () => {
     })
 }
 
-DeskThing.on(ServerEvent.SETTINGS, async (settingData) => {
+DeskThing.on(DESKTHING_EVENTS.SETTINGS, async (settingData) => {
     const settings = settingData.payload
 
     if (!settings) return

@@ -1,5 +1,6 @@
   import React, { useEffect } from 'react';
-import ProcessStore, { ProcessData } from '../stores/ProcessStore';
+import ProcessStore from '../stores/ProcessStore';
+import { SystemData } from '@shared/types'
 
   interface SidebarProps {
     selectedTab: string;
@@ -11,9 +12,9 @@ import ProcessStore, { ProcessData } from '../stores/ProcessStore';
     const [memoryUsage, setMemoryUsage] = React.useState(0);
 
     useEffect(() => {
-        const onUsageUpdate = (data: ProcessData) => {
-            setCpuUsage(data.cpuLoad);
-            setMemoryUsage(data.memUsage);
+        const onUsageUpdate = (data: SystemData) => {
+            setCpuUsage(data.cpu?.load || 0);
+            setMemoryUsage(data.ram?.usage || 0);
         };
         const removeListener = ProcessStore.on(onUsageUpdate);
 

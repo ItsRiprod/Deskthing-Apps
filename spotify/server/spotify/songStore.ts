@@ -227,7 +227,7 @@ export class SongStore extends EventEmitter<songStoreEvents> {
       shuffle_state: currentPlayback?.shuffle_state,
       repeat_state:
         currentPlayback?.repeat_state == "context"
-          ? "all"
+          ? "context"
           : currentPlayback.repeat_state,
       is_playing: currentPlayback?.is_playing,
       can_fast_forward: !currentPlayback.actions?.disallows?.seeking || true,
@@ -262,7 +262,7 @@ export class SongStore extends EventEmitter<songStoreEvents> {
       shuffle_state: currentPlayback?.shuffle_state,
       repeat_state:
         currentPlayback?.repeat_state == "context"
-          ? "all"
+          ? "context"
           : currentPlayback.repeat_state,
       is_playing: currentPlayback?.is_playing,
       can_fast_forward: !currentPlayback?.actions?.disallows?.seeking || true,
@@ -282,7 +282,7 @@ export class SongStore extends EventEmitter<songStoreEvents> {
     };
   }
 
-  async likeSong(songId?: string) {
+  async likeSong(songId?: string | boolean) {
     if (!songId) {
       const song = await this.getCurrentPlayback();
       if (!song?.item) {
@@ -292,7 +292,17 @@ export class SongStore extends EventEmitter<songStoreEvents> {
       songId = song?.item?.id as string;
     }
 
-    const isLiked = await this.checkLiked(songId);
+    let isLiked
+
+    if (typeof songId == 'boolean') {
+      isLiked = songId
+      const currentSong = await this.getCurrentPlayback()
+      songId = currentSong?.item?.id
+      if (!songId) return
+    } else {
+      isLiked = await this.checkLiked(songId);
+    }
+
     const songURL = `https://api.spotify.com/v1/me/tracks?ids=${songId}`;
 
     const data = {
