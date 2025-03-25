@@ -12,13 +12,7 @@ import {
   ToServerTypes,
 } from "@shared/types/transit";
 
-import {
-  CallStatus,
-  ChannelStatus,
-  ChatStatus,
-  GuildListStatus,
-  NotificationStatus,
-} from "@shared/types/discord";
+import { ChatStatus, GuildListStatus } from "@shared/types/discord";
 import { Action, AppState, AppStateContext } from "./AppStateContext";
 
 const DeskThing = createDeskThing<ToClientTypes, ToServerTypes>();
@@ -162,7 +156,6 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const getGuildList = () => {
-    
     dispatch({ type: "SET_CHAT_LOADING", payload: true });
     DeskThing.send({ type: DiscordEvents.GET, request: "refreshGuildList" });
   };
@@ -208,7 +201,7 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({
         if (!isValid) return;
 
         if (callStatus) {
-          dispatch({ type: "SET_CALL_STATUS", payload: callStatus });
+          dispatch({ type: "SET_CALL_STATUS", payload: callStatus.payload });
         } else {
           DeskThing.warn("Initial request for call data returned undefined");
         }
@@ -222,7 +215,7 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({
         if (!isValid) return;
 
         if (chatStatus) {
-          dispatch({ type: "SET_CHAT_STATUS", payload: chatStatus });
+          dispatch({ type: "SET_CHAT_STATUS", payload: chatStatus.payload });
         } else {
           DeskThing.warn("Initial request for chat data returned undefined");
         }
@@ -238,7 +231,7 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({
         if (notificationStatus) {
           dispatch({
             type: "SET_NOTIFICATION_STATUS",
-            payload: notificationStatus,
+            payload: notificationStatus.payload,
           });
         } else {
           DeskThing.warn(
@@ -255,7 +248,7 @@ export const AppStateProvider: React.FC<{ children: ReactNode }> = ({
         if (!isValid) return;
 
         if (guildList) {
-          dispatch({ type: "SET_GUILD_LIST", payload: guildList });
+          dispatch({ type: "SET_GUILD_LIST", payload: guildList.payload });
         } else {
           DeskThing.warn(
             "Initial request for guild list data returned undefined"

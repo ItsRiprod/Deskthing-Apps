@@ -1,7 +1,7 @@
 import { createDeskThing } from "@deskthing/server";
 import { AppSettingIDs } from "./discord/types/deskthingTypes";
 import StoreProvider from "./storeProvider";
-import { ServerEvent } from "@deskthing/types";
+import { DESKTHING_EVENTS } from "@deskthing/types";
 import {
   DiscordEvents,
   ToClientTypes,

@@ -1,5 +1,5 @@
 import { createDeskThing } from '@deskthing/server'
-import {  } from '@deskthing/types';
+import { DESKTHING_EVENTS } from '@deskthing/types';
 import { initSettings } from './utilities/initSettings'
 import { initListeners } from './utilities/initListeners'
 
@@ -10,4 +10,4 @@ const start = async () => {
   await initListeners()
 }
 // Main Entrypoint of the server
-DeskThing.on("start", start);
+DeskThing.on(DESKTHING_EVENTS.START, start);

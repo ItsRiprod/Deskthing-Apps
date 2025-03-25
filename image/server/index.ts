@@ -1,4 +1,4 @@
-import { AppSettings, ServerEvent, SETTING_TYPES } from '@deskthing/types';
+import { AppSettings, DESKTHING_EVENTS, SETTING_TYPES } from '@deskthing/types';
 import { createDeskThing } from '@deskthing/server';
 import dotenv from 'dotenv';
 
@@ -8,8 +8,12 @@ type ToClientData = {
   type: 'imageData', payload: string
 }
 
+enum IMAGE_REQUESTS {
+  GET = 'get'
+}
+
 type ToServerData = {
-  type: 'get', request: 'image', payload?: string
+  type: IMAGE_REQUESTS.GET, request: 'image', payload?: string
 }
 
 const DeskThing = createDeskThing<ToServerData, ToClientData>()
@@ -37,9 +41,10 @@ const sendImageToClient = async (imagePath: string) => {
 const start = async () => {
   const settings: AppSettings = {
     "image_source": {
-      "value": 'prompt',
-      "type": SETTING_TYPES.STRING,
-      "label": "Image Source"
+      value: 'prompt',
+      id: 'image_source',
+      type: SETTING_TYPES.STRING,
+      label: "Image Source"
     },
   }
   DeskThing.initSettings(settings)
@@ -49,7 +54,7 @@ const stop = async () => {
   // Function called when the server is stopped
 }
 
-DeskThing.on(ServerEvent.SETTINGS, async (setting) => {
+DeskThing.on(DESKTHING_EVENTS.SETTINGS, async (setting) => {
   if (setting.payload.image_source.value === 'prompt') {
     DeskThing.sendError('No Image Found')
   } else if (setting.payload.image_source.value !== 'unset' && setting.payload.image_source.type == SETTING_TYPES.STRING) {
@@ -57,7 +62,7 @@ DeskThing.on(ServerEvent.SETTINGS, async (setting) => {
   }
 })
 
-DeskThing.on('get', async (data) => {
+DeskThing.on(IMAGE_REQUESTS.GET, async (data) => {
   if (data.type == null) {
     DeskThing.sendError('No args provided!')
     return
@@ -79,7 +84,7 @@ DeskThing.on('get', async (data) => {
 })
 
 // Main Entrypoint of the server
-DeskThing.on('start', start)
+DeskThing.on(DESKTHING_EVENTS.START, start)
 
 // Main exit point of the server
-DeskThing.on('stop', stop)
+DeskThing.on(DESKTHING_EVENTS.STOP, stop)

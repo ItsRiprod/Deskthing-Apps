@@ -71,7 +71,7 @@ export type ToClientData =
       payload: TemperatureTypes
     };
 
-export type ToServerData =
+export type GenericTransitData =
   | {
       type: WeatherEvents.GET;
       request: "weather_data";

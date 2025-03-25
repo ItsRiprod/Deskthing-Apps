@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import Simple from "./components/Simple";
 import { createDeskThing } from "@deskthing/client";
-import { ToClientData, ToServerData, WeatherData, WeatherEvents } from "./types/weather";
+import { ToClientData, GenericTransitData, WeatherData, WeatherEvents } from "./types/weather";
 
-const DeskThing = createDeskThing<ToClientData, ToServerData>()
+const DeskThing = createDeskThing<ToClientData, GenericTransitData>()
 
 const App: React.FC = () => {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
@@ -24,12 +24,12 @@ const App: React.FC = () => {
     const fetchInitialData = async () => {
       const weatherData = await DeskThing.fetch({ type: WeatherEvents.GET, request: 'weather_data' }, { type: 'weather_data' });
       if (invalid) return
-      if (!weatherData) {
+      if (!weatherData?.payload) {
         DeskThing.warn(`No weather data available`);
         return;
       }
       DeskThing.debug(`Weather data updated from fetch`);
-      setWeatherData(weatherData);
+      setWeatherData(weatherData.payload);
     }
 
     fetchInitialData()

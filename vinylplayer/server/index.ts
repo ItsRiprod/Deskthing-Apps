@@ -10,6 +10,7 @@ const initSettings = () => {
     view: {
       label: "Record View",
       value: 'record',
+      id: 'view',
       description: 'Choose the view that you want to be displayed',
       type: SETTING_TYPES.SELECT,
       options: [{ label: 'Default Vinyl', value: 'record' }, { label: 'Fullscreen', value: 'fullscreen' }, { label: 'Record Center', value: 'recordcenter' }]

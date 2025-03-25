@@ -1,5 +1,5 @@
 import { createDeskThing } from "@deskthing/server";
-import { SEND_TYPES, ServerEvent, SETTING_TYPES } from "@deskthing/types";
+import { APP_REQUESTS, DESKTHING_EVENTS, SETTING_TYPES } from "@deskthing/types";
 import SystemStore from "../stores/systemStore";
 import { SystemDataKeys, ToAppData, ToClientData } from "@shared/types/index";
 import { SystemDataEvents, ViewOptions } from "../../shared/types/index";
@@ -7,8 +7,8 @@ const DeskThing = createDeskThing<ToAppData, ToClientData>();
 
 export const initListeners = async () => {
   DeskThing.fetch(
-    { type: SEND_TYPES.GET, request: "connections" },
-    { type: ServerEvent.CLIENT_STATUS, request: "connections" },
+    { type: APP_REQUESTS.GET, request: "connections" },
+    { type: DESKTHING_EVENTS.CLIENT_STATUS, request: "connections" },
     (data) => {
       if (data) {
         console.log('connections retrieved from the server: ', data)
@@ -18,7 +18,7 @@ export const initListeners = async () => {
   );
 };
 
-DeskThing.on(ServerEvent.SETTINGS, (settingData) => {
+DeskThing.on(DESKTHING_EVENTS.SETTINGS, (settingData) => {
   const setting = settingData.payload;
 
   if (!setting) return;
@@ -48,7 +48,7 @@ DeskThing.on(ServerEvent.SETTINGS, (settingData) => {
   }
 });
 
-DeskThing.on(ServerEvent.CLIENT_STATUS, (data) => {
+DeskThing.on(DESKTHING_EVENTS.CLIENT_STATUS, (data) => {
   switch (data.request) {
     case "opened":
       DeskThing.sendDebug(`Client opened app`);

@@ -1,10 +1,10 @@
 import { fetchWeatherApi } from "openmeteo";
 import * as weatherUtils from "./weatherUtils";
-import { AppSettings, SavedData, ToServerData } from "@deskthing/types";
+import { AppSettings, SavedData, GenericTransitData } from "@deskthing/types";
 import { createDeskThing } from "@deskthing/server";
 import { ToClientData, WeatherData } from "./types";
 
-const DeskThing = createDeskThing<ToServerData, ToClientData>();
+const DeskThing = createDeskThing<GenericTransitData, ToClientData>();
 
 class WeatherService {
   private weatherData: WeatherData;

@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Weather from "./components/Weather";
 import Retro from "./components/Retro";
 import Simple from "./components/Simple";
@@ -6,13 +6,13 @@ import { createDeskThing } from "@deskthing/client";
 import {
     TemperatureTypes,
   ToClientData,
-  ToServerData,
+  GenericTransitData,
   ViewOptions,
   WeatherData,
   WeatherEvents,
 } from "./types/types";
 
-const DeskThing = createDeskThing<ToClientData, ToServerData>();
+const DeskThing = createDeskThing<ToClientData, GenericTransitData>();
 
 const App: React.FC = () => {
   const [weatherData, setWeatherData] = useState<WeatherData | null>();
@@ -61,12 +61,12 @@ const App: React.FC = () => {
         { type: "weather_data" },
         (callback) => {
           if (invalid) return;
-          if (!callback) {
+          if (!callback?.payload) {
             DeskThing.warn(`No weather data available`);
             return;
           }
           DeskThing.debug(`Weather data updated from fetch`);
-          setWeatherData(callback);
+          setWeatherData(callback.payload);
         }
       );
       DeskThing.fetch(
@@ -74,14 +74,14 @@ const App: React.FC = () => {
         { type: "view" },
         (socketData) => {
           if (invalid) return;
-          if (!socketData) {
+          if (!socketData?.payload) {
             DeskThing.warn(`No weather data available`);
             return;
           }
           DeskThing.debug(
-            `View data updated from fetch ${JSON.stringify(socketData)}`
+            `View data updated from fetch ${JSON.stringify(socketData.payload)}`
           );
-          setCurrentView(socketData);
+          setCurrentView(socketData.payload);
         }
       );
       DeskThing.fetch(
@@ -89,12 +89,12 @@ const App: React.FC = () => {
         { type: "temp_type" },
         (callback) => {
           if (invalid) return;
-          if (!callback) {
+          if (!callback?.payload) {
             DeskThing.warn(`No weather data available`);
             return;
           }
           DeskThing.debug(`Temp type updated from fetch`);
-          setTempType(callback);
+          setTempType(callback.payload);
         }
       );
     };

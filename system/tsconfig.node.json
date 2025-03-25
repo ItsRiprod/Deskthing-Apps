@@ -19,7 +19,5 @@
   },
   "include": ["server", "shared"],
 
-  "references": [
-    { "path": "./tsconfig.shared.json" }
-  ]
+  "references": [{ "path": "./tsconfig.shared.json" }]
 }

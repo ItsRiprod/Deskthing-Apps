@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Record from './views/Record'
 import Fullscreen from './views/Fullscreen'
 import RecordCenter from './views/RecordCenter'
-import { AppSettings, FromDeviceDataEvents } from '@deskthing/types'
+import { AppSettings, DEVICE_CLIENT } from '@deskthing/types'
 import { DeskThing } from '@deskthing/client'
 
 const App: React.FC = () => {
@@ -11,7 +11,7 @@ const App: React.FC = () => {
     useEffect(() => {
         let invalid = false
 
-        const listener = DeskThing.on(FromDeviceDataEvents.SETTINGS, async (data) => {
+        const listener = DeskThing.on(DEVICE_CLIENT.SETTINGS, async (data) => {
             if (invalid) return
             const settings = data.payload as AppSettings
             console.log('Received data from the server!')

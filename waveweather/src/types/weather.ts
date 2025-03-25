@@ -52,7 +52,7 @@ export enum WeatherEvents {
       payload: WeatherData
   }
   
-  export type ToServerData = {
+  export type GenericTransitData = {
       type: WeatherEvents.GET,
       request: 'weather_data',
       payload?: string

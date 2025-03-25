@@ -1,9 +1,9 @@
 import { DeskThing } from '@deskthing/server';
-import { ServerEvent } from '@deskthing/types';
+import { DESKTHING_EVENTS } from '@deskthing/types';
 import dotenv from 'dotenv'
 dotenv.config()
 
-DeskThing.on(ServerEvent.START, async () => {
+DeskThing.on(DESKTHING_EVENTS.START, async () => {
 
   // Avoids importing any code prior to deskthing being initialized
 
@@ -19,4 +19,4 @@ DeskThing.on(ServerEvent.START, async () => {
 })
 
 
-DeskThing.on(ServerEvent.STOP, () => {})
+DeskThing.on(DESKTHING_EVENTS.STOP, () => {})

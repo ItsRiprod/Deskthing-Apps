@@ -1,5 +1,5 @@
 import { DeskThing } from "@deskthing/server";
-import { ServerEvent, Action } from "@deskthing/types";
+import { DESKTHING_EVENTS, Action } from "@deskthing/types";
 import StoreProvider from "./storeProvider";
 import { AppSettingIDs } from "./discord/types/deskthingTypes"
 
@@ -187,7 +187,7 @@ const actionHandlers: Record<string, actionHandler> = {
   },
 };
 
-DeskThing.on(ServerEvent.ACTION, (actionData) => {
+DeskThing.on(DESKTHING_EVENTS.ACTION, (actionData) => {
   const { id, value } = actionData.payload;
   const handler = actionHandlers[id];
 

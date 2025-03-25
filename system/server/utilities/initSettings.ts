@@ -1,5 +1,5 @@
 import { DeskThing } from "@deskthing/server";
-import { AppSettings, ServerEvent, SETTING_TYPES } from "@deskthing/types";
+import { AppSettings, DESKTHING_EVENTS, SETTING_TYPES } from "@deskthing/types";
 import { SystemDataKeys } from "@shared/types/"
 
 export const initSettings = async () => {
@@ -14,6 +14,7 @@ export const initSettings = async () => {
 
   const settings: AppSettings = {
     view: {
+      id: 'view',
       label: "System View",
       type: SETTING_TYPES.SELECT,
       description: "Choose the GUI you want",
@@ -24,6 +25,7 @@ export const initSettings = async () => {
       ],
     },
     include_stats: {
+      id: 'include_stats',
       label: "Included Stats",
       type: SETTING_TYPES.MULTISELECT,
       description: "Choose the GUI you want",
@@ -35,6 +37,7 @@ export const initSettings = async () => {
       })),
     },
     update_interval: {
+      id: 'update_interval',
       label: "Update Interval",
       type: SETTING_TYPES.NUMBER,
       description: "The rate at which data updates (in seconds)",

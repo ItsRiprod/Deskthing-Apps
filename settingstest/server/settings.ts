@@ -114,6 +114,6 @@ export const setupSettings = async () => {
     },
   };
 
-  // This adds the settings to the server. When the user changes a setting, the 'ServerEvent.SETTINGS' callback is triggered
+  // This adds the settings to the server. When the user changes a setting, the 'DESKTHING_EVENTS.SETTINGS' callback is triggered
   DeskThing.initSettings(Settings);
 };

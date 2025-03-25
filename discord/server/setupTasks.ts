@@ -1,5 +1,5 @@
 import { DeskThing } from "@deskthing/server"
-import { ServerEvent, SETTING_TYPES, Step, STEP_TYPES, Task } from "@deskthing/types"
+import { DESKTHING_EVENTS, SETTING_TYPES, Step, STEP_TYPES, Task } from "@deskthing/types"
 import { AppSettingIDs } from "./discord/types/deskthingTypes"
 
 export const setupTasks = () => {
@@ -28,7 +28,7 @@ export const setupTasks = () => {
                     instructions: 'Under the OAuth tab, copy the Client ID for the Discord Application',
                     completed: false,
                     strict: true,
-                    setting: AppSettingIDs.CLIENT_ID
+                    setting: { id: AppSettingIDs.CLIENT_ID }
                 },
                 client_secret: {
                     type: STEP_TYPES.SETTING,
@@ -37,7 +37,7 @@ export const setupTasks = () => {
                     instructions: 'Under the OAuth tab, copy the Client Secret for the Discord Application. You may have to regenerate the secret.',
                     completed: false,
                     strict: true,
-                    setting: AppSettingIDs.CLIENT_SECRET
+                    setting: { id: AppSettingIDs.CLIENT_SECRET }
                 },
                 ensure_discord_open: {
                     type: STEP_TYPES.STEP,
@@ -80,7 +80,7 @@ export const setupTasks = () => {
                     instructions: 'Set the main text for the Rich Presence',
                     completed: false,
                     strict: true,
-                    setting: AppSettingIDs.SET_MAIN_TEXT
+                    setting: { id: AppSettingIDs.SET_MAIN_TEXT }
                 },
                 set_secondary_text: {
                     type: STEP_TYPES.SETTING,
@@ -89,7 +89,7 @@ export const setupTasks = () => {
                     instructions: 'Set the secondary text for the Rich Presence',
                     completed: false,
                     strict: true,
-                    setting: AppSettingIDs.SET_SECONDARY_TEXT
+                    setting: { id: AppSettingIDs.SET_SECONDARY_TEXT }
                 },
                 have_timer: {
                     type: STEP_TYPES.SETTING,
@@ -98,7 +98,7 @@ export const setupTasks = () => {
                     instructions: 'Have a timer running?',
                     completed: false,
                     strict: true,
-                    setting: AppSettingIDs.HAVE_TIMER
+                    setting: { id: AppSettingIDs.HAVE_TIMER }
                 }
             }
         }
@@ -108,7 +108,7 @@ export const setupTasks = () => {
 const handleStepUpdate = (step: Step) => {}
 const handleTaskUpdate = (task: Task) => {}
 
-DeskThing.on(ServerEvent.TASKS, (taskData) => {
+DeskThing.on(DESKTHING_EVENTS.TASKS, (taskData) => {
     switch (taskData.request) {
         case 'step':
             handleStepUpdate(taskData.payload)

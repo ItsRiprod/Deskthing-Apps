@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { createDeskThing } from '@deskthing/client';  // Import DeskThing client for Spotify data
 import { IconPinwheel } from "../assets/Icons";
-import { ToClientData, ToServerData, WeatherData } from "../types/weather"
-import { FromDeviceDataEvents, ToDeviceDataEvents } from "@deskthing/types"
+import { ToClientData, GenericTransitData, WeatherData } from "../types/weather"
+import { DEVICE_CLIENT, CLIENT_REQUESTS } from "@deskthing/types"
 
-const DeskThing = createDeskThing<ToClientData, ToServerData>()
+const DeskThing = createDeskThing<ToClientData, GenericTransitData>()
 
 interface WeatherProps {
   weatherData: WeatherData | null;
@@ -24,21 +24,21 @@ const Simple = ({ weatherData }: WeatherProps) => {
     // Request current song data when component mounts
 
     const fetchSong = () => {
-      DeskThing.send({ app: 'client', type: ToDeviceDataEvents.GET, request: 'music' });
+      DeskThing.send({ app: 'client', type: CLIENT_REQUESTS.GET, request: 'music' });
     }
 
     const timeout = setTimeout(fetchSong, 1000);
 
 
     // Listen for updates to song data
-    const unsubscribe = DeskThing.on(FromDeviceDataEvents.MUSIC, (data) => {
+    const unsubscribe = DeskThing.on(DEVICE_CLIENT.MUSIC, (data) => {
       if (data?.payload.thumbnail) {
         setThumbnail(data.payload.thumbnail); // Set the thumbnail URL with real data when available
       }
     });
 
     // Set the time listener
-    const removeTimeListener = DeskThing.on(FromDeviceDataEvents.TIME, (data) => {
+    const removeTimeListener = DeskThing.on(DEVICE_CLIENT.TIME, (data) => {
       if (typeof data.payload === 'string') {
         setTime(data.payload);
       } else {

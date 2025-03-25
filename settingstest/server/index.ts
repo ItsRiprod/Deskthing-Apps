@@ -4,9 +4,6 @@ import { setupSettings } from './settings';
 import { setupTasks } from './tasks/tasks';
 import { userInput } from './userInput';
 import { setupWorkers } from './workerExample';
-// Doing this is required in order for the server to link with DeskThing
-export { DeskThing }
-
 // This is triggered at the end of this file with the on('start') listener. It runs when the DeskThing starts your app. It serves as the entrypoint for your app
 const start = async () => {
     setupSettings();

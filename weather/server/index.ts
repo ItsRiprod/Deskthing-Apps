@@ -1,13 +1,13 @@
 import {
   AppSettings,
-  ServerEvent,
+  DESKTHING_EVENTS,
   SETTING_TYPES,
 } from "@deskthing/types";
 import { createDeskThing } from "@deskthing/server";
 import WeatherService from "./weather";
-import { TemperatureTypes, ToClientData, ToServerData, ViewOptions, WeatherEvents } from "./types"
+import { TemperatureTypes, ToClientData, GenericTransitData, ViewOptions, WeatherEvents } from "./types"
 
-const DeskThing = createDeskThing<ToServerData, ToClientData>()
+const DeskThing = createDeskThing<GenericTransitData, ToClientData>()
 
 
 const start = async () => {
@@ -38,7 +38,7 @@ DeskThing.on(WeatherEvents.GET, async (request) => {
   }
 });
 
-DeskThing.on(ServerEvent.SETTINGS, (socketData) => {
+DeskThing.on(DESKTHING_EVENTS.SETTINGS, (socketData) => {
   // Syncs the data with the server
   if (socketData) {
     DeskThing.sendDebug("Settings updating");
@@ -80,6 +80,7 @@ const setupSettings = async () => {
   const settings: AppSettings = {
     temp_unit: {
       label: "Temperature Unit",
+      id: "temp_unit",
       value: "f",
       type: SETTING_TYPES.SELECT,
       options: [
@@ -89,6 +90,7 @@ const setupSettings = async () => {
     },
     speed_unit: {
       label: "Wind Speed Unit",
+      id: "speed_unit",
       value: "mph",
       placeholder: "mph",
       type: SETTING_TYPES.SELECT,
@@ -99,6 +101,7 @@ const setupSettings = async () => {
     },
     latitude: {
       label: "Latitude",
+      id: "latitude",
       value: latitude,
       description:
         "The latitude of the location you want to get weather data for. Can be found on google maps.",
@@ -108,6 +111,7 @@ const setupSettings = async () => {
     },
     longitude: {
       label: "Longitude",
+      id: "longitude",
       description:
         "The longitude of the location you want to get weather data for. Can be found on google maps.",
       value: longitude,
@@ -117,6 +121,7 @@ const setupSettings = async () => {
     },
     view: {
       label: "View",
+      id: "view",
       description:
         "What the weather UI should be",
       value: ViewOptions.SIMPLE,
@@ -129,6 +134,7 @@ const setupSettings = async () => {
     },
     temp_type: {
       label: "Temperature Type",
+      id: "temp_type",
       description:
         "The type of temperature to display",
       value: "apparentTemperature",
@@ -148,8 +154,8 @@ const setupSettings = async () => {
 const stop = async () => {
   WeatherService.stop();
 };
-DeskThing.on("stop", stop);
+DeskThing.on(DESKTHING_EVENTS.STOP, stop);
 
 
 // Main Entrypoint of the server
-DeskThing.on("start", start);
+DeskThing.on(DESKTHING_EVENTS.START, start);

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import WeatherIcon from "./WeatherIcon";
 import { TemperatureTypes, WeatherData } from "../types/types";
-import { FromDeviceDataEvents } from "@deskthing/types";
+import { DEVICE_CLIENT } from "@deskthing/types";
 import { DeskThing } from "@deskthing/client";
 
 interface WeatherProps {
@@ -14,7 +14,7 @@ const Simple = ({ weatherData, tempType }: WeatherProps) => {
 
   useEffect(() => {
     const removeTimeListener = DeskThing.on(
-      FromDeviceDataEvents.TIME,
+      DEVICE_CLIENT.TIME,
       (data) => {
         if (typeof data.payload === "string") {
           setTime(data.payload);
