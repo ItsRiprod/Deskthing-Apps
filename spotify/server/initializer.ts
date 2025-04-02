@@ -212,4 +212,9 @@ const handleCallbackData = async (data: SocketData) => {
   }
 };
 
+DeskThing.on(DESKTHING_EVENTS.STOP, () => {
+  const spotifyStore = storeProvider.getSpotifyApi();
+  spotifyStore.cleanupCache();
+})
+
 DeskThing.on(DESKTHING_EVENTS.CALLBACK_DATA, handleCallbackData);

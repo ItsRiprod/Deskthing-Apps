@@ -25,7 +25,7 @@ export class SpotifyStore {
   private authStore: AuthStore;
   private requestCache: Record<string, CacheEntry | undefined> = {};
   private requestQueue: Record<string, QueueEntry | undefined> = {};
-  private cacheExpiration = 10 * 1000; // 10 seconds default expiration
+  private cacheExpiration = 10 * 500; // 5 seconds default expiration
   private access_token: string | undefined = undefined;
   private rateLimitDelay = 0;
 
@@ -42,6 +42,7 @@ export class SpotifyStore {
     url: string,
     data: Record<string, any> | null = null,
     options: {
+      signal?: AbortSignal;
       forceRefresh?: boolean;
       cacheTime?: number;
       attempt?: number;
@@ -70,8 +71,23 @@ export class SpotifyStore {
     }
 
     // Setup error handling
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const internalController = new AbortController();
+    const timeoutId = setTimeout(() => internalController.abort(), 30000); // 30 second timeout
+
+    let combinedSignal = internalController.signal;
+    if (options.signal) {
+      // If external signal aborts, we need to abort too
+      const abortListener = () => {
+        internalController.abort();
+        clearTimeout(timeoutId);
+      };
+      options.signal.addEventListener('abort', abortListener);
+      
+      // Clean up listener when done
+      setTimeout(() => {
+        options?.signal?.removeEventListener('abort', abortListener);
+      }, 0);
+    }
 
     // Then check if the request is in the cache. Only cache requests that are GET requests
     if (
@@ -110,7 +126,7 @@ export class SpotifyStore {
             method,
             headers,
             body: data ? JSON.stringify(data) : null,
-            signal: controller.signal,
+            signal: combinedSignal,
           });
 
           clearTimeout(timeoutId); // clear the abort
@@ -119,7 +135,7 @@ export class SpotifyStore {
           if (!response.ok) {
             DeskThing.sendDebug(
               `SpotifyStore: makeRequest - request failed: ${response.status} ${response.statusText}`
-            );
+            )
             if (response.status === 401 && retryCount < MAX_RETRIES) {
               await this.authStore.refreshAccessToken();
 
@@ -168,13 +184,17 @@ export class SpotifyStore {
                 // Keep as text if not valid JSON
               }
             }
+          } else {
+            DeskThing.sendDebug(
+              `SpotifyStore: makeRequest - response is not JSON: ${cacheKey}`
+            );
           }
 
           // Cache the response
           this.requestCache[cacheKey] = {
             data: responseData,
             timestamp: now,
-          };
+          }
 
           return responseData;
         } catch (error) {
@@ -192,7 +212,7 @@ export class SpotifyStore {
             throw new Error("Request timed out after 30 seconds");
           }
 
-          DeskThing.sendError(`API request failed: ${error}`);
+          DeskThing.sendError(`API request failed: ${error.message}`);
           // Remove failed requests from cache
           if (this.requestQueue[cacheKey]) {
             delete this.requestQueue[cacheKey];
@@ -222,7 +242,7 @@ export class SpotifyStore {
     return requestPromise;
   }
 
-  private cleanupCache() {
+  cleanupCache() {
     const now = Date.now();
 
     // Clean up expired cache entries
@@ -246,10 +266,10 @@ export class SpotifyStore {
     });
   }
 
-  async getCurrentPlayback(): Promise<PlayerResponse | undefined> {
+  async getCurrentPlayback({ signal }: { signal?: AbortSignal } = {}): Promise<PlayerResponse | undefined> {
     DeskThing.sendDebug("SpotifyStore: getCurrentPlayback");
     const url = `${this.BASE_URL}?additional_types=episode`;
-    return this.makeRequest("get", url);
+    return this.makeRequest("get", url, undefined, { signal });
   }
 
   async getPlaylist(playlistId: string) {
@@ -358,9 +378,9 @@ export class SpotifyStore {
     }
   }
 
-  async getCurrentQueue(): Promise<QueueResponse | undefined> {
+  async getCurrentQueue({ signal }: { signal?: AbortSignal } = {}): Promise<QueueResponse | undefined> {
     const url = `${this.BASE_URL}/queue`;
-    return this.makeRequest("get", url);
+    return this.makeRequest("get", url, undefined, { signal });
   }
 
   async getPlaylists(): Promise<PlaylistsResponse | undefined> {

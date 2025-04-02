@@ -26,7 +26,7 @@ export class SongStore extends EventEmitter<songStoreEvents> {
     repeatState: "",
     shuffleState: false,
   };
-  private is_refreshing: boolean = false;
+  private is_refreshing: { state: boolean; timestamp: number } = { state: false, timestamp: 0 };
 
   constructor(spotifyApi: SpotifyStore, deviceStore: DeviceStore) {
     super();
@@ -34,9 +34,9 @@ export class SongStore extends EventEmitter<songStoreEvents> {
     this.deviceStore = deviceStore;
   }
 
-  async getCurrentPlayback(): Promise<PlayerResponse | undefined> {
+  async getCurrentPlayback({ signal }: { signal?: AbortSignal } = {}): Promise<PlayerResponse | undefined> {
     try {
-      const currentPlayback = await this.spotifyApi.getCurrentPlayback();
+      const currentPlayback = await this.spotifyApi.getCurrentPlayback({ signal });
       if (!currentPlayback) return undefined;
       
       this.deviceStore.addDevicesFromPlayback(currentPlayback);
@@ -68,63 +68,80 @@ export class SongStore extends EventEmitter<songStoreEvents> {
   }
 
   async checkForRefresh() {
-    if (this.is_refreshing) {
+    if (this.is_refreshing.state && Date.now() - this.is_refreshing.timestamp < 5000) {
       DeskThing.sendDebug(
         `SongStore: checkForRefresh - already refreshing, skipping...`
       );
       return;
     }
-    this.is_refreshing = true;
+    this.is_refreshing = { state: true, timestamp: Date.now() };
+
     try {
-      const playback = await this.getCurrentPlayback();
-      if (!playback) {
-        DeskThing.sendWarning("Unable to get current playback (is anything playing?)");
-        return;
+      // Use AbortController for proper timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      try {
+        const playback = await this.getCurrentPlayback({ signal: controller.signal });
+        
+        // Clear timeout as request completed
+        clearTimeout(timeoutId);
+
+        if (!playback) {
+          DeskThing.sendWarning("Unable to get current playback (is anything playing?)");
+          return;
+        }
+
+        // Check for any relevant state changes
+        const stateChanged =
+          playback.item?.id !== this.recentPlaybackState.songId ||
+          playback.is_playing !== this.recentPlaybackState.isPlaying ||
+          Math.abs(
+            (playback.progress_ms || 0) - this.recentPlaybackState.progress
+          ) > 3000 || // Allow small progress differences
+          (playback.device?.volume_percent || 0) !==
+            this.recentPlaybackState.volume ||
+          playback.repeat_state !== this.recentPlaybackState.repeatState ||
+          playback.shuffle_state !== this.recentPlaybackState.shuffleState;
+
+
+        // Update our stored state
+        this.recentPlaybackState = {
+          songId: playback.item?.id || null,
+          isPlaying: playback.is_playing || false,
+          progress: playback.progress_ms || 0,
+          volume: playback.device?.volume_percent || 0,
+          repeatState: playback.repeat_state || "",
+          shuffleState: playback.shuffle_state || false,
+        };
+
+        if (stateChanged) {
+          DeskThing.sendDebug("Playback state changed, refreshing...");
+          const songData = await this.constructSongData(playback);
+          this.emit("songUpdate", songData);
+        } else {
+          DeskThing.sendDebug("No significant state changes detected");
+        }
+      } catch (error) {
+        // Handle abort errors separately from other errors
+        if (error instanceof Error && error.name === 'AbortError') {
+          DeskThing.sendError("Playback refresh request timed out");
+        } else {
+          DeskThing.sendError("Error checking for state changes: " + error);
+        }
+      } finally {
+        clearTimeout(timeoutId); // Ensure timeout is cleared in all cases
       }
-
-      // Check for any relevant state changes
-      const stateChanged =
-        playback.item?.id !== this.recentPlaybackState.songId ||
-        playback.is_playing !== this.recentPlaybackState.isPlaying ||
-        Math.abs(
-          (playback.progress_ms || 0) - this.recentPlaybackState.progress
-        ) > 3000 || // Allow small progress differences
-        (playback.device?.volume_percent || 0) !==
-          this.recentPlaybackState.volume ||
-        playback.repeat_state !== this.recentPlaybackState.repeatState ||
-        playback.shuffle_state !== this.recentPlaybackState.shuffleState;
-
-
-      // Update our stored state
-      this.recentPlaybackState = {
-        songId: playback.item?.id || null,
-        isPlaying: playback.is_playing || false,
-        progress: playback.progress_ms || 0,
-        volume: playback.device?.volume_percent || 0,
-        repeatState: playback.repeat_state || "",
-        shuffleState: playback.shuffle_state || false,
-      };
-
-      if (stateChanged) {
-        DeskThing.sendDebug("Playback state changed, refreshing...");
-        const songData = await this.constructSongData(playback);
-        this.emit("songUpdate", songData);
-      } else {
-        DeskThing.sendDebug("No significant state changes detected");
-      }
-    } catch (error) {
-      DeskThing.sendError("Error checking for state changes: " + error);
     } finally {
-      this.is_refreshing = false;
+      this.is_refreshing = { state: false, timestamp: 0 };
     }
   }
-
   async returnSongData(id: string | null = null): Promise<void> {
     DeskThing.sendDebug("SongStore: returnSongData");
     try {
       const startTime = Date.now();
       const timeout = 5000;
-      const maxAttempts = 3;
+      const maxAttempts = 1;
       let attempts = 0;
       let currentPlayback: PlayerResponse | undefined;
 

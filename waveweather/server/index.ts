@@ -11,7 +11,7 @@ const DeskThing = createDeskThing<GenericTransitData, ToClientData>()
 
 
 const start = async () => {
-  setupSettings();
+  await setupSettings();
 
 };
 
@@ -101,7 +101,7 @@ const setupSettings = async () => {
     },
   };
 
-  DeskThing.initSettings(settings);
+  await DeskThing.initSettings(settings);
 };
 
 
