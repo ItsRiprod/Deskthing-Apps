@@ -1,0 +1,22 @@
+button {
+  background: transparent;
+  background-color: transparent;
+
+  border: none;
+}
+button:focus {
+  outline: none;
+  border: none;
+}
+button:active {
+  outline: none;
+  border: none;
+}
+
+#root {
+  max-height: var(--vh);
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

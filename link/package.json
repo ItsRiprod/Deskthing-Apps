@@ -1,0 +1,44 @@
+{
+  "name": "link",
+  "private": true,
+  "version": "0.10.4",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev:vite": "vite",
+    "dev:wrapper": "npx @deskthing/cli dev",
+    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:wrapper\"",
+    "build": "npx @deskthing/cli package",
+    "setup": "node setup.js",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@deskthing/client": "^0.10.11",
+    "@deskthing/server": "^0.10.16",
+    "@deskthing/types": "latest",
+    "autoprefixer": "^10.4.21",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@deskthing/cli": "latest",
+    "@eslint/js": "^9.9.0",
+    "@types/node": "^22.10.7",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/ws": "^8.5.13",
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^8.2.2",
+    "esbuild": "^0.19.2",
+    "eslint": "^9.9.0",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.9",
+    "tailwindcss": "^3.4.10",
+    "tsm": "^2.3.0",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.0.1",
+    "vite": "^5.4.15"
+  }
+}
