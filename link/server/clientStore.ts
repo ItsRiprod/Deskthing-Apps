@@ -42,17 +42,18 @@ export class ClientStore extends EventEmitter<ClientStoreEvents> {
     }
   }
 
-  addClientId(id: string) {
+  addClientId(id: string, inc: number = 1) {
     try {
       const client: LinkClient = {
         id: id,
         color: this.generateRandomColor(),
-        score: 0,
+        score: inc,
       };
 
       this.addClient(client);
       this.emit("client-added", client);
       this.emit("clients-updated", this.clients);
+      return client;
     } catch (error) {
       DeskThing.sendLog(`Error adding client by ID: ${error}`);
     }
@@ -88,19 +89,21 @@ export class ClientStore extends EventEmitter<ClientStoreEvents> {
       const client = this.clients.find((c) => c.id === id);
       if (!client) {
         DeskThing.sendDebug(`Client not found: ${id}`);
+        return this.addClientId(id)
       }
       return client;
     } catch (error) {
       DeskThing.sendLog(`Error getting client: ${error}`);
-      return undefined;
+      return this.addClientId(id)
     }
   }
 
-  incrementScore(id: string) {
+
+  incrementScore(id: string, inc: number) {
     try {
       const client = this.clients.find((c) => c.id === id);
       if (client) {
-        client.score += 1;
+        client.score += inc;
         DeskThing.sendDebug(
           `Score incremented for client ${id}: ${client.score}`
         );
@@ -108,6 +111,7 @@ export class ClientStore extends EventEmitter<ClientStoreEvents> {
         this.emit("clients-updated", this.clients);
       } else {
         DeskThing.sendDebug(`Client not found for score increment: ${id}`);
+        this.addClientId(id, inc)
       }
     } catch (error) {
       DeskThing.sendLog(`Error incrementing score: ${error}`);

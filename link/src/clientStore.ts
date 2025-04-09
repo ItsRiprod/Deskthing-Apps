@@ -12,12 +12,15 @@ interface ClientStoreState {
   clients: LinkClient[];
   currentClientId: string | null;
   initialized: boolean;
+  scorePool: number;
+  scoreTimeout: NodeJS.Timeout | null;
   
   // Actions
   setClients: (clients: LinkClient[]) => void;
   setCurrentClientId: (id: string) => void;
   updateClient: (client: LinkClient) => void;
   incrementScore: () => void;
+  flushScorePool: () => void;
   updateColor: (color: string) => void;
   requestNewClient: () => void;
   
@@ -32,11 +35,40 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
   clients: [],
   currentClientId: null,
   initialized: false,
+  scorePool: 0,
+  scoreTimeout: null,
   
   // Actions to update state
   setClients: (clients) => {
     DeskThing.debug('Setting clients:', clients);
     set({ clients });
+  },
+
+  flushScorePool: () => {
+    const { currentClientId, scorePool, scoreTimeout } = get();
+    
+    // Clear any existing timeout
+    if (scoreTimeout) {
+      clearTimeout(scoreTimeout);
+    }
+    
+    // Only send if we have scores to send
+    if (scorePool > 0 && currentClientId) {
+      DeskThing.debug('Flushing score pool for client:', currentClientId, 'amount:', scorePool);
+      DeskThing.send({
+        type: LINK_TO_SERVER.SCORE,
+        request: 'add',
+        clientId: currentClientId,
+        payload: {
+          inc: scorePool
+        }
+      });
+      
+      // Reset the pool
+      set({ scorePool: 0, scoreTimeout: null });
+    } else {
+      set({ scoreTimeout: null });
+    }
   },
   
   setCurrentClientId: (id) => {
@@ -54,19 +86,45 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
   },
   
   incrementScore: () => {
-    const { currentClientId } = get();
-    if (currentClientId) {
-      DeskThing.debug('Incrementing score for client:', currentClientId);
-      DeskThing.send({
-        type: LINK_TO_SERVER.SCORE,
-        request: 'add',
-        clientId: currentClientId,
-        payload: {
-          inc: 1
-        }
-      });
-    } else {
+    const { currentClientId, scorePool, scoreTimeout, flushScorePool } = get();
+    
+    if (!currentClientId) {
       DeskThing.warn('Cannot increment score: no current client ID');
+      return;
+    }
+    
+    // Increment the local pool
+    const newScorePool = scorePool + 1;
+    
+    // Clear existing timeout if there is one
+    if (scoreTimeout) {
+      clearTimeout(scoreTimeout);
+    }
+    
+    // Set a new timeout to flush after 500ms of inactivity
+    const newTimeout = setTimeout(() => {
+      flushScorePool();
+    }, 200);
+    
+    // Update state
+    set((state) => { 
+
+      const clientIndex = state.clients.findIndex(client => client.id === currentClientId);
+      if (clientIndex !== -1) {
+        state.clients[clientIndex].score += 1;
+      }
+
+      return { 
+        scorePool: newScorePool,
+        scoreTimeout: newTimeout,
+        clients: state.clients,
+      };
+    });
+    
+    // Dynamically adjust threshold based on score pool size
+    const threshold = Math.max(3, Math.floor(20 * Math.log10(newScorePool + 1)));
+    if (newScorePool >= threshold) {
+      flushScorePool();
     }
   },
   

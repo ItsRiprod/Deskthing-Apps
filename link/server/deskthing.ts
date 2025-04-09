@@ -34,7 +34,7 @@ DeskThing.on(LINK_TO_SERVER.DATA, async (data) => {
 DeskThing.on(LINK_TO_SERVER.SCORE, (data) => {
   try {
     if (data.request === "add") {
-      clientStore.incrementScore(data.clientId);
+      clientStore.incrementScore(data.clientId, data.payload.inc);
       DeskThing.sendDebug(`Score increment requested for client: ${data.clientId}`);
     } else if (data.request === "get") {
       const client = clientStore.getClient(data.clientId);
@@ -129,7 +129,7 @@ DeskThing.on(DESKTHING_EVENTS.CLIENT_STATUS, async (data) => {
   try {
     switch (data.request) {
       case 'opened':
-        const clientId = data.payload.connectionId;
+        const clientId = data.payload.clientId;
         clientStore.addClientId(clientId);
         const client = clientStore.getClient(clientId);
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -150,8 +150,8 @@ DeskThing.on(DESKTHING_EVENTS.CLIENT_STATUS, async (data) => {
         }
         break;
       case 'closed':
-        clientStore.removeClient(data.payload.connectionId);
-        DeskThing.sendDebug(`Client closed: ${data.payload.connectionId}`);
+        clientStore.removeClient(data.payload.clientId);
+        DeskThing.sendDebug(`Client closed: ${data.payload.clientId}`);
         break;
       case 'disconnected':
         clientStore.removeClient(data.payload);

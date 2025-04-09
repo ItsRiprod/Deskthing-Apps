@@ -1,12 +1,10 @@
 import React, { useEffect } from "react";
-import useClientStore, { initializeClientStore, getCurrentClient } from "./clientStore";
+import useClientStore, { initializeClientStore } from "./clientStore";
 import ClientList from "./components/ClientList";
-import ScoreControls from "./components/ScoreControls";
-import ColorPicker from "./components/ColorPicker";
+import UnifiedControls from "./components/UnifiedControls"
 
 const App: React.FC = () => {
-  const { initialized, requestNewClient } = useClientStore();
-  const currentClient = getCurrentClient();
+  const { initialized } = useClientStore();
 
   useEffect(() => {
     // Initialize the client store when the component mounts
@@ -27,33 +25,13 @@ const App: React.FC = () => {
   }, [])
 
   return (
-    <div className="bg-gray-900 w-screen h-screen flex flex-col p-6 text-white">
-
-      <main className="flex-1 flex flex-col md:flex-row gap-6">
-        <div className="w-full md:w-1/3 bg-gray-800 rounded-lg p-4 shadow-lg">
-          <h2 className="text-2xl font-semibold mb-4 text-blue-300">Your Profile</h2>
-          {initialized && currentClient ? (
-            <>
-              <ColorPicker />
-              <ScoreControls />
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-48">
-              <button 
-                onClick={requestNewClient}
-                className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                Connect to Server
-              </button>
-              <p className="text-gray-400 mt-3">Connect to access customization options</p>
-            </div>
-          )}
-        </div>
-
-        <div className="w-full md:w-2/3 bg-gray-800 rounded-lg p-4 shadow-lg">
-          <h2 className="text-2xl font-semibold mb-4 text-blue-300">Connected Clients</h2>
+    <div className="bg-zinc-950 min-h-screen flex flex-col p-4 sm:p-6 text-gray-200">
+      <main className="flex-1 flex flex-col">
+        <div className="w-full bg-zinc-900 rounded-xl p-6 shadow-2xl mb-6 border border-zinc-800">
+          <h2 className="text-3xl font-bold mb-6 text-purple-400 tracking-tight">Connected Clients</h2>
           <ClientList />
         </div>
+        <UnifiedControls />
       </main>
     </div>
   );
