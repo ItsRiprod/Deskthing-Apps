@@ -1,11 +1,52 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import ProcessStore from "../stores/ProcessStore";
+import { SystemData } from "@shared/types";
+
+
 
 const Dashboard: React.FC = () => {
+
+    const [processData, setProcessData] = useState<SystemData>();
+    const [cpuTemp, setCpuTemp] = useState<number | null>(null);
+
+
+    useEffect(() => {
+        const unsubscribe = ProcessStore.on((data) => {
+          try {
+            console.log("✅ Received system data:", data);
+            if (data.gpu) {
+              console.log("GPU data:", data.gpu);
+            }
+          } catch (err) {
+            console.warn("🛑 Could not log data:", err);
+          }
+    
+          setProcessData(data);
+    
+          if (data.cpu?.temp) {
+            setCpuTemp(Math.round(data.cpu.temp));
+          }
+    
+    
+          if (data.cpu?.load !== undefined) {
+            const percent = Math.ceil(data.cpu.load * 100);
+          }
+    
+        });
+    
+        return () => {
+          unsubscribe();
+        };
+      }, []);
+
+      const cpuPercent = processData?.cpu ? Math.ceil(processData.cpu.load * 100) : null;
+
+
   return (
     <div className="flex items-center justify-center h-screen w-screen bg-black">
       <div className="grid grid-cols-2 gap-4 p-4 sm:p-8 w-full max-w-6xl">
         {/* First Row */}
-        <Box label="CPU" usage="55%" temp="68°C" bgColour="bg-[#009285]" barColour="bg-[#09CEB2]" barBgColour="bg-[#00756B]" usageLabel="temp" totalUsage="" />
+        <Box label="CPU" usage={cpuPercent !== null ? `${cpuPercent}%` : "Loading..."} temp="68°C" bgColour="bg-[#009285]" barColour="bg-[#09CEB2]" barBgColour="bg-[#00756B]" usageLabel="temp" totalUsage="" />
         <Box label="GPU" usage="40%" temp="62°C" bgColour="bg-[#1360C5]" barColour="bg-[#2E87E6]" barBgColour="bg-[#064DA6]" usageLabel="temp" totalUsage="" />
 
         {/* Second Row (spanning two columns) */}

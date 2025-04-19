@@ -96,12 +96,21 @@ export class SystemStore extends EventEmitter<SystemEvents> {
 
   private async getCpuStats() {
     if (!this.includedStats.includes("cpu")) return undefined;
-    const cpuData = await si.cpuTemperature();
-
-    return {
-      load: cpuData.main,
-      temp: cpuData.main,
-    };
+  
+    try {
+      const loadData = await si.currentLoad();
+      const tempData = await si.cpuTemperature();
+  
+      return {
+        load: loadData.currentLoad / 100, 
+        temp: tempData.main ?? 0,
+      };
+    } catch (error) {
+      return {
+        load: 0,
+        temp: 0,
+      };
+    }
   }
 
   private async getRamStats() {
@@ -137,17 +146,33 @@ export class SystemStore extends EventEmitter<SystemEvents> {
 
   async getData(): Promise<SystemData | null> {
     try {
-      this.data = {
-        cpu: await this.getCpuStats(),
-        gpu: await this.getGraphicsStats(),
-        ram: await this.getRamStats(),
-        network: await this.getNetworkStats(),
-        processes: await this.getProcessStats(),
-      };
-
+      console.log("Starting getData collection...");
+      
+      const ram = await this.getRamStats();
+      console.log("RAM stats collected:", ram);
+      
+      const cpu = await this.getCpuStats();
+      console.log("CPU stats collected:", cpu);
+      
+      const gpu = await this.getGraphicsStats();
+      console.log("GPU stats collected:", gpu);
+      
+      const network = await this.getNetworkStats();
+      console.log("Network stats collected:", network);
+      
+      const processes = await this.getProcessStats();
+      console.log("Process stats collected:", processes);
+  
+      const payload = { cpu, gpu, ram, network, processes };
+      console.log("Final payload assembled:", payload);
+  
+      this.data = payload;
+      console.log("About to emit data event");
       this.emit("data", this.data);
+      console.log("Data event emitted");
       return this.data;
     } catch (error) {
+      console.error("Error collecting system data:", error);
       this.emit("error", { error: error as Error });
       return null;
     }
