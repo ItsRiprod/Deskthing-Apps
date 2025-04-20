@@ -86,12 +86,26 @@ export class SystemStore extends EventEmitter<SystemEvents> {
 
   private async getGraphicsStats() {
     if (!this.includedStats.includes("gpu")) return undefined;
-    const gpuData = await si.graphics();
-
-    return {
-      temp: gpuData.controllers[0].temperatureGpu || 0,
-      usage: gpuData.controllers[0].utilizationGpu || 0,
-    };
+    
+    try {
+      const response = await fetch('http://localhost:3333/gpu-stats');
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const gpuStats = await response.json();
+      return {
+        temp: gpuStats.temp ?? 0,
+        usage: gpuStats.usage ?? 0,
+        // You can use other properties from gpuStats if needed
+      };
+    } catch (error) {
+      console.error("Error fetching GPU stats:", error);
+      return {
+        temp: 0,
+        usage: 0,
+      };
+    }
   }
 
   private async getCpuStats() {
@@ -99,19 +113,26 @@ export class SystemStore extends EventEmitter<SystemEvents> {
   
     try {
       const loadData = await si.currentLoad();
-      const tempData = await si.cpuTemperature();
+  
+      // Fetch from your CPU temp server
+      const response = await fetch('http://localhost:3334/cpu-temp');
+      const cpuTempData = await response.json();
+      const temp = cpuTempData.temp ?? 0;
   
       return {
-        load: loadData.currentLoad / 100, 
-        temp: tempData.main ?? 0,
+        load: loadData.currentLoad / 100, // 0.23 for 23%
+        temp: temp,
       };
     } catch (error) {
+      console.error("Error fetching CPU stats:", error);
       return {
         load: 0,
         temp: 0,
       };
     }
   }
+  
+  
 
   private async getRamStats() {
     if (!this.includedStats.includes("ram")) return undefined;
@@ -119,6 +140,7 @@ export class SystemStore extends EventEmitter<SystemEvents> {
 
     return {
       usage: ramData.active,
+      total: ramData.total,
     };
   }
 
@@ -177,6 +199,7 @@ export class SystemStore extends EventEmitter<SystemEvents> {
       return null;
     }
   }
+  
 
   async updateInterval(interval: number) {
     if (interval != this.interval) {
@@ -187,3 +210,4 @@ export class SystemStore extends EventEmitter<SystemEvents> {
 }
 
 export default SystemStore.getInstance();
+
