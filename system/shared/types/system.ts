@@ -9,6 +9,7 @@ export interface SystemData {
     },
     ram?: {
         usage: number;
+        total: number;
     },
     network?: {
         upload: number;
