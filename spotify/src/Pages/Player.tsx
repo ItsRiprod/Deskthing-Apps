@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Loading from './Loading';
 import { ScrollingText } from '../components/ScrollingText';
 import { useMusic } from '../hooks/useMusic'
@@ -9,7 +9,9 @@ const Player: React.FC = () => {
   const { panel } = useUI();
 
   if (!currentSong) {
-    return <Loading />
+    return <div className="h-screen w-screen">
+      <Loading text="Waiting for a song to be played..." />
+    </div>
   }
 
   return (

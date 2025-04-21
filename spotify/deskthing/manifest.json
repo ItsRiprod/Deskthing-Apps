@@ -1,1 +1,19 @@
-{"id":"spotify","isAudioSource":true,"isWebApp":true,"requires":[],"label":"Spotify App","version":"0.10.7","version_code":"10.7","compatible_server":11,"compatible_client":11,"description":"The primary way to interact with spotify","author":"Riprod","platforms":["windows","linux","macos"],"homepage":"deskthing.app","repository":"https://github.com/ItsRiprod/Deskthing-Apps","tags":["audiosource",false],"requiredVersions":{"server":">=0.11.0","client":">=0.11.0"},"updateUrl":"https://github.com/ItsRiprod/Deskthing-Apps"}
+{
+  "id": "spotify",
+  "isAudioSource": true,
+  "isWebApp": true,
+  "requires": [],
+  "label": "Spotify App",
+  "version": "0.10.8",
+  "version_code": "10.8",
+  "compatible_server": 11,
+  "compatible_client": 11,
+  "description": "The primary way to interact with spotify",
+  "author": "Riprod",
+  "platforms": ["windows", "linux", "macos"],
+  "homepage": "deskthing.app",
+  "repository": "https://github.com/ItsRiprod/Deskthing-Apps",
+  "tags": ["audiosource", false],
+  "requiredVersions": { "server": ">=0.11.0", "client": ">=0.11.0" },
+  "updateUrl": "https://github.com/ItsRiprod/Deskthing-Apps"
+}

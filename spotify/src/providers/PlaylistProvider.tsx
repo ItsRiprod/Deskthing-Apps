@@ -24,7 +24,7 @@ export const PlaylistProvider: React.FC<{ children: ReactNode }> = ({ children }
       const listeners = [
         DeskThing.on('playlists', (data) => {
           setPlaylists(data.payload);
-          DeskThing.debug('Got playlists', data)
+          DeskThing.debug(`Got ${data.payload.length} playlists`, data)
         }),
         DeskThing.on('presets', (data) => {
           setPresets(data.payload);

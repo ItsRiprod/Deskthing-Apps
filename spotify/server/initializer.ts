@@ -46,9 +46,13 @@ DeskThing.on(SpotifyEvent.GET, async (data) => {
   const queueStore = storeProvider.getQueueStore();
   const playlistStore = storeProvider.getPlaylistStore();
 
+  DeskThing.sendDebug(`Received spotify GET event for ${data?.request || "unknown"}`);
+
+
   switch (data.request) {
     case "playlists": {
       const playlists = await playlistStore.getAllPlaylists();
+      DeskThing.sendDebug(`Sending ${playlists.length} playlists`);
       DeskThing.send({
         app: "spotify",
         type: "playlists",
@@ -58,6 +62,7 @@ DeskThing.on(SpotifyEvent.GET, async (data) => {
     }
     case "presets": {
       const presets = await playlistStore.getPresets();
+      DeskThing.sendDebug(`Sending ${presets.length} presets`);
       DeskThing.send({
         app: "spotify",
         type: "presets",
@@ -68,6 +73,7 @@ DeskThing.on(SpotifyEvent.GET, async (data) => {
     case "queue":
       const queue = await queueStore.getQueueData();
       if (queue) {
+        DeskThing.sendDebug(`Sending ${queue?.queue?.length} queue items`);
         DeskThing.send({
           app: "spotify",
           type: "queueData",
@@ -82,7 +88,10 @@ DeskThing.on(SongEvent.SET, async (data) => {
   if (data == null) {
     DeskThing.sendError("No args provided");
     return;
-  }
+  } 
+
+  DeskThing.sendDebug(`Received song SET event for ${data?.request || "unknown"}`);
+
 
   const actionStore = storeProvider.getActionStore();
   const songStore = storeProvider.getSongStore();
@@ -132,6 +141,9 @@ DeskThing.on(SpotifyEvent.SET, async (data) => {
     return;
   }
 
+  DeskThing.sendDebug(`Received SET event for ${data?.request || "unknown"}`);
+
+
   const actionStore = storeProvider.getActionStore();
   const songStore = storeProvider.getSongStore();
   const playlistStore = storeProvider.getPlaylistStore();
@@ -144,7 +156,7 @@ DeskThing.on(SpotifyEvent.SET, async (data) => {
       response = await playlistStore.addCurrentPlaylistToPreset(data.payload);
       break;
     case "preset":
-      if (!data.payload.playlistId || !data.payload.presetNum) {
+      if (!data.payload.playlistId || data.payload.presetNum == undefined) {
         DeskThing.sendError("No playlistId or presetNum provided");
         return;
       }
@@ -162,6 +174,8 @@ DeskThing.on(SpotifyEvent.ADD, async (data) => {
     DeskThing.sendError("No args provided");
     return;
   }
+
+  DeskThing.sendDebug(`Received ADD event for ${data?.request || "unknown"}`);
 
   const queueStore = storeProvider.getQueueStore();
   const playlistStore = storeProvider.getPlaylistStore();

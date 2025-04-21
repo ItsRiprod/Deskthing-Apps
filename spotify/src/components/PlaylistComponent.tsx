@@ -3,8 +3,7 @@ import { Playlist } from "@shared/spotifyTypes";
 import { FC, useMemo, useState } from "react";
 import { SwipeContainer } from "@src/components/SwipeContainer";
 import { useControls } from "@src/hooks/useControls";
-import { Heart, Pin, Plus, X } from "lucide-react";
-import Overlay from "./Overlay";
+import { Pin, Plus } from "lucide-react";
 import { AddToPresetOverlay } from "./AddToPresetOverlay";
 
 type PlaylistComponentProps = {
@@ -18,7 +17,7 @@ export const PlaylistComponent: FC<PlaylistComponentProps> = ({ playlist }) => {
   const decodedImage = useMemo(
     () =>
       playlist.thumbnail_url &&
-      DeskThing.formatImageUrl(playlist.thumbnail_url),
+      DeskThing.useProxy(playlist.thumbnail_url),
     [playlist.thumbnail_url]
   );
 

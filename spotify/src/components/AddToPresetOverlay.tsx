@@ -26,7 +26,7 @@ export const AddToPresetOverlay: FC<AddToPresetOverlayProps> = ({
             <button
               key={preset.index}
               onClick={() => {
-                onPresetSelect(preset.index);
+                onPresetSelect(preset.index - 1); // the index is off by one
                 onClose();
               }}
             >

@@ -12,7 +12,7 @@ type SongComponentProps = {
 export const SongComponent: FC<SongComponentProps> = ({ song }) => {
   const { addToQueue, nextTrack, likeSong } = useControls()
   const decodedImage = useMemo(
-    () => song.thumbnail && DeskThing.formatImageUrl(song.thumbnail),
+    () => song.thumbnail && DeskThing.useProxy(song.thumbnail),
     [song.thumbnail]
   );
 

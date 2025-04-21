@@ -1,9 +1,9 @@
 import { SpotifyStore } from "./spotifyStore";
 import { DeskThing } from "@deskthing/server";
-import { QueueResponse } from "../types/spotifyAPI";
+import { Episode, QueueResponse, Track } from "../types/spotifyAPI";
 import EventEmitter from "node:events";
 import { SongStore } from "./songStore";
-import { SongQueue } from "@shared/spotifyTypes";
+import { AbbreviatedSong, SongQueue } from "@shared/spotifyTypes";
 import { getEncodedImage } from "../utils/imageUtils";
 
 type queueStoreEvents = {
@@ -21,6 +21,14 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
   constructor(spotifyApi: SpotifyStore) {
     super();
     this.spotifyApi = spotifyApi;
+  }
+
+  private isTrack(item: Track | Episode): item is Track {
+    return item.type === 'track';
+  }
+  
+  private isEpisode(item: Track | Episode): item is Episode {
+    return item.type === 'episode';
   }
 
   private isCacheValid(): boolean {
@@ -200,11 +208,97 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
         : null,
     };
 
+    
     this.queueData = queueData;
     this.lastFetchTime = Date.now();
-
+    
     this.emit("queueUpdate", queueData);
+    
+    return queueData;
+  }
 
+  private async getAbbreviatedSongs2(queue: QueueResponse): Promise<SongQueue> {
+    const processedQueue = await Promise.all(
+      (queue.queue || []).map(async (song) => {
+        try {
+          if (this.isTrack(song)) {
+            return {
+              id: song.id,
+              name: song.name || "Unknown Track",
+              artists: song.artists?.map(artist => artist.name) || ["Unknown Artist"],
+              album: song.album?.name || "Unknown Album",
+              thumbnail: song.album?.images?.[0]?.url || "",
+              type: 'track'
+            };
+          } else if (this.isEpisode(song)) {
+            return {
+              id: `spotify:episode:${song.id}`,
+              name: song.name || "Unknown Episode",
+              artists: song.show?.publisher ? [song.show.publisher] : ["Unknown Publisher"],
+              album: song.show?.name || "Unknown Show",
+              thumbnail: song.show?.images?.[0]?.url || "",
+              type: 'episode'
+            };
+          } else {
+            // Handle unknown content type
+            return {
+              id: "unknown",
+              name: "Unknown Item",
+              artists: ["Unknown Artist"],
+              album: "Unknown Album",
+              thumbnail: "",
+              type: 'unknown'
+            };
+          }
+        } catch (error) {
+          DeskThing.sendWarning(`Failed to process queue item: ${error}`);
+          return {
+            id: "error",
+            name: "Error Processing Item",
+            artists: ["Error"],
+            album: "Error",
+            thumbnail: "",
+            type: 'error'
+          };
+        }
+      })
+    );
+
+    let currentlyPlaying: AbbreviatedSong | null = null
+    if (queue.currently_playing) {
+      try {
+        if (this.isTrack(queue.currently_playing)) {
+          currentlyPlaying = {
+            id: queue.currently_playing.id,
+            name: queue.currently_playing.name || "Unknown Track",
+            artists: queue.currently_playing.artists?.map(artist => artist.name) || ["Unknown Artist"],
+            album: queue.currently_playing.album?.name || "Unknown Album",
+            thumbnail: queue.currently_playing.album?.images?.[0]?.url || "",
+          };
+        } else if (this.isEpisode(queue.currently_playing)) {
+          currentlyPlaying = {
+            id: `spotify:episode:${queue.currently_playing.id}`,
+            name: queue.currently_playing.name || "Unknown Episode",
+            artists: queue.currently_playing.show?.publisher ? [queue.currently_playing.show.publisher] : ["Unknown Publisher"],
+            album: queue.currently_playing.show?.name || "Unknown Show",
+            thumbnail: queue.currently_playing?.images?.[0]?.url || "",
+          };
+        }
+      } catch (error) {
+        DeskThing.sendWarning(`Failed to process currently playing item: ${error}`);
+      }
+    }
+  
+    const queueData: SongQueue = {
+      queue: processedQueue.filter(Boolean), // Remove any null entries
+      currently_playing: currentlyPlaying
+    };
+  
+    this.queueData = queueData;
+    this.lastFetchTime = Date.now();
+  
+    this.emit("queueUpdate", queueData);
+  
     return queueData;
   }
 }

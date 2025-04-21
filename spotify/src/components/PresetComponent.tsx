@@ -14,26 +14,26 @@ export const PresetComponent: FC<PresetComponentProps> = ({ preset }) => {
   const { playPreset, addCurrentToPreset, setCurrentToPreset } = useControls()
 
   const decodedImage = useMemo(
-    () => preset.thumbnail_url && DeskThing.formatImageUrl(preset.thumbnail_url),
+    () => preset.thumbnail_url && DeskThing.useProxy(preset.thumbnail_url),
     [preset.thumbnail_url]
   );
 
   const handleSwipeLeft = () => {
     // unpin
     if (preset.id === '-1')  {
-      setCurrentToPreset(preset.index)
+      setCurrentToPreset(preset.index -1)
     } else {
       console.log('Removing a preset is not available')
     }
   };
 
   const handleSwipeRight = () => {
-    addCurrentToPreset(preset.index)
+    addCurrentToPreset(preset.index -1)
   };
 
   const handleClick = () => {
     if (preset.id == '-1') return
-    playPreset(preset.index)
+    playPreset(preset.index -1)
   }
 
   return (

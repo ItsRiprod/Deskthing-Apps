@@ -1,10 +1,13 @@
 import { DeskThing } from "@deskthing/server";
 import { AuthStore } from "./authStore";
 import {
+  Album,
+  Artist,
   PlayerResponse,
   PlaylistResponse,
   PlaylistsResponse,
   QueueResponse,
+  Show,
 } from "../types/spotifyAPI";
 import { sortObjectKeys } from "../utils/objectUtils";
 
@@ -81,11 +84,11 @@ export class SpotifyStore {
         internalController.abort();
         clearTimeout(timeoutId);
       };
-      options.signal.addEventListener('abort', abortListener);
-      
+      options.signal.addEventListener("abort", abortListener);
+
       // Clean up listener when done
       setTimeout(() => {
-        options?.signal?.removeEventListener('abort', abortListener);
+        options?.signal?.removeEventListener("abort", abortListener);
       }, 0);
     }
 
@@ -134,8 +137,8 @@ export class SpotifyStore {
           // If there is an error
           if (!response.ok) {
             DeskThing.sendDebug(
-              `SpotifyStore: makeRequest - request failed: ${response.status} ${response.statusText}`
-            )
+              `SpotifyStore: makeRequest - request failed: ${response.status} ${response.statusText || "(no status text)"} ${this.getResponseCodeText(response.status)}`
+            );
             if (response.status === 401 && retryCount < MAX_RETRIES) {
               await this.authStore.refreshAccessToken();
 
@@ -194,7 +197,7 @@ export class SpotifyStore {
           this.requestCache[cacheKey] = {
             data: responseData,
             timestamp: now,
-          }
+          };
 
           return responseData;
         } catch (error) {
@@ -266,14 +269,71 @@ export class SpotifyStore {
     });
   }
 
-  async getCurrentPlayback({ signal }: { signal?: AbortSignal } = {}): Promise<PlayerResponse | undefined> {
+  private getResponseCodeText(code: number) {
+    switch (code) {
+      case 200:
+        return "OK";
+      case 201:
+        return "Created";
+      case 202:
+        return "Accepted";
+      case 204:
+        return "No Content";
+      case 304:
+        return "Not Modified";
+      case 400:
+        return "Bad Request";
+      case 401:
+        return "Unauthorized";
+      case 403:
+        return "Forbidden";
+      case 404:
+        return "Not Found";
+      case 429:
+        return "Too Many Requests";
+      case 500:
+        return "Internal Server Error";
+      case 502:
+        return "Bad Gateway";
+      case 503:
+        return "Service Unavailable";
+      default:
+        return "Unknown Error";
+    }
+  }
+
+  async getCurrentPlayback({ signal }: { signal?: AbortSignal } = {}): Promise<
+    PlayerResponse | undefined
+  > {
     DeskThing.sendDebug("SpotifyStore: getCurrentPlayback");
     const url = `${this.BASE_URL}?additional_types=episode`;
     return this.makeRequest("get", url, undefined, { signal });
   }
+  async getPlaylists(limit = 20): Promise<PlaylistsResponse | undefined> {
+    const url = `https://api.spotify.com/v1/me/playlists?limit=${limit}`;
+    return this.makeRequest("get", url);
+  }
 
-  async getPlaylist(playlistId: string) {
+  async getPlaylist(
+    playlistId: string
+  ): Promise<PlaylistResponse | undefined> {
     const url = `https://api.spotify.com/v1/playlists/${playlistId}?market=ES`;
+    return this.makeRequest("get", url);
+  }
+
+
+  async getAlbum(albumId: string): Promise<Album | undefined> {
+    const url = `https://api.spotify.com/v1/albums/${albumId}`;
+    return this.makeRequest("get", url);
+  }
+
+  async getArtist(artistId: string): Promise<Artist | undefined> {
+    const url = `https://api.spotify.com/v1/artists/${artistId}`;
+    return this.makeRequest("get", url);
+  }
+
+  async getShow(showId: string): Promise<Show | undefined> {
+    const url = `https://api.spotify.com/v1/shows/${showId}`;
     return this.makeRequest("get", url);
   }
 
@@ -378,13 +438,10 @@ export class SpotifyStore {
     }
   }
 
-  async getCurrentQueue({ signal }: { signal?: AbortSignal } = {}): Promise<QueueResponse | undefined> {
+  async getCurrentQueue({ signal }: { signal?: AbortSignal } = {}): Promise<
+    QueueResponse | undefined
+  > {
     const url = `${this.BASE_URL}/queue`;
     return this.makeRequest("get", url, undefined, { signal });
-  }
-
-  async getPlaylists(): Promise<PlaylistsResponse | undefined> {
-    const url = `https://api.spotify.com/v1/me/playlists?limit=20`;
-    return this.makeRequest("get", url);
   }
 }
