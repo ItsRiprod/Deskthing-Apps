@@ -15,15 +15,15 @@
     "dev:wrapper": "npx @deskthing/cli dev"
   },
   "dependencies": {
-    "@deskthing/client": "^0.10.11",
-    "@deskthing/server": "^0.10.16",
+    "@deskthing/client": "^0.10.14",
+    "@deskthing/server": "^0.10.17",
     "openmeteo": "^1.1.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.12.7"
   },
   "devDependencies": {
-    "@deskthing/cli": "^0.10.24",
+    "@deskthing/cli": "^0.10.25",
     "@deskthing/types": "^0.10.19",
     "@eslint/js": "^9.9.0",
     "@types/react": "^18.3.3",
@@ -39,6 +39,6 @@
     "tsm": "^2.3.0",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
-    "vite": "^5.4.16"
+    "vite": "^5.4.18"
   }
 }
