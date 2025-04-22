@@ -12,11 +12,11 @@ enum IMAGE_REQUESTS {
   GET = 'get'
 }
 
-type ToServerData = {
+type GenericTransitData = {
   type: IMAGE_REQUESTS.GET, request: 'image', payload?: string
 }
 
-const DeskThing = createDeskThing<ToServerData, ToClientData>()
+const DeskThing = createDeskThing<GenericTransitData, ToClientData>()
 
 const sendImageToClient = async (imagePath: string) => {
   try {

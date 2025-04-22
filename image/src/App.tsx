@@ -10,13 +10,13 @@ enum IMAGE_REQUESTS {
   GET = "get",
 }
 
-type ToServerData = {
+type GenericTransitData = {
   type: IMAGE_REQUESTS.GET;
   request: "image";
   payload?: string;
 };
 
-const DeskThing = createDeskThing<ToClientData, ToServerData>();
+const DeskThing = createDeskThing<ToClientData, GenericTransitData>();
 
 const App: React.FC = () => {
   const [imageData, setImageData] = useState<string | null>(null);

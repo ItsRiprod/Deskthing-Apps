@@ -13,8 +13,8 @@
     "dev:wrapper": "npx @deskthing/cli dev"
   },
   "dependencies": {
-    "@deskthing/client": "^0.10.9",
-    "@deskthing/server": "^0.10.12",
+    "@deskthing/client": "^0.10.14",
+    "@deskthing/server": "^0.10.17",
     "discord-interactions": "^4.0.0",
     "discord-rpc": "^4.0.1",
     "dotenv": "^16.4.7",
@@ -23,8 +23,8 @@
     "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
-    "@deskthing/cli": "^0.10.20",
-    "@deskthing/types": "^0.10.15",
+    "@deskthing/cli": "^0.10.25",
+    "@deskthing/types": "^0.10.19",
     "@eslint/js": "^9.17.0",
     "@types/discord-rpc": "^4.0.9",
     "@types/node": "^22.13.5",
@@ -42,6 +42,6 @@
     "tsm": "^2.3.0",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.0",
-    "vite": "^5.4.15"
+    "vite": "^5.4.18"
   }
 }
