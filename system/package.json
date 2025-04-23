@@ -5,21 +5,26 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:wrapper\"",
+    "dev:gpu": "node server/stores/gpu-monitor.js",
+    "dev:cpu": "node server/stores/cpu-temps.js",
+    "dev:vite": "vite",
+    "dev:wrapper": "npx @deskthing/cli dev",
+    "dev": "concurrently \"npm run dev:gpu\" \"npm run dev:cpu\" \"npm run dev:vite\" \"npm run dev:wrapper\"",
     "build": "npx @deskthing/cli package",
     "build-server": "esbuild server/index.ts --bundle --platform=node --outdir=dist/",
     "setup": "node setup.js",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "dev:vite": "vite",
-    "dev:wrapper": "npx @deskthing/cli dev"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@deskthing/client": "^0.10.9",
     "@deskthing/server": "^0.10.12",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "node-wmi": "^0.0.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "systeminformation": "^5.23.5"
+    "systeminformation": "^5.25.11"
   },
   "devDependencies": {
     "@deskthing/cli": "^0.10.20",

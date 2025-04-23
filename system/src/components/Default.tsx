@@ -1,15 +1,11 @@
 import React, { useState } from 'react'
-import Sidebar from './Sidebar'
-import CPUUsage from './CPUUsage'
-import MEMUsage from './MEMUsage'
+import Dashboard from './Dashboard'
 
 const Default: React.FC = () => {
-    const [currentView, setCurrentView] = useState('cpu')
+    const [currentView, setCurrentView] = useState('dash')
     return (
         <div className="bg-black flex w-screen h-screen">
-            <Sidebar selectedTab={currentView} onTabChange={setCurrentView} />
-            {currentView === 'cpu' && <CPUUsage />}
-            {currentView === 'mem' && <MEMUsage />}
+            {currentView === 'dash' && <Dashboard />}
         </div>
     )
 }
