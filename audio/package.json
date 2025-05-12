@@ -16,14 +16,14 @@
   "dependencies": {
     "@deskthing/client": "latest",
     "@deskthing/server": "latest",
-    "@deskthing/types": "latest",
     "autoprefixer": "^10.4.21",
     "node-nowplaying": "^0.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@deskthing/cli": "latest",
+    "@deskthing/cli": "^0.10.27",
+    "@deskthing/types": "^0.10.21",
     "@eslint/js": "^9.9.0",
     "@types/node": "^22.10.7",
     "@types/react": "^18.3.3",

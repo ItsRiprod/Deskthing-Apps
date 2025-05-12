@@ -1,49 +1,92 @@
 import { DeskThing } from "@deskthing/server"
-import { SongData } from "@deskthing/types";
-import { NowPlaying, NowPlayingMessage } from "node-nowplaying";
+import { SongAbilities, SongData } from "@deskthing/types";
+import { NowPlaying } from "./nowplayingWrapper";
+import type { NowPlayingMessage, NowPlaying as NowPlayingType } from "node-nowplaying";
+import { saveBase64AsPng } from "./imageUtils";
 
 export class MediaStore {
   private static instance: MediaStore;
-  private player: NowPlaying;
+  private player: NowPlayingType;
   private nowPlayingInfo: NowPlayingMessage | undefined = undefined;
   private availableSources: string[] = [];
+
+  private isSubscribed = false
 
   private constructor() {
     this.player = new NowPlaying(this.handleMessage.bind(this));
   }
 
   public initializeListeners = async () => {
-    await this.player.subscribe();
+    if (!this.isSubscribed) {
+      await this.player.subscribe();
+      this.isSubscribed = true
+    }
   }
 
-  private handleMessage(message: NowPlayingMessage) {
+  private async handleMessage(message: NowPlayingMessage) {
+    if (message.thumbnail) {
+      message.thumbnail = await saveBase64AsPng(message.thumbnail, (message.id || `${message.trackName}-${message.artist}`).replace(/[<>:"/\\|?*]/g, '_'))
+    }
+
     this.nowPlayingInfo = message;
     this.parseAndSendData()
   }
 
+  purge = () => {
+    this.player.unsubscribe()
+    this.nowPlayingInfo = undefined
+    this.availableSources = []
+  }
+
+  stop = () => {
+    this.player.unsubscribe()
+  }
+
+  start = async () => {
+    if (!this.isSubscribed) {
+      await this.player.subscribe();
+      this.isSubscribed = true
+    }
+  }
+
+  private getAbilities = (data: NowPlayingMessage) => {
+    let abilities: SongAbilities[] = []
+    if (data.canFastForward) abilities.push(SongAbilities.FAST_FORWARD)
+    if (data.canLike) abilities.push(SongAbilities.LIKE)
+    if (data.canSkip) abilities.push(SongAbilities.NEXT)
+    if (data.canChangeVolume) abilities.push(SongAbilities.CHANGE_VOLUME)
+    if (data.canSetOutput) abilities.push(SongAbilities.SET_OUTPUT)
+    return abilities
+  }
+
   private parseAndSendData() {
     if (!this.nowPlayingInfo) return;
+
+    /** 
+     * Checks if the current track duration is extremely long (over 5 minutes in nanoseconds).
+     * Used to identify potentially problematic track durations.
+     */
+    const isNano = this.nowPlayingInfo?.trackDuration && this.nowPlayingInfo.trackDuration > 2231730000
+
     const musicPayload: SongData = {
+      version: 2,
       album: this.nowPlayingInfo.album || null,
       artist: this.nowPlayingInfo.artist?.[0] || null,
       playlist: this.nowPlayingInfo.playlist || null,
       playlist_id: this.nowPlayingInfo.playlistId || null,
       track_name: this.nowPlayingInfo.trackName,
       shuffle_state: this.nowPlayingInfo.shuffleState || null,
-      repeat_state: (this.nowPlayingInfo.repeatState as "context" | "track" | "off") || "off",
+      repeat_state: (this.nowPlayingInfo.repeatState as "off" | "all" | "track") || "off",
       is_playing: this.nowPlayingInfo.isPlaying,
-      can_fast_forward: this.nowPlayingInfo.canFastForward,
-      can_skip: this.nowPlayingInfo.canSkip,
-      can_like: this.nowPlayingInfo.canLike,
-      can_change_volume: this.nowPlayingInfo.canChangeVolume,
-      can_set_output: this.nowPlayingInfo.canSetOutput,
-      track_duration: this.nowPlayingInfo.trackDuration || null,
-      track_progress: this.nowPlayingInfo.trackProgress || null,
+      abilities: this.getAbilities(this.nowPlayingInfo),
+      track_duration: this.nowPlayingInfo.trackDuration && isNano ? this.nowPlayingInfo.trackDuration / 1000 : this.nowPlayingInfo.trackDuration || null,
+      track_progress: this.nowPlayingInfo.trackProgress && isNano ? this.nowPlayingInfo.trackProgress / 1000 : this.nowPlayingInfo.trackProgress || null,
       volume: this.nowPlayingInfo.volume,
       thumbnail: this.nowPlayingInfo.thumbnail || null,
       device: this.nowPlayingInfo.device || null,
       id: this.nowPlayingInfo.id || null,
-      device_id: this.nowPlayingInfo.deviceId || null
+      device_id: this.nowPlayingInfo.deviceId || null,
+      source: 'local'
     }
     DeskThing.sendSong(musicPayload)
   }

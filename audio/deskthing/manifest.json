@@ -11,6 +11,7 @@
   },
   "description": "A cross-platform audio app that lets you control any locally playing music",
   "author": "Riprod",
+  "postinstall": true,
   "platforms": [
     "windows",
     "linux",

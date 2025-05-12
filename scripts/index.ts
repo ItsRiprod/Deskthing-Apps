@@ -14,6 +14,7 @@ const MAINTAINED_APPS = [
   "vinylplayer",
   "weather",
   "waveweather",
+  "audio"
 ];
 
 const ensureCLIDownload = async () => {

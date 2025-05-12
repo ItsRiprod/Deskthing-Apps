@@ -10,6 +10,7 @@
     "outDir": "scripts/dist",
     "rootDir": "./scripts",
     "allowJs": true,
+    "types": ["node"],
     "resolveJsonModule": true
   },
   "include": ["scripts/**/*"],
