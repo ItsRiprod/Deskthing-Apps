@@ -59,14 +59,18 @@ export class MediaStore {
     return abilities
   }
 
+  private nanoToMilli = (nano: number) => {
+    return nano / 10000
+  }
+
   private parseAndSendData() {
     if (!this.nowPlayingInfo) return;
 
     /** 
-     * Checks if the current track duration is extremely long (over 5 minutes in nanoseconds).
+     * Checks if the current track duration is extremely long (over 8 hours).
      * Used to identify potentially problematic track durations.
      */
-    const isNano = this.nowPlayingInfo?.trackDuration && this.nowPlayingInfo.trackDuration > 2231730000
+    const isNano = this.nowPlayingInfo?.trackDuration && this.nowPlayingInfo.trackDuration > 18000000 // if it is larger than eight hours - assume it is nanoseconds and convert to ms
 
     const musicPayload: SongData = {
       version: 2,
@@ -79,8 +83,8 @@ export class MediaStore {
       repeat_state: (this.nowPlayingInfo.repeatState as "off" | "all" | "track") || "off",
       is_playing: this.nowPlayingInfo.isPlaying,
       abilities: this.getAbilities(this.nowPlayingInfo),
-      track_duration: this.nowPlayingInfo.trackDuration && isNano ? this.nowPlayingInfo.trackDuration / 1000 : this.nowPlayingInfo.trackDuration || null,
-      track_progress: this.nowPlayingInfo.trackProgress && isNano ? this.nowPlayingInfo.trackProgress / 1000 : this.nowPlayingInfo.trackProgress || null,
+      track_duration: this.nowPlayingInfo.trackDuration && isNano ? this.nanoToMilli(this.nowPlayingInfo.trackDuration) : this.nowPlayingInfo.trackDuration || null,
+      track_progress: this.nowPlayingInfo.trackProgress && isNano ? this.nanoToMilli(this.nowPlayingInfo.trackProgress) : this.nowPlayingInfo.trackProgress || null,
       volume: this.nowPlayingInfo.volume,
       thumbnail: this.nowPlayingInfo.thumbnail || null,
       device: this.nowPlayingInfo.device || null,
