@@ -2,7 +2,7 @@ import { DeskThing } from "@deskthing/server"
 import { SongAbilities, SongData } from "@deskthing/types";
 import { NowPlaying } from "./nowplayingWrapper";
 import type { NowPlayingMessage, NowPlaying as NowPlayingType } from "node-nowplaying";
-import { saveBase64AsPng } from "./imageUtils";
+import { saveImage } from "./imageUtils";
 
 export class MediaStore {
   private static instance: MediaStore;
@@ -25,7 +25,7 @@ export class MediaStore {
 
   private async handleMessage(message: NowPlayingMessage) {
     if (message.thumbnail) {
-      message.thumbnail = await saveBase64AsPng(message.thumbnail, (message.id || `${message.trackName}-${message.artist}`).replace(/[<>:"/\\|?*]/g, '_'))
+      message.thumbnail = await saveImage(message.thumbnail, (message.id || `${message.trackName}-${message.artist}`).replace(/[<>:"/\\|?*]/g, '_'))
     }
 
     this.nowPlayingInfo = message;

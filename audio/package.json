@@ -22,8 +22,8 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@deskthing/cli": "^0.10.27",
-    "@deskthing/types": "^0.10.21",
+    "@deskthing/cli": "^0.10.30",
+    "@deskthing/types": "^0.10.22",
     "@eslint/js": "^9.9.0",
     "@types/node": "^22.10.7",
     "@types/react": "^18.3.3",
