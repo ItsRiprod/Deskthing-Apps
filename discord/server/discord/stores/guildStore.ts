@@ -114,15 +114,15 @@ export class GuildListManager extends EventEmitter<guildListEvents> {
   }
 
   public async refreshGuildList(): Promise<void> {
-    DeskThing.sendDebug("Refreshing guild list");
+    console.debug("Refreshing guild list");
     const guild = (await this.rpc.request(
       RPCCommands.GET_GUILDS,
       {}
     )) as GetGuildsData;
-    DeskThing.sendDebug("Got guilds");
+    console.debug("Got guilds");
 
     if (!guild.guilds) {
-      DeskThing.sendWarning("No guilds found");
+      console.warn("No guilds found");
       return;
     }
 
@@ -139,11 +139,11 @@ export class GuildListManager extends EventEmitter<guildListEvents> {
         if (icon) {
           this.iconCache.set(guild.id, icon);
         } else {
-          DeskThing.sendDebug('Failed to fetch guild icon')
+          console.debug('Failed to fetch guild icon')
           console.log(guild)
         }
       } catch (error) {
-        DeskThing.sendError(
+        console.error(
           `Failed to fetch guild icon for ${guild.id}: ${error}`
         );
         icon = ""; // Use empty string as fallback
@@ -176,7 +176,7 @@ export class GuildListManager extends EventEmitter<guildListEvents> {
 
     // Clear text channels if no guild is selected
     if (!guildId) {
-      DeskThing.sendDebug('Clearing text channels (empty guild id)')
+      console.debug('Clearing text channels (empty guild id)')
       this.currentStatus.textChannels = [];
     } else {
       // Subscribe to events for the new guild
@@ -187,7 +187,7 @@ export class GuildListManager extends EventEmitter<guildListEvents> {
       this.setupGuildChannels(channelResponse.channels);
     }
 
-    DeskThing.sendLog(`Selected guild ID updated: ${guildId || "None"}`);
+    console.log(`Selected guild ID updated: ${guildId || "None"}`);
     this.emit("guildSelected", guildId);
   }
 
@@ -198,7 +198,7 @@ export class GuildListManager extends EventEmitter<guildListEvents> {
     );
 
     this.currentStatus.guilds = processedGuilds;
-    DeskThing.sendLog(`Guild list updated with ${processedGuilds.length} guilds`);
+    console.log(`Guild list updated with ${processedGuilds.length} guilds`);
     this.emit("guildUpdate", this.currentStatus);
   }
 
@@ -215,7 +215,7 @@ export class GuildListManager extends EventEmitter<guildListEvents> {
       textChannels.map((channel) => this.constructChannel(channel))
     );
 
-    DeskThing.sendLog(
+    console.log(
       `Text channels updated with ${textChannels.length} channels`
     );
     this.emit("channelsUpdated", [...this.currentStatus.textChannels]);

@@ -28,9 +28,9 @@ export class CallControls extends EventEmitter<callEvents> {
         isMuted: true,
         isDeafened: this.rpc.user?.isDeafened || false,
       });
-      DeskThing.sendLog("User muted");
+      console.log("User muted");
     } catch (error) {
-      DeskThing.sendError(`Failed to mute: ${error}`);
+      console.error(`Failed to mute: ${error}`);
     }
   }
 
@@ -45,9 +45,9 @@ export class CallControls extends EventEmitter<callEvents> {
         isMuted: false,
         isDeafened: this.rpc.user?.isDeafened || false,
       });
-      DeskThing.sendLog("User unmuted");
+      console.log("User unmuted");
     } catch (error) {
-      DeskThing.sendError(`Failed to unmute: ${error}`);
+      console.error(`Failed to unmute: ${error}`);
     }
   }
 
@@ -62,9 +62,9 @@ export class CallControls extends EventEmitter<callEvents> {
         isMuted: newMuteState,
         isDeafened: this.rpc.user?.isDeafened || false,
       });
-      DeskThing.sendLog(`User ${newMuteState ? "muted" : "unmuted"}`);
+      console.log(`User ${newMuteState ? "muted" : "unmuted"}`);
     } catch (error) {
-      DeskThing.sendError(`Failed to toggle mute: ${error}`);
+      console.error(`Failed to toggle mute: ${error}`);
     }
   }
 
@@ -79,9 +79,9 @@ export class CallControls extends EventEmitter<callEvents> {
         isMuted: this.rpc.user?.isMuted || false,
         isDeafened: true,
       });
-      DeskThing.sendLog("User deafened");
+      console.log("User deafened");
     } catch (error) {
-      DeskThing.sendError(`Failed to deafen: ${error}`);
+      console.error(`Failed to deafen: ${error}`);
     }
   }
 
@@ -96,9 +96,9 @@ export class CallControls extends EventEmitter<callEvents> {
         isMuted: this.rpc.user?.isMuted || false,
         isDeafened: false,
       });
-      DeskThing.sendLog("User undeafened");
+      console.log("User undeafened");
     } catch (error) {
-      DeskThing.sendError(`Failed to undeafen: ${error}`);
+      console.error(`Failed to undeafen: ${error}`);
     }
   }
 
@@ -114,9 +114,9 @@ export class CallControls extends EventEmitter<callEvents> {
         isMuted: newDeafenState,
         isDeafened: newDeafenState,
       });
-      DeskThing.sendLog(`User ${newDeafenState ? "deafened" : "undeafened"}`);
+      console.log(`User ${newDeafenState ? "deafened" : "undeafened"}`);
     } catch (error) {
-      DeskThing.sendError(`Failed to toggle deafen: ${error}`);
+      console.error(`Failed to toggle deafen: ${error}`);
     }
   }
 
@@ -128,9 +128,9 @@ export class CallControls extends EventEmitter<callEvents> {
         isMuted: this.rpc.user?.isMuted || false,
         isDeafened: this.rpc.user?.isDeafened || false,
       });
-      DeskThing.sendLog("User disconnected from voice channel");
+      console.log("User disconnected from voice channel");
     } catch (error) {
-      DeskThing.sendError(`Failed to disconnect: ${error}`);
+      console.error(`Failed to disconnect: ${error}`);
     }
   }
 }

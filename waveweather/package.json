@@ -16,15 +16,15 @@
   },
   "dependencies": {
     "@deskthing/client": "^0.10.14",
-    "@deskthing/server": "^0.10.17",
+    "@deskthing/server": "^0.10.18",
     "openmeteo": "^1.1.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.12.7"
   },
   "devDependencies": {
-    "@deskthing/cli": "^0.10.25",
-    "@deskthing/types": "^0.10.19",
+    "@deskthing/cli": "^0.10.30",
+    "@deskthing/types": "^0.10.22",
     "@eslint/js": "^9.9.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

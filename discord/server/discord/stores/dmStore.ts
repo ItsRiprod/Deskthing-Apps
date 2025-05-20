@@ -63,15 +63,15 @@
     }
 
     public async refreshDMList(): Promise<void> {
-      DeskThing.sendDebug("Refreshing DM list");
+      console.debug("Refreshing DM list");
       const channels = (await this.rpc.request(
         RPCCommands.GET_CHANNELS,
         {}
       )) as GetChannelsData;
-      DeskThing.sendDebug("Got channels");
+      console.debug("Got channels");
 
       if (!channels.channels) {
-        DeskThing.sendWarning("No channels found");
+        console.warn("No channels found");
         return;
       }
 
@@ -94,12 +94,12 @@
             if (avatar) {
               this.avatarCache.set(channel.id, avatar);
             } else {
-              DeskThing.sendDebug('Failed to fetch DM avatar')
+              console.debug('Failed to fetch DM avatar')
               console.log(channel)
             }
           }
         } catch (error) {
-          DeskThing.sendError(
+          console.error(
             `Failed to fetch DM avatar for ${channel.id}: ${error}`
           );
           avatar = "";
@@ -130,7 +130,7 @@
       this.currentStatus.selectedDMId = dmId;
 
       if (!dmId) {
-        DeskThing.sendDebug('Clearing channels (empty DM id)')
+        console.debug('Clearing channels (empty DM id)')
         this.currentStatus.channels = [];
       } else {
         this.rpc.subscribe(RPCEvents.CHANNEL_CREATE, dmId);
@@ -140,7 +140,7 @@
         this.setupDMChannels(channelResponse.channels);
       }
 
-      DeskThing.sendLog(`Selected DM ID updated: ${dmId || "None"}`);
+      console.log(`Selected DM ID updated: ${dmId || "None"}`);
       this.emit("dmSelected", dmId);
     }
 
@@ -150,7 +150,7 @@
       );
 
       this.currentStatus.dms = processedDMs;
-      DeskThing.sendLog(`DM list updated with ${processedDMs.length} DMs`);
+      console.log(`DM list updated with ${processedDMs.length} DMs`);
       this.emit("dmUpdate", this.currentStatus);
     }
 
@@ -165,7 +165,7 @@
         dmChannels.map((channel) => this.constructChannel(channel))
       );
 
-      DeskThing.sendLog(
+      console.log(
         `DM channels updated with ${dmChannels.length} channels`
       );
       this.emit("channelsUpdated", [...this.currentStatus.channels]);

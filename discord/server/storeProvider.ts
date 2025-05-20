@@ -82,9 +82,9 @@ export class StoreProvider {
 
   public async initialize(): Promise<void> {
     try {
-      DeskThing.sendLog("Initializing Store Provider...");
+      console.log("Initializing Store Provider...");
     } catch (error) {
-      DeskThing.sendError(`Failed to initialize Store Provider: ${error}`);
+      console.error(`Failed to initialize Store Provider: ${error}`);
       throw error;
     }
   }
@@ -93,7 +93,7 @@ export class StoreProvider {
     // Cleanup logic
     this.rpc.removeAllListeners();
     StoreProvider.instance = null;
-    DeskThing.sendLog("Store Provider disposed");
+    console.log("Store Provider disposed");
   }
 }
 

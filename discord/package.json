@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@deskthing/client": "^0.10.14",
-    "@deskthing/server": "^0.10.17",
+    "@deskthing/server": "^0.10.18",
     "discord-interactions": "^4.0.0",
     "discord-rpc": "^4.0.1",
     "dotenv": "^16.4.7",
@@ -23,8 +23,8 @@
     "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
-    "@deskthing/cli": "^0.10.25",
-    "@deskthing/types": "^0.10.19",
+    "@deskthing/cli": "^0.10.31",
+    "@deskthing/types": "^0.10.22",
     "@eslint/js": "^9.17.0",
     "@types/discord-rpc": "^4.0.9",
     "@types/node": "^22.13.5",

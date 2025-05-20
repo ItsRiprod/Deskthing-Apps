@@ -58,13 +58,13 @@ export class ChatStatusManager extends EventEmitter<chatStatusEvents> {
     }
     this.currentStatus.currentChannelId = channelId;
 
-    DeskThing.sendLog(`Chat channel ID updated: ${channelId || "None"}`);
+    console.log(`Chat channel ID updated: ${channelId || "None"}`);
     this.debounceUpdateClient();
   }
 
   public setChatExpand(isExpanded: boolean) {
     this.currentStatus.isLoading = isExpanded;
-    DeskThing.sendLog(`Chat expand status: ${isExpanded}`);
+    console.log(`Chat expand status: ${isExpanded}`);
     this.debounceUpdateClient();
   }
 
@@ -76,12 +76,12 @@ export class ChatStatusManager extends EventEmitter<chatStatusEvents> {
     if (this.debounceTimeoutId) {
       clearTimeout(this.debounceTimeoutId);
     } else {
-      DeskThing.sendLog("Updating client with new chat status");
+      console.log("Updating client with new chat status");
       this.updateClient();
     }
 
     this.debounceTimeoutId = setTimeout(() => {
-      DeskThing.sendLog("Updating client with new chat status");
+      console.log("Updating client with new chat status");
       this.updateClient();
       this.debounceTimeoutId = null;
     }, 1000);

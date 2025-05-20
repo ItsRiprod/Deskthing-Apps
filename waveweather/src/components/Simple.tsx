@@ -113,7 +113,7 @@ const Simple = ({ weatherData }: WeatherProps) => {
               <div className="w-full h-full bg-zinc-800 rounded-lg flex flex-col items-center justify-center">
                 <IconPinwheel className="animate-spin text-white stroke-2" iconSize={256} />
                 <p className="font-HelveticaNeue text-white text-center text-2xl font-semibold">
-                  Waiting for song...
+                  Waiting for thumbnail
                 </p>
                 </div>}
           </div>

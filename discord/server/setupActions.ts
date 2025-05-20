@@ -192,7 +192,7 @@ DeskThing.on(DESKTHING_EVENTS.ACTION, (actionData) => {
   const handler = actionHandlers[id];
 
   if (handler) {
-    DeskThing.sendLog(`Received ${id} action`);
+    console.log(`Received ${id} action`);
     handler(value);
   }
 });

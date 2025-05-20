@@ -34,7 +34,7 @@ export class TokenStorage {
       const { [this.TOKEN_KEY]: _, ...remainingData } = data;
       
       await DeskThing.saveData(remainingData);
-      DeskThing.sendLog("Discord token cleared from storage");
+      console.log("Discord token cleared from storage");
     } catch (error) {
       console.error("Failed to clear Discord token:", error);
       throw error;

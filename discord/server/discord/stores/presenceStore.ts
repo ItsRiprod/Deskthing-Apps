@@ -34,11 +34,10 @@ export class RichPresence {
         instance: false,
       });
       
-      DeskThing.sendLog("Rich presence updated");
+      console.log("Rich presence updated");
       this.currentActivity = options;
     } catch (error) {
-      DeskThing.sendError(`Failed to update rich presence: ${error}`);
-      throw error;
+      console.error(`Failed to update rich presence: ${error}`);
     }
   }
 
@@ -55,10 +54,10 @@ export class RichPresence {
       }
       
       await this.rpc.setActivity({});
-      DeskThing.sendLog("Rich presence cleared");
+      console.log("Rich presence cleared");
       this.currentActivity = {};
     } catch (error) {
-      DeskThing.sendError(`Failed to clear rich presence: ${error}`);
+      console.error(`Failed to clear rich presence: ${error}`);
     }
   }
 }

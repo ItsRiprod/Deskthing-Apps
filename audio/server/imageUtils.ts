@@ -35,12 +35,6 @@ const saveBase64Image = async (base64Image: string, fileName: string): Promise<s
     // Generate file path with correct extension
     const filePath = join(imagesDir, `${fileName}.${imageFormat}`);
 
-    // Skip if file already exists
-    if (existsSync(filePath)) {
-        DeskThing.sendWarning(`File already exists: ${fileName}.${imageFormat}`);
-        return `/resource/image/audio/${fileName}.${imageFormat}`;
-    }
-
     // Write the file and return a promise
     return new Promise((resolve, reject) => {
         writeFile(filePath, base64Data, 'base64', (err) => {
@@ -65,12 +59,6 @@ const saveBinaryImage = async (binaryData: string, fileName: string): Promise<st
 
     // Generate file path (assuming png as default)
     const filePath = join(imagesDir, `${fileName}.png`);
-
-    // Skip if file already exists
-    if (existsSync(filePath)) {
-        DeskThing.sendWarning(`File already exists: ${fileName}.png`);
-        return `/resource/image/audio/${fileName}.png`;
-    }
 
     // Write the file and return a promise
     return new Promise((resolve, reject) => {

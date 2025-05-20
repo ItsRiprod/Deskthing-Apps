@@ -42,7 +42,7 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     this.rpc.on(
       RPCEvents.VOICE_STATE_CREATE,
       async (data: VoiceStateCreate) => {
-        DeskThing.sendDebug(`Voice state created for user ${data.user.id}`);
+        console.debug(`Voice state created for user ${data.user.id}`);
         const participant: CallParticipant = {
           id: data.user.id,
           profileUrl: await getEncodedImage(
@@ -82,7 +82,7 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     this.rpc.on(
       RPCEvents.VOICE_STATE_UPDATE,
       async (data: VoiceStateCreate) => {
-        DeskThing.sendDebug(`Voice state updated for user ${data.user.id}`);
+        console.debug(`Voice state updated for user ${data.user.id}`);
         const participant: CallParticipant = {
           id: data.user.id,
           profileUrl: await getEncodedImage(
@@ -107,12 +107,12 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     });
 
     this.rpc.on(RPCEvents.SPEAKING_START, (data: { user_id: string }) => {
-      DeskThing.sendLog(`User ${data.user_id} started speaking`);
+      console.log(`User ${data.user_id} started speaking`);
       this.updateSpeakingStatus(data.user_id, true);
     });
 
     this.rpc.on(RPCEvents.SPEAKING_STOP, (data: { user_id: string }) => {
-      DeskThing.sendLog(`User ${data.user_id} stopped speaking`);
+      console.log(`User ${data.user_id} stopped speaking`);
       this.updateSpeakingStatus(data.user_id, false);
     });
 
@@ -135,7 +135,7 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
       this.emit("channelChanged", undefined);
     }
 
-    DeskThing.sendLog(`Call channel ID updated: ${channelId || "None"}`);
+    console.log(`Call channel ID updated: ${channelId || "None"}`);
   }
 
   public async updateParticipant(participant: CallParticipant): Promise<void> {
@@ -156,16 +156,16 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
 
   public async updateCurrentUser(participant?: CallParticipant) {
     if (!participant) {
-      DeskThing.sendWarning('Unable to find participant - updating user with RPC')
+      console.warn('Unable to find participant - updating user with RPC')
       participant = await this.rpc.updateUser();
       if (!participant) {
-        DeskThing.sendWarning('Unable to find current user')
+        console.warn('Unable to find current user')
         return
       }
     }
 
     if (participant.id == this.currentStatus.user?.id) {
-      DeskThing.sendDebug('User has not changed, skipping update')
+      console.debug('User has not changed, skipping update')
       return
     }
 
@@ -191,7 +191,7 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
         isSpeaking: isSpeaking,
       });
     } else {
-      DeskThing.sendLog(`User ${userId} not found in call participants`);
+      console.log(`User ${userId} not found in call participants`);
     }
   }
 
@@ -205,7 +205,7 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
       this.emit("update", this.currentStatus);
       this.emit("connectionStateChanged", isConnected);
 
-      DeskThing.sendLog(
+      console.log(
         `Call connection status: ${isConnected ? "Connected" : "Disconnected"}`
       );
 
@@ -224,7 +224,7 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
   private clearOldSubscriptions = async () => {
     if (!this.activeSubscriptions) return
     this.activeSubscriptions = false
-    DeskThing.sendDebug('Clearing old subscriptions')
+    console.debug('Clearing old subscriptions')
     this.rpc.unsubscribe(RPCEvents.VOICE_STATE_CREATE);
     this.rpc.unsubscribe(RPCEvents.VOICE_STATE_UPDATE);
     this.rpc.unsubscribe(RPCEvents.VOICE_STATE_DELETE);
@@ -279,7 +279,7 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     };
 
     this.emit("channelChanged", channel);
-    DeskThing.sendLog(`Call channel setup: ${channel.name}`);
+    console.log(`Call channel setup: ${channel.name}`);
     this.emit("update", this.currentStatus);
   }
 
@@ -298,6 +298,6 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     };
 
     this.emit("update", this.currentStatus);
-    DeskThing.sendLog("Call status cleared");
+    console.log("Call status cleared");
   }
 }

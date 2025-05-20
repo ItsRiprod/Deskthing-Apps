@@ -72,7 +72,7 @@ private debounce<T>(eventType: string, fn: (data: T) => void, delay: number = 50
 
     // Guild store events
     this.guildStore.on("guildUpdate", this.debounce("guildUpdate", (status) => {
-      DeskThing.sendDebug('Sending updated guilds')
+      console.debug('Sending updated guilds')
       DeskThing.send({
         type: DiscordEvents.GUILD_LIST,
         payload: status,

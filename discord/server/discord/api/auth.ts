@@ -42,38 +42,38 @@ export class DiscordAuth {
       
       if (savedToken) {
         try {
-          DeskThing.sendLog("Using saved token for authentication");
+          console.log("Using saved token for authentication");
           await this.authenticateWithToken(savedToken);
           this.isAuthenticating = false
           return;
         } catch (error) {
-          DeskThing.sendLog("Saved token invalid, obtaining new one");
+          console.log("Saved token invalid, obtaining new one");
         }
       }
       
       // If no saved token or it's invalid, get a new one
       const token = await this.authorize();
-      DeskThing.sendLog("Obtained new token, authenticating...");
+      console.log("Obtained new token, authenticating...");
       await this.authenticateWithToken(token);
       
       this.isAuthenticating = false
     } catch (error) {
-      DeskThing.sendError(`Authentication failed: ${error}`);
+      console.error(`Authentication failed: ${error}`);
       this.isAuthenticating = false
     }
   }
 
   private async authorize(): Promise<string> {
-    DeskThing.sendLog("Requesting authorization from Discord");
+    console.log("Requesting authorization from Discord");
     
     if (!this.clientId || !this.clientSecret ) {
-      DeskThing.sendWarning('Client ID or Client Secret is not defined - cancelling the authorization')
+      console.warn('Client ID or Client Secret is not defined - cancelling the authorization')
       throw new Error('Client ID or Client Secret is not defined')
     }
 
     if (!this.rpc.isConnected) {
       // Throws - but let it throw
-      DeskThing.sendDebug('Attempting to reconnect RPC before authorizing')
+      console.debug('Attempting to reconnect RPC before authorizing')
       await this.rpc.connect(this.clientId);
     }
 
@@ -110,19 +110,19 @@ export class DiscordAuth {
       return access_token;
       
     } catch (error) {
-      DeskThing.sendError(`Authorization failed: ${error}`);
+      console.error(`Authorization failed: ${error}`);
       throw error;
     }
   }
 
   private async authenticateWithToken(token: string): Promise<void> {
-    DeskThing.sendLog("Authenticating with Discord using token");
+    console.log("Authenticating with Discord using token");
 
     if (!this.rpc.isConnected) {
       if (!this.clientId) {
         throw new Error("RPC client is not connected and clientId was not provided");
       }
-      DeskThing.sendDebug('Attempting to reconnect RPC before authenticating with tokens')
+      console.debug('Attempting to reconnect RPC before authenticating with tokens')
       // Throws, but let throw
       await this.rpc.connect(this.clientId);
     }
@@ -131,11 +131,11 @@ export class DiscordAuth {
       const response = await this.rpc.authenticate(token);
       
       this.accessToken = token;
-      DeskThing.sendLog("Successfully authenticated with Discord");
+      console.log("Successfully authenticated with Discord");
       return response;
       
     } catch (error) {
-      DeskThing.sendError(`Token authentication failed: ${error}`);
+      console.error(`Token authentication failed: ${error}`);
       this.accessToken = null;
       throw error;
     }

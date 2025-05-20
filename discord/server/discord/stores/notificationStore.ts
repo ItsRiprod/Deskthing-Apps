@@ -41,19 +41,19 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
       clearTimeout(this.debounceTimeoutId);
     } else {
       // If this is the first update, send it immediately
-      DeskThing.sendLog("Updating client with new notification status");
+      console.log("Updating client with new notification status");
       this.updateClient();
     }
 
     this.debounceTimeoutId = setTimeout(() => {
-      DeskThing.sendLog("Updating client with new notification status");
+      console.log("Updating client with new notification status");
       this.updateClient();
       this.debounceTimeoutId = null;
     }, 1000); // update with a second delay
   };
 
   public async addNewNotificationMessage(message: MessageObject, title: string = "") {
-    DeskThing.sendLog("Adding new notification message");
+    console.log("Adding new notification message");
     
     const newNotification: Notification = {
       id: message.id,

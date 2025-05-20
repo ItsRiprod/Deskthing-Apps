@@ -27,7 +27,7 @@ export enum ImageType {
 export const getImageFromHash = (imageHash: string, imageType: ImageType, id?: string,  options?: {
     size?: number,
     ext?: string
-}) => {
+}): string => {
     const size = options?.size ? `?size=${options.size}` : ''
     const ext = options?.ext ? `.${options.ext}` : '.png'
 
@@ -90,10 +90,5 @@ export const getEncodedImage = async (imageHash?: string | null, imageType?: Ima
 
 export const getEncodedImageURL = async (imageUrl: string) => {
     if (!imageUrl) return undefined
-    if (process.env.DESKTHING_ENV == 'development') {
-        return imageUrl
-    } else {
-        const encodedUrl = await DeskThing.saveImageReferenceFromURL(imageUrl)
-        return encodedUrl || undefined
-    }
+    return imageUrl
 }

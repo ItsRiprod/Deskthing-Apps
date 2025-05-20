@@ -1,5 +1,4 @@
-
-// version 0.10.7
+// @ts-check
 import { defineConfig } from '@deskthing/cli';
 import dotEnv from 'dotenv'
 

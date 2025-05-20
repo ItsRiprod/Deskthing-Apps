@@ -11,36 +11,36 @@ import {
 const DeskThing = createDeskThing<ToServerTypes, ToClientTypes>();
 
 export const initializeDiscord = async () => {
-  const settings = await DeskThing.getSettings();
-
-  if (!settings) {
-    DeskThing.sendDebug(
-      "Settings have not been defined yet - cancelling the initialization"
-    );
-    return;
-  }
-
-  const clientId = settings[AppSettingIDs.CLIENT_ID].value;
-  const clientSecret = settings[AppSettingIDs.CLIENT_SECRET].value;
-
-  if (
-    !clientId ||
-    !clientSecret ||
-    typeof clientId !== "string" ||
-    typeof clientSecret !== "string"
-  ) {
-    DeskThing.sendDebug(
-      "Client ID or Client Secret is not defined - cancelling the initialization"
-    );
-    return;
-  }
-
   try {
+    const settings = await DeskThing.getSettings();
+
+    if (!settings) {
+      console.debug(
+        "Settings have not been defined yet - cancelling the initialization"
+      );
+      return;
+    }
+
+    const clientId = settings[AppSettingIDs.CLIENT_ID]?.value;
+    const clientSecret = settings[AppSettingIDs.CLIENT_SECRET]?.value;
+
+    if (
+      !clientId ||
+      !clientSecret ||
+      typeof clientId !== "string" ||
+      typeof clientSecret !== "string"
+    ) {
+      console.debug(
+        "Client ID or Client Secret is not defined - cancelling the initialization"
+      );
+      return;
+    }
+
     StoreProvider.getAuth().setClientId(clientId);
     StoreProvider.getAuth().setClientSecret(clientSecret);
     StoreProvider.getAuth().authenticate();
   } catch (error) {
-    DeskThing.sendError(`Failed to initialize Discord: ${error}`);
+    console.error(`Failed to initialize Discord: ${error}`);
   }
 };
 

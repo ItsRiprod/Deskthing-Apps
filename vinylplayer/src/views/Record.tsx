@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { SocketData, SongData } from '@deskthing/types'
+import { SongData } from '@deskthing/types'
 import PlayPause from '../assets/components/PlayPause'
 import Skip from '../assets/components/Skip'
 import Rewind from '../assets/components/Rewind'
@@ -13,16 +13,6 @@ const Record: React.FC = () => {
     useEffect(() => {
         let isMounted = true
 
-        const onMusicUpdates = async (data: SocketData) => {
-            if (!isMounted) return
-            const songData = data.payload as SongData
-            setSongData(songData)
-            setIsPlaying(songData.is_playing)
-            if (songData.thumbnail && songData.thumbnail !== thumbnail) {
-                setThumbnail(DeskThing.formatImageUrl(songData.thumbnail))
-            }
-        }
-        
         const initializeData = async () => {
             try {
                 const data = await DeskThing.getMusic()
@@ -37,7 +27,17 @@ const Record: React.FC = () => {
 
         initializeData()
 
-        const unsubscribe = DeskThing.on('music', onMusicUpdates)
+        const unsubscribe = DeskThing.on('music',  async (data) => {
+            if (!isMounted) return
+
+            const songData = data.payload
+            setSongData(songData)
+            setIsPlaying(songData?.is_playing || false)
+            if (songData.thumbnail && songData.thumbnail !== thumbnail) {
+                setThumbnail(songData.thumbnail)
+            }
+        }
+        )
 
         return () => {
             isMounted = false
