@@ -24,14 +24,14 @@ export const LeftPanel = ({ className, clickable = true }: LeftPanelTypes) => {
 
   return (
     <div
-      className={`w-5/12 h-screen flex-col items-center bg-neutral-950 flex ${className}`}
+      className={`w-5/12 h-screen flex-col items-center bg-neutral-950 flex border-neutral-800 border-r-2 ${className}`}
       style={{ pointerEvents: clickable ? 'auto' : 'none' }}
     >
       <div className="w-full flex items-center justify-between p-4">
         <h1 className="font-geist text-2xl text-neutral-200 font-bold">{panelState}</h1>
-        <Button onClick={() => handleButtonClick(otherState)} className="py-2 px-4 rounded-xl text-neutral-300 items-center bg-neutral-900">
-            <Icon className="w-5 h-5" />
-            <p className="font-medium font-geist pl-1">{otherState}</p>
+        <Button onClick={() => handleButtonClick(otherState)} className="py-3 px-5 rounded-xl text-neutral-300 items-center bg-neutral-900">
+            <Icon className="w-6 h-6" />
+            <p className="text-lg font-medium font-geist pl-1">{otherState}</p>
         </Button>
       </div>
       <div className="max-h-full w-full overflow-y-hidden">

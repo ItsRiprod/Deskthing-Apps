@@ -17,11 +17,11 @@ export const AddToPresetOverlay: FC<AddToPresetOverlayProps> = ({
 
   return (
     <Overlay onClose={onClose}>
-      <div className="w-full h-full flex flex-col gap-4 p-4 bg-neutral-950 rounded-xl overflow-y-auto">
-        <h2 className="text-2xl text-neutral-200 font-semibold">
+      <div className="w-full h-full flex flex-col p-4 bg-neutral-950 rounded-xl overflow-y-auto">
+        <h2 className="text-2xl text-neutral-200 font-semibold mb-4">
           Add to Preset
         </h2>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col">
           {presets.map((preset: Playlist) => (
             <button
               key={preset.index}
@@ -30,7 +30,7 @@ export const AddToPresetOverlay: FC<AddToPresetOverlayProps> = ({
                 onClose();
               }}
             >
-              <div className="rounded-lg bg-neutral-900 w-full flex-nowrap flex items-center">
+              <div className="rounded-lg bg-neutral-900 w-full flex-nowrap flex items-center mb-2">
                 {preset.thumbnail_url && (
                   <img
                     src={preset.thumbnail_url}
@@ -40,10 +40,10 @@ export const AddToPresetOverlay: FC<AddToPresetOverlayProps> = ({
                 )}
                 <div className="flex w-full flex-col overflow-x-hidden h-full justify-center p-3">
                   <div className="overflow-clip w-full">
-                    <h1 className="text-xl text-neutral-200 text-ellipsis text-nowrap overflow-hidden font-semibold">
+                    <h1 className="text-left text-xl text-neutral-200 text-ellipsis text-nowrap overflow-hidden font-semibold">
                       {preset.title}
                     </h1>
-                    <p className="text-neutral-500 text-ellipsis text-nowrap overflow-hidden font-medium">
+                    <p className="text-left text-neutral-500 text-ellipsis text-nowrap overflow-hidden font-medium">
                       {preset.owner}
                     </p>
                   </div>
