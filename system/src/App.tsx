@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import Default from './components/Default'
-import Cpu from './components/Cpu'
+import Dashboard from './components/Dashboard'
 import { SystemDataEvents, ToAppData, ToClientData, ViewOptions } from '@shared/types'
 import { createDeskThing } from '@deskthing/client'
 
@@ -28,7 +28,7 @@ const App: React.FC = () => {
             case ViewOptions.DEFAULT:
                 return <Default />
             case ViewOptions.GPU:
-                return <Cpu />
+                return <Dashboard />
             default:
                 return <div className="text-white">Unknown View</div>
         }

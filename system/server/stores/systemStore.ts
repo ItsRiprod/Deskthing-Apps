@@ -86,23 +86,53 @@ export class SystemStore extends EventEmitter<SystemEvents> {
 
   private async getGraphicsStats() {
     if (!this.includedStats.includes("gpu")) return undefined;
-    const gpuData = await si.graphics();
-
-    return {
-      temp: gpuData.controllers[0].temperatureGpu || 0,
-      usage: gpuData.controllers[0].utilizationGpu || 0,
-    };
+    
+    try {
+      const response = await fetch('http://localhost:3333/gpu-stats');
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const gpuStats = await response.json();
+      return {
+        temp: gpuStats.temp ?? 0,
+        usage: gpuStats.usage ?? 0,
+        // You can use other properties from gpuStats if needed
+      };
+    } catch (error) {
+      console.error("Error fetching GPU stats:", error);
+      return {
+        temp: 0,
+        usage: 0,
+      };
+    }
   }
 
   private async getCpuStats() {
     if (!this.includedStats.includes("cpu")) return undefined;
-    const cpuData = await si.cpuTemperature();
-
-    return {
-      load: cpuData.main,
-      temp: cpuData.main,
-    };
+  
+    try {
+      const loadData = await si.currentLoad();
+  
+      // Fetch from your CPU temp server
+      const response = await fetch('http://localhost:3334/cpu-temp');
+      const cpuTempData = await response.json();
+      const temp = cpuTempData.temp ?? 0;
+  
+      return {
+        load: loadData.currentLoad / 100, // 0.23 for 23%
+        temp: temp,
+      };
+    } catch (error) {
+      console.error("Error fetching CPU stats:", error);
+      return {
+        load: 0,
+        temp: 0,
+      };
+    }
   }
+  
+  
 
   private async getRamStats() {
     if (!this.includedStats.includes("ram")) return undefined;
@@ -110,6 +140,7 @@ export class SystemStore extends EventEmitter<SystemEvents> {
 
     return {
       usage: ramData.active,
+      total: ramData.total,
     };
   }
 
@@ -137,21 +168,38 @@ export class SystemStore extends EventEmitter<SystemEvents> {
 
   async getData(): Promise<SystemData | null> {
     try {
-      this.data = {
-        cpu: await this.getCpuStats(),
-        gpu: await this.getGraphicsStats(),
-        ram: await this.getRamStats(),
-        network: await this.getNetworkStats(),
-        processes: await this.getProcessStats(),
-      };
-
+      console.log("Starting getData collection...");
+      
+      const ram = await this.getRamStats();
+      console.log("RAM stats collected:", ram);
+      
+      const cpu = await this.getCpuStats();
+      console.log("CPU stats collected:", cpu);
+      
+      const gpu = await this.getGraphicsStats();
+      console.log("GPU stats collected:", gpu);
+      
+      const network = await this.getNetworkStats();
+      console.log("Network stats collected:", network);
+      
+      const processes = await this.getProcessStats();
+      console.log("Process stats collected:", processes);
+  
+      const payload = { cpu, gpu, ram, network, processes };
+      console.log("Final payload assembled:", payload);
+  
+      this.data = payload;
+      console.log("About to emit data event");
       this.emit("data", this.data);
+      console.log("Data event emitted");
       return this.data;
     } catch (error) {
+      console.error("Error collecting system data:", error);
       this.emit("error", { error: error as Error });
       return null;
     }
   }
+  
 
   async updateInterval(interval: number) {
     if (interval != this.interval) {
@@ -162,3 +210,4 @@ export class SystemStore extends EventEmitter<SystemEvents> {
 }
 
 export default SystemStore.getInstance();
+
