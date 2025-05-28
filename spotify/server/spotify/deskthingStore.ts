@@ -6,7 +6,7 @@ import { PlaylistStore } from "./playlistStore";
 import { AuthStore } from "./authStore";
 import { ToClientTypes, ToServerTypes } from "../../shared/transitTypes";
 import { DeviceStore } from "./deviceStore";
-import { SpotifySettingIDs } from "../setupSettings";
+import { SpotifySettingIDs } from "../../shared/spotifyTypes";
 import { APP_REQUESTS } from "@deskthing/types"
 
 const DeskThing = createDeskThing<ToServerTypes, ToClientTypes>();
@@ -33,7 +33,7 @@ export class DeskthingStore {
   setup() {
     // Listen for song updates
     this.songStore.on("songUpdate", (songData) => {
-      DeskThing.sendDebug(
+      console.debug(
         "deskthingStore: song change detected, sending: " +
           JSON.stringify(songData)
       );

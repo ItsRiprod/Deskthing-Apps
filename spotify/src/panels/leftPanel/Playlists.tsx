@@ -11,8 +11,8 @@ export const Playlists = () => {
   };
 
   return (
-    <div className="h-full flex flex-col w-full p-4 pt-0">
-      <div className="overflow-y-scroll w-full h-full mb-4 rounded-xl">
+    <div className="h-full overflow-y-scroll flex flex-col w-full p-4 pt-0">
+      <div className="w-full mb-4 rounded-xl">
         {playlists.map((playlist, index) => (
           <div key={index} className="max-w-full w-full overflow-y-hidden mb-2">
             <PlaylistComponent playlist={playlist} />

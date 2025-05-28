@@ -1,3 +1,4 @@
+import { JSX } from 'react'
 import { Icon } from '.'
 
 function Settings(props): JSX.Element {

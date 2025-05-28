@@ -13,11 +13,11 @@ export default defineConfig({
     },
     client: {
       logging: {
-        level: "debug",
+        level: "info",
         prefix: "[DeskThing Client]",
         enableRemoteLogging: false,
       },
-      clientPort: 3000,
+      clientPort: 8888,
       viteLocation: "http://localhost",
       vitePort: 5173,
       linkPort: 8080,
@@ -33,9 +33,12 @@ export default defineConfig({
           "change_source": true,
           "output_device": "default",
           "transfer_playback_on_error": true,
+          "blur_background_thumbnail": false,
+          "show_controls": true,
+          "thumbnail_size": "small",
+          "text_setting": "minimal",
         }
       }
     },
   }
 });
-  

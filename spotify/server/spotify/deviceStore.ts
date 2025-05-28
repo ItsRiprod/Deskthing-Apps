@@ -76,7 +76,7 @@ export class DeviceStore extends EventEmitter<deviceStoreEvents> {
         await this.addDevicesFromDeviceList(devices);
       }
     } catch (error) {
-      DeskThing.sendError("Error refreshing devices: " + error);
+      console.error("Error refreshing devices: " + error);
     }
   }
 
@@ -84,7 +84,7 @@ export class DeviceStore extends EventEmitter<deviceStoreEvents> {
     try {
       await this.spotifyApi.transferPlayback(deviceId);
     } catch (error) {
-      DeskThing.sendError("Error transferring playback: " + error);
+      console.error("Error transferring playback: " + error);
     }
   }
 

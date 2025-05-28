@@ -1,5 +1,5 @@
 import { DeskThing } from "@deskthing/server";
-import { SpotifySettingIDs } from "../setupSettings";
+import { SpotifySettingIDs } from "../../shared/spotifyTypes"
 import EventEmitter from "node:events";
 
 type authStoreEvents = {
@@ -36,13 +36,13 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
         | undefined;
     }
     if (data && data.access_token && data.refresh_token) {
-      DeskThing.sendLog("Found auth token in storage");
+      console.log("Found auth token in storage");
       this.access_token = data.access_token as string;
       this.refresh_token = data.refresh_token as string;
       this.emit("accessTokenUpdate", { accessToken: this.access_token });
     }
     if (this.client_id && this.client_secret && this.redirect_uri) {
-      DeskThing.sendDebug("Auth credentials found");
+      console.debug("Auth credentials found");
       await this.refreshAccessToken();
       this.emit("authUpdate", { authStatus: true });
     }
@@ -67,7 +67,7 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
 
   private async checkAuth() {
     if (!this.client_id || !this.client_secret || !this.redirect_uri) {
-      DeskThing.sendWarning(
+      console.warn(
         `Missing credentials: ${!this.client_id ? "Client ID, " : ""}${!this.client_secret ? "Client Secret, " : ""}${!this.redirect_uri ? "Redirect URI" : ""}`.replace(
           /, $/,
           ""
@@ -78,24 +78,31 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
 
     if (this.debounceTimeout) {
       clearTimeout(this.debounceTimeout);
+      this.debounceTimeout = null;
     }
 
-    if (!this.access_token && !this.is_logging_in) {
-      if (this.debounceTimeout) {
-        clearTimeout(this.debounceTimeout);
-        this.debounceTimeout = null;
-      }
-      this.debounceTimeout = setTimeout(async () => {
-        await this.login();
-        this.debounceTimeout = null;
-      }, 2000);
+    if (this.is_logging_in) {
+      console.log("Already logging in (cancelling request)");
+      return false;
     }
+
+    if (this.access_token) {
+      console.log("Already authenticated");
+      return true;
+    }
+
+    // Wait 2 seconds before attempting to login
+    this.debounceTimeout = setTimeout(async () => {
+      await this.login();
+      this.debounceTimeout = null;
+    }, 2000);
+  
     return true;
   }
 
   async login() {
     if (this.is_logging_in) {
-      DeskThing.sendLog("Already logging in (cancelling request)");
+      console.log("Already logging in (cancelling login request)");
       return;
     }
 
@@ -113,6 +120,7 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
         `&redirect_uri=${this.redirect_uri}` +
         `&state=${state}`;
 
+      // Prompts the user to open a URL in their browser
       DeskThing.openUrl(auth_url);
 
       DeskThing.setInterval(async () => {
@@ -123,25 +131,25 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
       });
     } catch (error) {
       this.is_logging_in = false;
-      DeskThing.sendError(`Login failed: ${error}`);
+      console.error(`Login failed: ${error}`);
       throw error;
     }
   }
 
   async refreshAccessToken(): Promise<void> {
     if (!this.client_id || !this.client_secret) {
-      DeskThing.sendError("Missing client credentials");
+      console.error("Missing client credentials");
       return;
     }
 
     if (!this.refresh_token) {
-      DeskThing.sendError("Missing refresh token - authenticating");
+      console.error("Missing refresh token - authenticating");
       await this.login();
       return;
     }
 
     if (this.is_refreshing) {
-      DeskThing.sendLog("Already refreshing token");
+      console.log("Already refreshing token");
       return;
     }
 
@@ -182,10 +190,10 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
         refresh_token: this.refresh_token,
       });
 
-      DeskThing.sendLog("Access token refreshed");
+      console.log("Access token refreshed");
       this.emit("authUpdate", { authStatus: true });
     } catch (error) {
-      DeskThing.sendError(`Failed to refresh token: ${error}`);
+      console.error(`Failed to refresh token: ${error}`);
 
       if (
         error instanceof Error &&
@@ -219,23 +227,25 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
    * @returns
    */
   async getAccessToken(code?: string): Promise<string | undefined> {
-    DeskThing.sendDebug("SpotifyStore: getAccessToken called");
+    console.debug("SpotifyStore: getAccessToken called");
     if (!code && this.access_token) {
       return this.access_token;
     } else if (!code) {
-      DeskThing.sendError("Missing code for token exchange");
+      console.error("Missing code for token exchange");
       return;
     }
 
     // This code block will only be entered as a result of the user logging in. All errors should set isLoggingIn to false
 
     if (!this.client_id || !this.client_secret || !this.redirect_uri) {
-      DeskThing.sendError("Missing client credentials for token exchange");
+      console.error("Missing client credentials for token exchange");
       this.is_logging_in = false;
       return;
     }
 
     try {
+
+      // Attempt to fetch the api token with the code
       const response = await fetch("https://accounts.spotify.com/api/token", {
         method: "post",
         headers: {
@@ -254,7 +264,7 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
       });
 
       if (!response.ok) {
-        throw new Error(`Token exchange failed: ${response.status}`);
+        throw new Error(`Token exchange failed: ${response.status}:${response.statusText}`);
       }
 
       const data = await response.json();
@@ -273,11 +283,11 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
         refresh_token: this.refresh_token,
       });
 
-      DeskThing.sendLog("Successfully obtained access and refresh tokens");
+      console.debug("Successfully obtained access and refresh tokens");
       this.emit("authUpdate", { authStatus: true });
     } catch (error) {
       this.emit('authUpdate', { authStatus: false });
-      DeskThing.sendError(`Failed to exchange code for tokens: ${error}`);
+      console.error(`Failed to exchange code for tokens: ${error}`);
       throw error;
     } finally {
       this.is_logging_in = false;

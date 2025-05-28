@@ -18,7 +18,6 @@ const App: React.FC = () => {
               <ControlProvider>
                 <UIProvider>
                   <Player />
-                  <PanelManager />
                 </UIProvider>
               </ControlProvider>
             </QueueProvider>

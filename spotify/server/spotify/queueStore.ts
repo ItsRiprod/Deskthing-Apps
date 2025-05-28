@@ -39,40 +39,40 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
   }
 
   private async getCurrentQueue({ signal }: { signal?: AbortSignal } = {}): Promise<QueueResponse | undefined> {
-    DeskThing.sendDebug("QueueStore: getCurrentQueue");
+    console.debug("QueueStore: getCurrentQueue");
     try {
       const currentQueue = await this.spotifyApi.getCurrentQueue({ signal });
       if (!currentQueue) {
-        DeskThing.sendWarning("No queue data available");
+        console.warn("No queue data available");
         return undefined;
       }
-      DeskThing.sendLog("Got the current queue successfully");
+      console.log("Got the current queue successfully");
 
       this.rawQueueData = currentQueue;
       this.lastFetchTime = Date.now();
       return currentQueue;
     } catch (error) {
-      DeskThing.sendError("Error getting current queue: " + error);
+      console.error("Error getting current queue: " + error);
       return undefined;
     }
   }
   async getQueueData(): Promise<SongQueue | undefined> {
-    DeskThing.sendDebug("QueueStore: getQueueData");
+    console.debug("QueueStore: getQueueData");
     if (this.isCacheValid()) {
-      DeskThing.sendDebug("QueueStore: getQueueData - using cached data");
+      console.debug("QueueStore: getQueueData - using cached data");
       return this.queueData;
     }
 
     const queue = await this.getCurrentQueue();
     if (!queue) {
-      DeskThing.sendError("No queue data available");
+      console.error("No queue data available");
       return undefined;
     }
     return await this.getAbbreviatedSongs(queue);
   }
 
   async addToQueue(uri: string) {
-    DeskThing.sendDebug("QueueStore: addToQueue " + uri);
+    console.debug("QueueStore: addToQueue " + uri);
     await this.spotifyApi.addToQueue(
       uri.startsWith("spotify:track:") ? uri : "spotify:track:" + uri
     );
@@ -81,14 +81,14 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
   async checkForRefresh() {
     // Early returns for already refreshing or valid cache
     if (this.is_refreshing) {
-      DeskThing.sendDebug(
+      console.debug(
         `QueueStore: checkForRefresh - already refreshing, skipping...`
       );
       return;
     }
 
     if (this.isCacheValid()) {
-      DeskThing.sendDebug("QueueStore: checkForRefresh - using cached data");
+      console.debug("QueueStore: checkForRefresh - using cached data");
       return;
     }
 
@@ -106,7 +106,7 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
         clearTimeout(timeoutId);
         
         if (!queue) {
-          DeskThing.sendError("Unable to get current queue");
+          console.error("Unable to get current queue");
           return;
         }
 
@@ -114,7 +114,7 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
           queue.currently_playing?.id === 
           this.rawQueueData?.currently_playing?.id
         ) {
-          DeskThing.sendDebug(
+          console.debug(
             "QueueStore: checkForRefresh - no change, skipping..."
           );
           return;
@@ -125,9 +125,9 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
       } catch (error) {
         // Handle abort errors separately from other errors
         if (error instanceof Error && error.name === 'AbortError') {
-          DeskThing.sendError("Queue refresh request timed out");
+          console.error("Queue refresh request timed out");
         } else {
-          DeskThing.sendError("Error checking queue: " + error);
+          console.error("Error checking queue: " + error);
         }
       } finally {
         clearTimeout(timeoutId); // Ensure timeout is cleared in all cases
@@ -138,7 +138,7 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
   }
 
   async returnQueueData(): Promise<void> {
-    DeskThing.sendDebug("QueueStore: returnQueueData");
+    console.debug("QueueStore: returnQueueData");
     try {
       if (this.isCacheValid()) {
         if (this.queueData) {
@@ -149,13 +149,13 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
 
       const queue = await this.getCurrentQueue();
       if (!queue) {
-        DeskThing.sendError("No queue data available");
+        console.error("No queue data available");
         return;
       }
 
       this.emit("queueUpdate", await this.getAbbreviatedSongs(queue));
     } catch (error) {
-      DeskThing.sendError("Error getting queue data:" + error);
+      console.error("Error getting queue data:" + error);
       return;
     }
   }
@@ -251,7 +251,7 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
             };
           }
         } catch (error) {
-          DeskThing.sendWarning(`Failed to process queue item: ${error}`);
+          console.warn(`Failed to process queue item: ${error}`);
           return {
             id: "error",
             name: "Error Processing Item",
@@ -285,7 +285,7 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
           };
         }
       } catch (error) {
-        DeskThing.sendWarning(`Failed to process currently playing item: ${error}`);
+        console.warn(`Failed to process currently playing item: ${error}`);
       }
     }
   

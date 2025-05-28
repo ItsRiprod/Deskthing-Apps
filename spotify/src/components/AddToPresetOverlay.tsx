@@ -1,8 +1,9 @@
 import { FC } from "react";
 import { Playlist } from "@shared/spotifyTypes";
-import { PresetComponent } from "./PresetComponent";
 import { usePlaylists } from "@src/hooks/usePlaylists";
 import Overlay from "./Overlay";
+import Button from "./Button";
+import { X } from "lucide-react";
 
 type AddToPresetOverlayProps = {
   onPresetSelect: (index: number) => void;
@@ -18,15 +19,20 @@ export const AddToPresetOverlay: FC<AddToPresetOverlayProps> = ({
   return (
     <Overlay onClose={onClose}>
       <div className="w-full h-full flex flex-col p-4 bg-neutral-950 rounded-xl overflow-y-auto">
-        <h2 className="text-2xl text-neutral-200 font-semibold mb-4">
-          Add to Preset
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl text-neutral-200 font-semibold">
+            Add to Preset
+          </h2>
+          <Button onClick={onClose}>
+            <X size={23} className="text-neutral-200" />
+          </Button>
+        </div>
         <div className="flex flex-col">
           {presets.map((preset: Playlist) => (
             <button
               key={preset.index}
               onClick={() => {
-                onPresetSelect(preset.index - 1); // the index is off by one
+                onPresetSelect(preset.index); // the index is off by one
                 onClose();
               }}
             >

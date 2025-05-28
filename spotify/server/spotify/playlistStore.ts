@@ -1,6 +1,5 @@
 import { DeskThing } from "@deskthing/server";
 import { Playlist } from "../../shared/spotifyTypes";
-import storeProvider from "./storeProvider";
 import EventEmitter from "node:events";
 import { SpotifyStore } from "./spotifyStore";
 import { AuthStore } from "./authStore";
@@ -52,16 +51,25 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
   private async initializePlaylists() {
     // Set up default placeholder preset slots
 
-    this.presetSlots = Array(4).fill(null).map((_, i) => 
-      this.presetSlots[i] || this.createEmptyPlaylist(i + 1)
-    );
+    const existingData = await DeskThing.getData()
+
+    const existingPresetSlots = existingData?.presetSlots as Playlist[] | undefined
+
+    if (existingPresetSlots) {
+      this.presetSlots = existingPresetSlots
+    } else {
+      this.presetSlots = Array(4).fill(null).map((_, i) =>
+        this.presetSlots[i] || this.createEmptyPlaylist(i)
+      );
+    }
+
     // Fetch available playlists from Spotify
     await this.refreshPlaylists();
   }
 
   async getPresets(): Promise<Playlist[]> {
     if (this.presetSlots && this.presetSlots.length > 0) {
-      DeskThing.sendDebug(`Using cached presets`);
+      console.debug(`Using cached presets`);
       return this.presetSlots;
     } else {
       await this.initializePlaylists();
@@ -71,7 +79,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
 
   async getAllPlaylists(): Promise<Playlist[]> {
     if (this.availablePlaylists && this.availablePlaylists.length > 0) {
-      DeskThing.sendDebug(`Using cached playlists`);
+      console.debug(`Using cached playlists`);
       return this.availablePlaylists;
     } else {
       await this.initializePlaylists();
@@ -94,17 +102,31 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
 
   async addCurrentPlaylistToPreset(playlistIndex: number) {
     if (!this.isValidIndex(playlistIndex)) {
-      DeskThing.sendError("Invalid playlist index!");
+      console.error("Invalid playlist index!");
       return;
     }
 
-    const currentPlayback = await this.spotifyApi.getCurrentPlayback();
-    if (!currentPlayback?.context?.uri) {
-      DeskThing.sendError("No context uri found!");
+    try {
+      const currentPlayback = await this.spotifyApi.getCurrentPlayback();
+      if (!currentPlayback?.context?.uri) {
+        console.error("No context uri found!");
+        return;
+      }
+
+      this.setPreset(playlistIndex, { Context: currentPlayback.context });
+    } catch (error) {
+      console.error("Error in playPreset:", error);
+    }
+  }
+
+  async clearPreset(index: number) {
+    if (!this.isValidIndex(index)) {
+      console.error("Invalid playlist index!");
       return;
     }
 
-    this.setPreset(playlistIndex, { Context: currentPlayback.context });
+    this.presetSlots[index] = this.createEmptyPlaylist(index);
+    await this.saveAndUpdatePlaylists();
   }
 
   async setPreset(
@@ -115,15 +137,17 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       await this.setLikedSongsPlaylist(index);
       return;
     }
-  
+
     const uri = options.playlistURI || options.Context?.uri;
 
     if (!uri) {
-      DeskThing.sendError("No uri found in options");
+      console.error("No uri found in options");
       return;
     }
 
     const contentType = this.getContentType(uri);
+
+    console.debug(`Setting preset ${index} to ${uri} (${contentType})`);
 
     switch (contentType) {
       case 'playlist':
@@ -142,7 +166,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
         await this.setLikedSongsPlaylist(index);
         break;
       default:
-        DeskThing.sendError(`Unsupported content type for URI: ${uri}`);
+        console.error(`Unsupported content type for URI: ${uri}`);
     }
 
     await this.saveAndUpdatePlaylists();
@@ -155,24 +179,24 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
           ? playlistUri
           : `spotify:playlist:${playlistUri}`,
       });
-      DeskThing.sendLog(
+      console.log(
         `Successfully started playing playlist: ${playlistUri}`
       );
       await this.refreshPlaylists();
     } catch (error) {
-      DeskThing.sendError(`Failed to play playlist: ${error}`);
+      console.error(`Failed to play playlist: ${error}`);
     }
   }
 
   async playPreset(index: number) {
     if (!this.isValidIndex(index)) {
-      DeskThing.sendError(`Invalid playlist index! ${index}`);
+      console.error(`Invalid playlist index! ${index}`);
       return;
     }
 
     const playlist = this.presetSlots[index];
     if (!playlist?.uri) {
-      DeskThing.sendError(`Invalid playlist or missing URI at index ${index}`);
+      console.error(`Invalid playlist or missing URI at index ${index}`);
       return;
     }
 
@@ -181,7 +205,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
 
   async refreshPlaylists() {
 
-    DeskThing.sendDebug(`Refreshing playlists`);
+    console.debug(`Refreshing playlists`);
     // Refresh preset slots
     await Promise.all(
       this.presetSlots.map(async (playlist, index) => {
@@ -195,167 +219,204 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
       })
     )
 
-    // Refresh available playlists
-    const playlistsResponse = await this.spotifyApi.getPlaylists();
+    try {
+      // Refresh available playlists
+      const playlistsResponse = await this.spotifyApi.getPlaylists();
 
-    if (!playlistsResponse || playlistsResponse.items.length == 0) {
-      DeskThing.sendError("No playlists found!");
+      if (!playlistsResponse || playlistsResponse.items.length == 0) {
+        console.error("No playlists found!");
 
-    } else {
-      DeskThing.sendDebug(
-        `Got ${playlistsResponse?.items.length} playlists from Spotify`
-      );
-      const spotifyPlaylists = playlistsResponse.items;
-  
-      if (spotifyPlaylists) {
-        this.availablePlaylists = await Promise.all(
-          spotifyPlaylists.map(async (playlist, index) => ({
-            title: playlist.name,
-            owner: playlist.owner.display_name || "Unknown",
-            tracks: playlist.tracks.total,
-            id: playlist.id,
-            uri: playlist.uri,
-            index,
-            snapshot_id: playlist.snapshot_id,
-            thumbnail_url: await getEncodedImage(playlist.images[0]?.url || ""),
-          }))
+      } else {
+        console.debug(
+          `Got ${playlistsResponse?.items.length} playlists from Spotify`
         );
+        const spotifyPlaylists = playlistsResponse.items;
+
+        if (spotifyPlaylists) {
+          this.availablePlaylists = await Promise.all(
+            spotifyPlaylists.map(async (playlist, index) => ({
+              title: playlist.name,
+              owner: playlist.owner.display_name || "Unknown",
+              tracks: playlist.tracks.total,
+              id: playlist.id,
+              uri: playlist.uri,
+              index,
+              snapshot_id: playlist.snapshot_id,
+              thumbnail_url: await getEncodedImage(playlist.images[0]?.url || ""),
+            }))
+          );
+        }
       }
+
+
+      await this.saveAndUpdatePlaylists();
+    } catch (error) {
+      console.error("Error in refreshPlaylists:", error);
     }
-
-
-    await this.saveAndUpdatePlaylists();
   }
 
   private async refreshLikedSongsPlaylist(index: number) {
-    const response = await this.spotifyApi.getLikedTracks();
+    try {
 
-    this.presetSlots[index] = {
-      title: "Liked Songs",
-      owner: "You",
-      tracks: response.total || 0,
-      id: "liked",
-      index,
-      snapshot_id: response.snapshot_id,
-      uri: "spotify:collection:tracks",
-      thumbnail_url: await getEncodedImage(
-        "https://t.scdn.co/images/3099b3803ad9496896c43f22fe9be8c4.png"
-      ),
-    };
+      const response = await this.spotifyApi.getLikedTracks();
+
+      this.presetSlots[index] = {
+        title: "Liked Songs",
+        owner: "You",
+        tracks: response.total || 0,
+        id: "liked",
+        index,
+        snapshot_id: response.snapshot_id,
+        uri: "spotify:collection:tracks",
+        thumbnail_url: await getEncodedImage(
+          "https://t.scdn.co/images/3099b3803ad9496896c43f22fe9be8c4.png"
+        ),
+      };
+    } catch (error) {
+      console.error(`Error refreshing liked songs playlist:`, error);
+    }
   }
 
   private async refreshRegularPlaylist(index: number, playlist: Playlist) {
-    const response = await this.spotifyApi.getPlaylist(playlist.id);
+    try {
+      const response = await this.spotifyApi.getPlaylist(playlist.id);
 
-    if (!this.validatePlaylistData(response)) {
-      DeskThing.sendWarning(`Invalid playlist data received for ${playlist.id}`);
-      return;
+      if (!this.validatePlaylistData(response)) {
+        console.warn(`Invalid playlist data received for ${playlist.id}`);
+        return;
+      }
+
+      this.presetSlots[index] = {
+        title: response?.name || "Unknown",
+        owner: response?.owner.display_name || "Unknown",
+        tracks: response?.tracks.total || 0,
+        id: response?.id || "-1",
+        index,
+        snapshot_id: response?.snapshot_id || "",
+        uri: response?.uri || "spotify:playlist:unknown",
+        thumbnail_url:
+          playlist.thumbnail_url || response?.images[0]?.url,
+      };
+    } catch (error) {
+      console.error(`Error refreshing playlist ${playlist.id}:`, error);
     }
-
-    this.presetSlots[index] = {
-      title: response?.name || "Unknown",
-      owner: response?.owner.display_name || "Unknown",
-      tracks: response?.tracks.total || 0,
-      id: response?.id || "-1",
-      index,
-      snapshot_id: response?.snapshot_id || "",
-      uri: response?.uri || "spotify:playlist:unknown",
-      thumbnail_url:
-        playlist.thumbnail_url || response?.images[0]?.url,
-    };
   }
 
   private async setLikedSongsPlaylist(index: number) {
-    const response = await this.spotifyApi.getLikedTracks();
+    try {
 
-    this.presetSlots[index] = {
-      title: "Liked Songs",
-      owner: "You",
-      tracks: response.total || 0,
-      id: "liked",
-      index,
-      snapshot_id: response.snapshot_id,
-      uri: "spotify:collection:tracks",
-      thumbnail_url: await getEncodedImage(
-        "https://t.scdn.co/images/3099b3803ad9496896c43f22fe9be8c4.png"
-      ),
-    };
+      const response = await this.spotifyApi.getLikedTracks();
+
+      this.presetSlots[index] = {
+        title: "Liked Songs",
+        owner: "You",
+        tracks: response.total || 0,
+        id: "liked",
+        index,
+        snapshot_id: response.snapshot_id,
+        uri: "spotify:collection:tracks",
+        thumbnail_url: await getEncodedImage(
+          "https://t.scdn.co/images/3099b3803ad9496896c43f22fe9be8c4.png"
+        ),
+      };
+    } catch (error) {
+      console.error(`Error setting liked songs playlist:`, error);
+    }
   }
 
   private async setAlbumAsPlaylist(index: number, albumUri: string) {
-    const albumId = albumUri.split(":").pop();
-    if (!albumId) {
-      throw new Error("Invalid album URI");
+    try {
+
+      const albumId = albumUri.split(":").pop();
+      if (!albumId) {
+        throw new Error("Invalid album URI");
+      }
+
+      const response = await this.spotifyApi.getAlbum(albumId);
+
+      this.presetSlots[index] = {
+        title: response?.name || "Unknown Album",
+        owner: response?.artists?.[0]?.name || "Unknown Artist",
+        tracks: response?.total_tracks || 0,
+        id: response?.id || "-1",
+        index,
+        snapshot_id: "", // Albums don't have snapshot_id
+        uri: albumUri,
+        thumbnail_url: await response?.images?.[0]?.url,
+      };
+    } catch (error) {
+      console.error(`Error setting albumURI ${albumUri} to playlist at index ${index}: ${error}`);
     }
-    
-    const response = await this.spotifyApi.getAlbum(albumId);
-    
-    this.presetSlots[index] = {
-      title: response?.name || "Unknown Album",
-      owner: response?.artists?.[0]?.name || "Unknown Artist",
-      tracks: response?.total_tracks || 0,
-      id: response?.id || "-1",
-      index,
-      snapshot_id: "", // Albums don't have snapshot_id
-      uri: albumUri,
-      thumbnail_url: await response?.images?.[0]?.url,
-    };
   }
-  
+
   private async setArtistAsPlaylist(index: number, artistUri: string) {
-    const artistId = artistUri.split(":").pop();
-    if (!artistId) {
-      throw new Error("Invalid artist URI");
+    try {
+
+      const artistId = artistUri.split(":").pop();
+      if (!artistId) {
+        throw new Error("Invalid artist URI");
+      }
+
+      const response = await this.spotifyApi.getArtist(artistId);
+
+      this.presetSlots[index] = {
+        title: `${response?.name || "Unknown Artist"}'s Top Tracks`,
+        owner: "Spotify",
+        tracks: 0, // We don't know how many top tracks until we request them
+        id: response?.id || "-1",
+        index,
+        snapshot_id: "",
+        uri: artistUri,
+        thumbnail_url: await response?.images?.[0]?.url,
+      };
+    } catch (error) {
+      console.error(`Error setting artistURI ${artistUri} to playlist at index ${index}: ${error}`);
     }
-    
-    const response = await this.spotifyApi.getArtist(artistId);
-    
-    this.presetSlots[index] = {
-      title: `${response?.name || "Unknown Artist"}'s Top Tracks`,
-      owner: "Spotify",
-      tracks: 0, // We don't know how many top tracks until we request them
-      id: response?.id || "-1",
-      index,
-      snapshot_id: "",
-      uri: artistUri,
-      thumbnail_url: await response?.images?.[0]?.url,
-    };
   }
-  
+
   private async setPodcastAsPlaylist(index: number, showUri: string) {
-    const showId = showUri.split(":").pop();
-    if (!showId) {
-      throw new Error("Invalid show URI");
+    try {
+
+      const showId = showUri.split(":").pop();
+      if (!showId) {
+        throw new Error("Invalid show URI");
+      }
+
+      const response = await this.spotifyApi.getShow(showId);
+
+      this.presetSlots[index] = {
+        title: response?.name || "Unknown Podcast",
+        owner: response?.publisher || "Unknown Publisher",
+        tracks: response?.total_episodes || 0,
+        id: response?.id || "-1",
+        index,
+        snapshot_id: "",
+        uri: showUri,
+        thumbnail_url: await response?.images?.[0]?.url,
+      };
+    } catch (error) {
+      console.error(`Error setting showURI ${showUri} to playlist at index ${index}: ${error}`);
     }
-    
-    const response = await this.spotifyApi.getShow(showId);
-    
-    this.presetSlots[index] = {
-      title: response?.name || "Unknown Podcast",
-      owner: response?.publisher || "Unknown Publisher",
-      tracks: response?.total_episodes || 0,
-      id: response?.id || "-1",
-      index,
-      snapshot_id: "",
-      uri: showUri,
-      thumbnail_url: await response?.images?.[0]?.url,
-    };
   }
 
   private async setRegularPlaylist(index: number, playlistUri: string) {
     const playlistId = playlistUri.includes(':') ? playlistUri.split(":")[2] : playlistUri;
-    const response = await this.spotifyApi.getPlaylist(playlistId);
+    try {
+      const response = await this.spotifyApi.getPlaylist(playlistId);
 
-    this.presetSlots[index] = {
-      title: response?.name || "Unknown",
-      owner: response?.owner.display_name || "Unknown",
-      tracks: response?.tracks.total || 0,
-      id: response?.id || "-1",
-      index,
-      snapshot_id: response?.snapshot_id || "",
-      uri: response?.uri || "spotify:playlist:unknown",
-      thumbnail_url: response?.images[0]?.url || "",
-    };
+      this.presetSlots[index] = {
+        title: response?.name || "Unknown",
+        owner: response?.owner.display_name || "Unknown",
+        tracks: response?.tracks.total || 0,
+        id: response?.id || "-1",
+        index,
+        snapshot_id: response?.snapshot_id || "",
+        uri: response?.uri || "spotify:playlist:unknown",
+        thumbnail_url: response?.images[0]?.url || "",
+      };
+    } catch (error) {
+      console.error(`Error refreshing playlist ${playlistId}:`, error);
+    }
   }
 
   private async saveAndUpdatePlaylists() {
@@ -370,13 +431,13 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
 
   async addCurrentToPreset(playlistIndex: number) {
     if (!this.isValidIndex(playlistIndex)) {
-      DeskThing.sendError("Invalid playlist index!");
+      console.error("Invalid playlist index!");
       return;
     }
 
     const playlist = this.presetSlots[playlistIndex];
     if (!playlist?.uri) {
-      DeskThing.sendError(
+      console.error(
         "Invalid playlist or missing URI at index " + playlistIndex
       );
       return;
@@ -384,27 +445,57 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
 
     try {
       await this.spotifyApi.addToPlaylist(playlist.id);
-      DeskThing.sendLog(
+      console.log(
         "Successfully added track to playlist: " + playlist.title
       );
       await this.refreshPlaylists();
     } catch (error) {
-      DeskThing.sendError("Failed to add track to playlist: " + error);
+      console.error("Failed to add track to playlist: " + error);
     }
   }
 
   async addCurrentToPlaylist(playlistId: string) {
     try {
       await this.spotifyApi.addToPlaylist(playlistId);
-      DeskThing.sendLog("Successfully added track to playlist: " + playlistId);
+      console.log("Successfully added track to playlist: " + playlistId);
       await this.refreshPlaylists();
     } catch (error) {
-      DeskThing.sendError("Failed to add track to playlist: " + error);
+      console.error("Failed to add track to playlist: " + error);
     }
   }
 
+  async addSongToPreset(presetIndex: number, songId: string) {
+    if (!this.isValidIndex(presetIndex)) {
+      console.error("Invalid preset index!");
+      return;
+    }
+
+    const playlist = this.presetSlots[presetIndex];
+    if (!playlist?.uri) {
+      console.error(
+        "Invalid playlist or missing URI at index " + presetIndex
+      );
+      return;
+    }
+
+    try {
+      await this.spotifyApi.addToPlaylist(playlist.id, songId);
+      console.log(
+        "Successfully added track to playlist: " + playlist.title
+      );
+      await this.refreshPlaylists();
+    } catch (error) {
+      console.error("Failed to add track to playlist: " + error);
+    }
+  }
+
+
   private isValidIndex(index: number): boolean {
-    return index >= 1 && index <= this.presetSlots.length;
+    const isValid = index >= 0 && index <= this.presetSlots.length -1;
+    if (!isValid) {
+      console.error(`Invalid playlist index! Received: ${index} and there are only ${this.presetSlots.length} preset slots.`);
+    }
+    return isValid;
   }
 
   private isLikedSongsPlaylist(context: any): boolean {
@@ -414,3 +505,4 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
     );
   }
 }
+

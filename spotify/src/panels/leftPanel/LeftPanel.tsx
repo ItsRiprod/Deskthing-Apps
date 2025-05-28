@@ -2,8 +2,7 @@ import Button from "@src/components/Button"
 import { useUI } from "../../hooks/useUI";
 import { Playlists } from "./Playlists";
 import { Queue } from "./Queue";
-import { IconArrowRight } from "@src/assets/icons";
-import { ListMusic, ListStart } from "lucide-react";
+import { ListMusic, ListStart, X } from "lucide-react";
 import { PanelState } from "@src/contexts/UIContext"
 
 type LeftPanelTypes = {
@@ -12,11 +11,15 @@ type LeftPanelTypes = {
 };
 
 export const LeftPanel = ({ className, clickable = true }: LeftPanelTypes) => {
-  const { panelState, setPanelState } = useUI();
+  const { panelState, setPanelState, setPanel } = useUI();
 
   const handleButtonClick = (state: PanelState) => {
     if (!clickable) return;
     setPanelState(state);
+  }
+
+  const handleClose = () => {
+    setPanel(null);
   }
 
   const otherState = panelState === "Queue" ? "Playlists" : "Queue";
@@ -24,10 +27,13 @@ export const LeftPanel = ({ className, clickable = true }: LeftPanelTypes) => {
 
   return (
     <div
-      className={`w-5/12 h-screen flex-col items-center bg-neutral-950 flex border-neutral-800 border-r-2 ${className}`}
+      className={`sm:w-5/12 w-full h-screen flex-col items-center bg-neutral-950 flex border-neutral-800 border-r-2 ${className}`}
       style={{ pointerEvents: clickable ? 'auto' : 'none' }}
     >
-      <div className="w-full flex items-center justify-between p-4">
+      <button className="sm:hidden absolute top-4 right-4" onClick={handleClose}>
+        <X className="w-6 h-6 text-white" />
+      </button>
+      <div className="w-full sm:flex-row flex-col  flex sm:items-center justify-between p-4">
         <h1 className="font-geist text-2xl text-neutral-200 font-bold">{panelState}</h1>
         <Button onClick={() => handleButtonClick(otherState)} className="py-3 px-5 rounded-xl text-neutral-300 items-center bg-neutral-900">
             <Icon className="w-6 h-6" />

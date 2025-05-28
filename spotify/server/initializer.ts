@@ -27,7 +27,7 @@ DeskThing.on(SongEvent.GET, async (data) => {
   const musicStore = storeProvider.getSongStore();
 
   if (data.type == null) {
-    DeskThing.sendError("No args provided!");
+    console.error("No args provided!");
     return;
   }
 
@@ -46,13 +46,13 @@ DeskThing.on(SpotifyEvent.GET, async (data) => {
   const queueStore = storeProvider.getQueueStore();
   const playlistStore = storeProvider.getPlaylistStore();
 
-  DeskThing.sendDebug(`Received spotify GET event for ${data?.request || "unknown"}`);
+  console.debug(`Received spotify GET event for ${data?.request || "unknown"}`);
 
 
   switch (data.request) {
     case "playlists": {
       const playlists = await playlistStore.getAllPlaylists();
-      DeskThing.sendDebug(`Sending ${playlists.length} playlists`);
+      console.debug(`Sending ${playlists.length} playlists`);
       DeskThing.send({
         app: "spotify",
         type: "playlists",
@@ -62,7 +62,7 @@ DeskThing.on(SpotifyEvent.GET, async (data) => {
     }
     case "presets": {
       const presets = await playlistStore.getPresets();
-      DeskThing.sendDebug(`Sending ${presets.length} presets`);
+      console.debug(`Sending ${presets.length} presets`);
       DeskThing.send({
         app: "spotify",
         type: "presets",
@@ -73,7 +73,7 @@ DeskThing.on(SpotifyEvent.GET, async (data) => {
     case "queue":
       const queue = await queueStore.getQueueData();
       if (queue) {
-        DeskThing.sendDebug(`Sending ${queue?.queue?.length} queue items`);
+        console.debug(`Sending ${queue?.queue?.length} queue items`);
         DeskThing.send({
           app: "spotify",
           type: "queueData",
@@ -86,117 +86,134 @@ DeskThing.on(SpotifyEvent.GET, async (data) => {
 
 DeskThing.on(SongEvent.SET, async (data) => {
   if (data == null) {
-    DeskThing.sendError("No args provided");
+    console.error("No args provided");
     return;
-  } 
-
-  DeskThing.sendDebug(`Received song SET event for ${data?.request || "unknown"}`);
-
-
-  const actionStore = storeProvider.getActionStore();
-  const songStore = storeProvider.getSongStore();
-  let response;
-  switch (data.request) {
-    case AUDIO_REQUESTS.NEXT:
-      response = await actionStore.next(data.payload);
-      break;
-    case AUDIO_REQUESTS.PREVIOUS:
-      response = await actionStore.previous();
-      break;
-    case AUDIO_REQUESTS.FAST_FORWARD:
-      response = await actionStore.fastForward(data.payload);
-      break;
-    case AUDIO_REQUESTS.REWIND:
-      response = await actionStore.rewind(data.payload);
-      break;
-    case AUDIO_REQUESTS.PLAY:
-      response = await actionStore.play(data.payload);
-      break;
-    case AUDIO_REQUESTS.PAUSE:
-    case AUDIO_REQUESTS.STOP:
-      response = await actionStore.pause();
-      break;
-    case AUDIO_REQUESTS.SEEK:
-      response = await actionStore.seek(data.payload);
-      break;
-    case AUDIO_REQUESTS.LIKE:
-      response = await songStore.likeSong(data.payload);
-      break;
-    case AUDIO_REQUESTS.VOLUME:
-      response = await actionStore.volume(data.payload);
-      break;
-    case AUDIO_REQUESTS.REPEAT:
-      response = await actionStore.repeat(data.payload);
-      break;
-    case AUDIO_REQUESTS.SHUFFLE:
-      response = await actionStore.shuffle(data.payload);
-      break;
   }
-  DeskThing.sendLog(response);
+
+  console.debug(`Received song SET event for ${data?.request || "unknown"}`);
+
+  try {
+
+    const actionStore = storeProvider.getActionStore();
+    const songStore = storeProvider.getSongStore();
+    let response;
+    switch (data.request) {
+      case AUDIO_REQUESTS.NEXT:
+        response = await actionStore.next(data.payload);
+        break;
+      case AUDIO_REQUESTS.PREVIOUS:
+        response = await actionStore.previous();
+        break;
+      case AUDIO_REQUESTS.FAST_FORWARD:
+        response = await actionStore.fastForward(data.payload);
+        break;
+      case AUDIO_REQUESTS.REWIND:
+        response = await actionStore.rewind(data.payload);
+        break;
+      case AUDIO_REQUESTS.PLAY:
+        response = await actionStore.play(data.payload);
+        break;
+      case AUDIO_REQUESTS.PAUSE:
+      case AUDIO_REQUESTS.STOP:
+        response = await actionStore.pause();
+        break;
+      case AUDIO_REQUESTS.SEEK:
+        response = await actionStore.seek(data.payload);
+        break;
+      case AUDIO_REQUESTS.LIKE:
+        response = await songStore.likeSong(data.payload);
+        break;
+      case AUDIO_REQUESTS.VOLUME:
+        response = await actionStore.volume(data.payload);
+        break;
+      case AUDIO_REQUESTS.REPEAT:
+        response = await actionStore.repeat(data.payload);
+        break;
+      case AUDIO_REQUESTS.SHUFFLE:
+        response = await actionStore.shuffle(data.payload);
+        break;
+    }
+    console.log(response);
+  } catch (error) {
+    console.error(`Error handling set request ${data?.request || "unknown"}:`, error);
+  }
 });
 
 DeskThing.on(SpotifyEvent.SET, async (data) => {
   if (data == null) {
-    DeskThing.sendError("No args provided");
+    console.error("No args provided");
     return;
   }
 
-  DeskThing.sendDebug(`Received SET event for ${data?.request || "unknown"}`);
-
-
-  const actionStore = storeProvider.getActionStore();
-  const songStore = storeProvider.getSongStore();
-  const playlistStore = storeProvider.getPlaylistStore();
-  let response;
-  switch (data.request) {
-    case "transfer":
-      response = await actionStore.transferPlayback(data.payload);
-      break;
-    case "current_to_preset":
-      response = await playlistStore.addCurrentPlaylistToPreset(data.payload);
-      break;
-    case "preset":
-      if (!data.payload.playlistId || data.payload.presetNum == undefined) {
-        DeskThing.sendError("No playlistId or presetNum provided");
-        return;
-      }
-      response = await playlistStore.setPreset(data.payload.presetNum, { playlistURI: data.payload.playlistId });
-      break;
-    case "like_song":
-      response = await songStore.likeSong(data.payload);
-      break;
+  try {
+    const actionStore = storeProvider.getActionStore();
+    const songStore = storeProvider.getSongStore();
+    const playlistStore = storeProvider.getPlaylistStore();
+    let response;
+    switch (data.request) {
+      case "transfer":
+        response = await actionStore.transferPlayback(data.payload);
+        break;
+      case "current_to_preset":
+        response = await playlistStore.addCurrentPlaylistToPreset(data.payload);
+        break;
+      case "remove_preset":
+        response = await playlistStore.clearPreset(data.payload);
+        break;
+      case "preset":
+        if (!data.payload.playlistId || data.payload.presetNum == undefined) {
+          console.error("No playlistId or presetNum provided");
+          return;
+        }
+        response = await playlistStore.setPreset(data.payload.presetNum, { playlistURI: data.payload.playlistId });
+        break;
+      case "like_song":
+        response = await songStore.likeSong(data.payload);
+        break;
+    }
+    console.log(response);
+  } catch (error) {
+    console.error(`Error handling SET request: ${data?.request || "unknown"}:`, error);
   }
-  DeskThing.sendLog(response);
 });
 
 DeskThing.on(SpotifyEvent.ADD, async (data) => {
   if (data == null) {
-    DeskThing.sendError("No args provided");
+    console.error("No args provided");
     return;
   }
 
-  DeskThing.sendDebug(`Received ADD event for ${data?.request || "unknown"}`);
+  try {
 
-  const queueStore = storeProvider.getQueueStore();
-  const playlistStore = storeProvider.getPlaylistStore();
-  let response;
-  switch (data.request) {
-    case "current_to_preset": // Expects playlist index
-      response = await playlistStore.addCurrentToPreset(data.payload);
-      break;
-    case "current_to_playlist": // Expects uri
-      response = await playlistStore.addCurrentToPlaylist(data.payload);
-      break;
-    case "queue": // Expects uri
-      response = await queueStore.addToQueue(data.payload);
-      break;
+
+    console.debug(`Received ADD event for ${data?.request || "unknown"}`);
+
+    const queueStore = storeProvider.getQueueStore();
+    const playlistStore = storeProvider.getPlaylistStore();
+    let response;
+    switch (data.request) {
+      case "current_to_preset": // Expects playlist index
+        response = await playlistStore.addCurrentToPreset(data.payload);
+        break;
+      case "current_to_playlist": // Expects uri
+        response = await playlistStore.addCurrentToPlaylist(data.payload);
+        break;
+      case "song_to_preset": // Expects uri
+        response = await playlistStore.addSongToPreset(data.payload.presetNum, data.payload.songId);
+        break;
+      case "queue": // Expects uri
+        response = await queueStore.addToQueue(data.payload);
+        break;
+    }
+    console.log(response);
+  } catch (error) {
+    console.error(`Error handling ADD request: ${data?.request || "unknown"}:`, error);
   }
-  DeskThing.sendLog(response);
 })
 
 DeskThing.on(SpotifyEvent.PLAY, async (data) => {
   if (data == null) {
-    DeskThing.sendError("No args provided");
+    console.error("No args provided");
     return;
   }
 
@@ -210,18 +227,18 @@ DeskThing.on(SpotifyEvent.PLAY, async (data) => {
       response = await playlistStore.playPreset(data.payload);
       break;
   }
-  DeskThing.sendLog(response);
+  console.log(response);
 })
 
 const handleCallbackData = async (data: SocketData) => {
   if (data.payload == null) {
-    DeskThing.sendError("Unable to get access token");
+    console.error("Unable to get access token (payload is null)");
   } else {
     const authStore = storeProvider.getAuthStore();
     try {
       await authStore.getAccessToken(data.payload);
     } catch (error) {
-      DeskThing.sendError("Unable to get access token");
+      console.error("Unable to get access token", error);
     }
   }
 };

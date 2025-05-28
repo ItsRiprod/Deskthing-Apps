@@ -21,7 +21,7 @@ export class ActionStore {
 
     this.songStore.on('rawSongUpdate', (song) => {
       if (!song?.context?.uri) return
-      this.context_uri = song.context .uri;
+      this.context_uri = song.context.uri;
     })
   }
 
@@ -32,7 +32,7 @@ export class ActionStore {
           if (typeof action.value === "number") {
             await this.playlistStore.addCurrentPlaylistToPreset(action.value + 1);
           } else {
-            DeskThing.sendError("Invalid Playlist Index");
+            console.error("Invalid Playlist Index");
           }
           break;
 
@@ -42,7 +42,7 @@ export class ActionStore {
           } else if (typeof action.value === "string") {
             await this.playlistStore.playPlaylist(action.value);
           } else {
-            DeskThing.sendError("Invalid Playlist ID");
+            console.error("Invalid Playlist ID");
           }
           break;
 
@@ -59,10 +59,10 @@ export class ActionStore {
           break;
 
         default:
-          DeskThing.sendError(`Unknown action: ${action.id}`);
+          console.error(`Unknown action: ${action.id}`);
       }
     } catch (error) {
-      DeskThing.sendError(`Error handling action: ${error}`);
+      console.error(`Error handling action: ${error}`);
     }
   }
 
@@ -86,16 +86,21 @@ export class ActionStore {
    * @returns 
    */
   async play(context?: { playlist?: string; id?: string; position?: number }) {
-    if (context) {
-      DeskThing.sendDebug(`Playing ${context.id ? 'track' : 'playlist'}`);
-      return this.spotifyApi.play({
-        context_uri: context.playlist ? `spotify:playlist:${context.playlist}` : undefined,
-        uris: context.id ? [context.id.includes('spotify:') ?  context.id : `spotify:track:${context.id}`] : undefined,
-        offset: context.position !== undefined ? { position: context.position } : undefined,
-      });
+    try {
+
+      if (context) {
+        console.debug(`Playing ${context.id ? 'track' : 'playlist'}`);
+        return this.spotifyApi.play({
+          context_uri: context.playlist ? `spotify:playlist:${context.playlist}` : undefined,
+          uris: context.id ? [context.id.includes('spotify:') ? context.id : `spotify:track:${context.id}`] : undefined,
+          offset: context.position !== undefined ? { position: context.position } : undefined,
+        });
+      }
+      console.debug('Resuming current song');
+      return this.spotifyApi.play();
+    } catch (error) {
+      console.error("Error playing:", error);
     }
-    DeskThing.sendDebug('Resuming current song');
-    return this.spotifyApi.play();
   }
   async seek(position: string | number) {
     return this.spotifyApi.seek(position);
@@ -105,7 +110,7 @@ export class ActionStore {
     return this.spotifyApi.volume(newVol);
   }
 
-  async repeat(state: "context" | "track" | "off") {
+  async repeat(state: "off" | "all" | "track") {
     return this.spotifyApi.repeat(state);
   }
 
@@ -114,7 +119,7 @@ export class ActionStore {
   }
 
   async transferPlayback(deviceId: string) {
-    DeskThing.sendLog(`Transferring playback to ${deviceId}`);
+    console.log(`Transferring playback to ${deviceId}`);
     return this.spotifyApi.transferPlayback(deviceId);
   }
 
@@ -124,14 +129,14 @@ export class ActionStore {
       const currentPosition = playback?.progress_ms;
 
       if (!currentPosition) {
-        DeskThing.sendError("No current position found!");
+        console.error("No current position found!");
         return;
       }
 
       const newPosition = currentPosition + seconds * 1000
       await this.seek(newPosition);
     } catch (error) {
-      DeskThing.sendError("Error fast forwarding!" + error);
+      console.error("Error fast forwarding!" + error);
     }
   }
 
@@ -141,14 +146,14 @@ export class ActionStore {
       const currentPosition = playback?.progress_ms;
 
       if (!currentPosition) {
-        DeskThing.sendError("No current position found!");
+        console.error("No current position found!");
         return;
       }
 
       const newPosition = currentPosition - seconds * 1000;
       await this.seek(newPosition);
     } catch (error) {
-      DeskThing.sendError("Error rewinding!" + error);
+      console.error("Error rewinding!" + error);
     }
   }
 }

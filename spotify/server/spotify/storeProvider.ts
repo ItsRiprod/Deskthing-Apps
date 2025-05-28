@@ -71,6 +71,10 @@ export class StoreProvider {
   public getQueueStore(): QueueStore {
     return this.queueStore
   }
+
+  public getDeskthingStore(): DeskthingStore {
+    return this.deskthingStore
+  }
 }
 
 export default StoreProvider.getInstance()

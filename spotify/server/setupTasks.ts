@@ -1,7 +1,7 @@
 
 import { DeskThing } from "@deskthing/server"
-import { DESKTHING_EVENTS, DESKTHING_EVENTS, Step, STEP_TYPES, Task } from "@deskthing/types"
-import { SpotifySettingIDs } from "./setupSettings"
+import { DESKTHING_EVENTS, Step, STEP_TYPES, Task } from "@deskthing/types"
+import { SpotifySettingIDs } from "../shared/spotifyTypes"
 
 export const setupTasks = () => {
     DeskThing.tasks.initTasks({

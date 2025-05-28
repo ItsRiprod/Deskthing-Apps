@@ -1,12 +1,13 @@
 import { SpotifyStore as SpotifyStore } from "./spotifyStore";
 import { DeskThing } from "@deskthing/server";
-import { Device, SpotifySongData } from "../../shared/spotifyTypes";
-import { PlayerResponse } from "../types/spotifyAPI";
+import { Device } from "../../shared/spotifyTypes";
+import { Actions, PlayerResponse } from "../types/spotifyAPI";
 import EventEmitter from "node:events";
 import { DeviceStore } from "./deviceStore"
+import { SongAbilities, SongData } from "@deskthing/types";
 
 type songStoreEvents = {
-  songUpdate: [SpotifySongData];
+  songUpdate: [SongData];
   rawSongUpdate: [PlayerResponse];
   thumbnailUpdate: [string];
   deviceUpdate: [Device];
@@ -38,16 +39,16 @@ export class SongStore extends EventEmitter<songStoreEvents> {
     try {
       const currentPlayback = await this.spotifyApi.getCurrentPlayback({ signal });
       if (!currentPlayback) return undefined;
-      
+
       this.deviceStore.addDevicesFromPlayback(currentPlayback);
       this.emit("rawSongUpdate", currentPlayback);
       return currentPlayback;
     } catch (error) {
       if (!(error instanceof Error)) {
-        DeskThing.sendError(`Error getting current playback: ${error}`);
+        console.error(`Error getting current playback: ${error}`);
         return undefined;
       }
-      DeskThing.sendError(`Error getting current playback: ${error.message}`);
+      console.error(`Error getting current playback: ${error.message}`);
       return undefined;
     }
   }
@@ -60,16 +61,17 @@ export class SongStore extends EventEmitter<songStoreEvents> {
         id: "like_song",
         state: isLiked[0] == true ? "liked" : "",
       });
+      console.debug('IsSongLiked? ', isLiked)
       return isLiked[0];
     } catch (ex) {
-      DeskThing.sendError("Error checking if song is liked!" + ex);
+      console.error("Error checking if song is liked!" + ex);
       return false;
     }
   }
 
   async checkForRefresh() {
     if (this.is_refreshing.state && Date.now() - this.is_refreshing.timestamp < 5000) {
-      DeskThing.sendDebug(
+      console.debug(
         `SongStore: checkForRefresh - already refreshing, skipping...`
       );
       return;
@@ -83,12 +85,12 @@ export class SongStore extends EventEmitter<songStoreEvents> {
 
       try {
         const playback = await this.getCurrentPlayback({ signal: controller.signal });
-        
+
         // Clear timeout as request completed
         clearTimeout(timeoutId);
 
         if (!playback) {
-          DeskThing.sendWarning("Unable to get current playback (is anything playing?)");
+          console.warn("Unable to get current playback (is anything playing?)");
           return;
         }
 
@@ -100,7 +102,7 @@ export class SongStore extends EventEmitter<songStoreEvents> {
             (playback.progress_ms || 0) - this.recentPlaybackState.progress
           ) > 3000 || // Allow small progress differences
           (playback.device?.volume_percent || 0) !==
-            this.recentPlaybackState.volume ||
+          this.recentPlaybackState.volume ||
           playback.repeat_state !== this.recentPlaybackState.repeatState ||
           playback.shuffle_state !== this.recentPlaybackState.shuffleState;
 
@@ -116,18 +118,18 @@ export class SongStore extends EventEmitter<songStoreEvents> {
         };
 
         if (stateChanged) {
-          DeskThing.sendDebug("Playback state changed, refreshing...");
+          console.debug("Playback state changed, refreshing...");
           const songData = await this.constructSongData(playback);
           this.emit("songUpdate", songData);
         } else {
-          DeskThing.sendDebug("No significant state changes detected");
+          console.debug("No significant state changes detected");
         }
       } catch (error) {
         // Handle abort errors separately from other errors
         if (error instanceof Error && error.name === 'AbortError') {
-          DeskThing.sendError("Playback refresh request timed out");
+          console.error("Playback refresh request timed out");
         } else {
-          DeskThing.sendError("Error checking for state changes: " + error);
+          console.error("Error checking for state changes: " + error);
         }
       } finally {
         clearTimeout(timeoutId); // Ensure timeout is cleared in all cases
@@ -137,7 +139,7 @@ export class SongStore extends EventEmitter<songStoreEvents> {
     }
   }
   async returnSongData(id: string | null = null): Promise<void> {
-    DeskThing.sendDebug("SongStore: returnSongData");
+    console.debug("SongStore: returnSongData");
     try {
       const startTime = Date.now();
       const timeout = 5000;
@@ -147,14 +149,14 @@ export class SongStore extends EventEmitter<songStoreEvents> {
 
       while (attempts < maxAttempts) {
         if (DeskThing.stopRequested) {
-          DeskThing.sendLog("Stop requested!");
+          console.log("Stop requested!");
           throw new Error("Stop requested!");
         }
 
         currentPlayback = await this.getCurrentPlayback();
 
         if (!currentPlayback) {
-          DeskThing.sendError("No playback data available");
+          console.error("No playback data available");
           await new Promise((resolve) => setTimeout(resolve, 1000));
           attempts++;
           continue;
@@ -172,7 +174,7 @@ export class SongStore extends EventEmitter<songStoreEvents> {
               this.emit("deviceUpdate", currentPlayback.device);
             }
 
-            DeskThing.sendDebug(
+            console.debug(
               "SongStore: songData: " + JSON.stringify(songData)
             );
             this.emit("songUpdate", songData);
@@ -180,14 +182,14 @@ export class SongStore extends EventEmitter<songStoreEvents> {
           }
 
           // Same track, wait before next attempt
-          DeskThing.sendLog("Song has not changed. Trying again...");
+          console.log("Song has not changed. Trying again...");
           await new Promise((resolve) => setTimeout(resolve, 1000));
         } else if (currentPlayback.currently_playing_type === "episode") {
           const songData = await this.constructSongData(currentPlayback);
           this.emit("songUpdate", songData);
           return;
         } else {
-          DeskThing.sendError("No song is playing or detected!");
+          console.error("No song is playing or detected!");
           return;
         }
 
@@ -200,14 +202,14 @@ export class SongStore extends EventEmitter<songStoreEvents> {
 
       throw new Error("Max attempts reached without finding new song!");
     } catch (error) {
-      DeskThing.sendError("Error getting song data:" + error);
+      console.error("Error getting song data:" + error);
       return;
     }
   }
 
   private async constructSongData(
     currentPlayback: PlayerResponse
-  ): Promise<SpotifySongData> {
+  ): Promise<SongData> {
     if (
       currentPlayback.device.id &&
       currentPlayback.device.id != this.recent_device_id
@@ -227,15 +229,35 @@ export class SongStore extends EventEmitter<songStoreEvents> {
     }
   }
 
+  private returnAbilities(actions: Actions): SongAbilities[] {
+    const abilities: SongAbilities[] = [];
+    const disallows = actions.disallows || {};
+
+    if (actions.pausing || !disallows.pausing) abilities.push(SongAbilities.PAUSE);
+    if (actions.resuming || !disallows.resuming) abilities.push(SongAbilities.PLAY);
+    if (actions.seeking || !disallows.seeking) abilities.push(SongAbilities.FAST_FORWARD, SongAbilities.REWIND);
+    if (actions.skipping_next || !disallows.skipping_next) abilities.push(SongAbilities.NEXT);
+    if (actions.skipping_prev || !disallows.skipping_prev) abilities.push(SongAbilities.PREVIOUS);
+    if (actions.toggling_shuffle || !disallows.toggling_shuffle) abilities.push(SongAbilities.SHUFFLE);
+    if ((actions.toggling_repeat_context || !disallows.toggling_repeat_context) ||
+      (actions.toggling_repeat_track || !disallows.toggling_repeat_track)) abilities.push(SongAbilities.REPEAT);
+    if (actions.transferring_playback || !disallows.transferring_playback) abilities.push(SongAbilities.SET_OUTPUT);
+
+    abilities.push(SongAbilities.LIKE, SongAbilities.CHANGE_VOLUME);
+
+    return abilities;
+  }
+
   async constructSongType(
     currentPlayback: Extract<
       PlayerResponse,
       { currently_playing_type: "track" }
     >
-  ): Promise<SpotifySongData> {
+  ): Promise<SongData> {
     const isLiked = await this.checkLiked(currentPlayback.item.id);
 
     return {
+      version: 2,
       album: currentPlayback?.item.album?.name || "Not Found",
       artist: currentPlayback?.item.album?.artists[0].name || "Not Found",
       playlist: currentPlayback?.context?.type || "Not Found",
@@ -244,58 +266,66 @@ export class SongStore extends EventEmitter<songStoreEvents> {
       shuffle_state: currentPlayback?.shuffle_state,
       repeat_state:
         currentPlayback?.repeat_state == "context"
-          ? "context"
-          : currentPlayback.repeat_state,
+          ? "all"
+          : currentPlayback?.repeat_state,
       is_playing: currentPlayback?.is_playing,
-      can_fast_forward: !currentPlayback.actions?.disallows?.seeking || true,
-      can_skip: !currentPlayback?.actions?.disallows?.skipping_next || true,
-      can_like: true,
-      can_change_volume: currentPlayback?.device.supports_volume || true,
-      can_set_output:
-        !currentPlayback?.actions?.disallows?.transferring_playback || true,
       track_duration: currentPlayback?.item.duration_ms,
       track_progress: currentPlayback?.progress_ms,
       volume: currentPlayback?.device?.volume_percent || 50,
-      device: currentPlayback?.device.name,
-      device_id: currentPlayback?.device.id,
-      id: currentPlayback?.item.id,
-      isLiked: isLiked[0],
-      thumbnail: currentPlayback.item.album.images[0].url,
+      device: currentPlayback?.device?.name,
+      device_id: currentPlayback?.device?.id,
+      id: currentPlayback?.item?.id,
+      liked: isLiked[0],
+      thumbnail: currentPlayback.item?.album?.images[0]?.url,
+      source: 'spotify',
+      abilities: this.returnAbilities(currentPlayback?.actions),
+
+      // depreciated
+      can_fast_forward: !currentPlayback.actions?.disallows?.seeking || true,
+      can_skip: !currentPlayback?.actions?.disallows?.skipping_next || true,
+      can_like: true,
+      can_change_volume: currentPlayback?.device?.supports_volume || true,
+      can_set_output:
+        !currentPlayback?.actions?.disallows?.transferring_playback || true,
     };
   }
-
   async constructEpisodeType(
     currentPlayback: Extract<
       PlayerResponse,
       { currently_playing_type: "episode" }
     >
-  ): Promise<SpotifySongData> {
+  ): Promise<SongData> {
     return {
-      album: currentPlayback?.item.show.name,
-      artist: currentPlayback?.item.show.publisher,
+      version: 2,
+      album: currentPlayback?.item?.show?.name || 'Podcast',
+      artist: currentPlayback?.item?.show?.publisher || 'Author',
       playlist: currentPlayback?.context?.type || "Not Found",
       playlist_id: currentPlayback?.context?.uri || "123456",
       track_name: currentPlayback?.item.name,
       shuffle_state: currentPlayback?.shuffle_state,
       repeat_state:
         currentPlayback?.repeat_state == "context"
-          ? "context"
-          : currentPlayback.repeat_state,
+          ? "all"
+          : currentPlayback?.repeat_state,
       is_playing: currentPlayback?.is_playing,
-      can_fast_forward: !currentPlayback?.actions?.disallows?.seeking || true,
-      can_skip: !currentPlayback?.actions?.disallows?.skipping_next || true,
-      can_like: true,
-      can_change_volume: currentPlayback?.device?.supports_volume || true,
-      can_set_output:
-        !currentPlayback?.actions?.disallows?.transferring_playback || true,
       track_duration: currentPlayback?.item.duration_ms,
       track_progress: currentPlayback?.progress_ms,
       volume: currentPlayback?.device.volume_percent || 50,
       device: currentPlayback?.device.name,
       device_id: currentPlayback?.device.id,
       id: currentPlayback?.item.id,
-      isLiked: false,
-      thumbnail: currentPlayback.item.show.images[0].url,
+      thumbnail: currentPlayback.item?.show?.images[0]?.url,
+      source: 'spotify',
+      abilities: this.returnAbilities(currentPlayback?.actions),
+      liked: false,
+      
+      // Depreciated data
+      can_fast_forward: !currentPlayback?.actions?.disallows?.seeking || true,
+      can_skip: !currentPlayback?.actions?.disallows?.skipping_next || true,
+      can_like: true,
+      can_change_volume: currentPlayback?.device?.supports_volume || true,
+      can_set_output:
+        !currentPlayback?.actions?.disallows?.transferring_playback || true,
     };
   }
 
@@ -303,13 +333,13 @@ export class SongStore extends EventEmitter<songStoreEvents> {
     if (!songId) {
       const song = await this.getCurrentPlayback();
       if (!song?.item) {
-        DeskThing.sendError("No song found!");
+        console.error("No song found!");
         return;
       }
       songId = song?.item?.id as string;
     }
 
-    let isLiked
+    let isLiked: boolean
 
     if (typeof songId == 'boolean') {
       isLiked = songId
@@ -320,27 +350,21 @@ export class SongStore extends EventEmitter<songStoreEvents> {
       isLiked = await this.checkLiked(songId);
     }
 
-    const songURL = `https://api.spotify.com/v1/me/tracks?ids=${songId}`;
-
-    const data = {
-      ids: [songId],
-    };
-
     try {
-      if (isLiked[0]) {
-        DeskThing.sendLog("Disliking the current song");
+      if (isLiked) {
+        console.log("Disliking the current song");
         await this.spotifyApi.likeSong(songId, false);
-        DeskThing.sendLog("Successfully unliked song: " + songId);
+        console.log("Successfully unliked song: " + songId);
         this.emit("iconUpdate", { id: "like_song", state: "" });
         return;
       } else {
-        DeskThing.sendLog("Liking the current song");
+        console.log("Liking the current song", isLiked);
         await this.spotifyApi.likeSong(songId, true);
-        DeskThing.sendLog("Successfully liked song: " + songId);
+        console.log("Successfully liked song: " + songId);
         this.emit("iconUpdate", { id: "like_song", state: "liked" });
       }
     } catch (error) {
-      DeskThing.sendError("Failed to like song: " + error);
+      console.error("Failed to like song: " + error);
     }
   }
 }

@@ -1,9 +1,3 @@
-import { SongData } from '@deskthing/types'
-
-export interface SpotifySongData extends SongData {
-  isLiked: boolean
-}
-
 export type Playlist = {
   title: string
   owner: string
@@ -37,4 +31,21 @@ export type AbbreviatedSong = {
 export type SongQueue = {
   queue: AbbreviatedSong[];
   currently_playing: AbbreviatedSong | null
+}
+
+export enum SpotifySettingIDs {
+    CLIENT_ID = "client_id",
+    CLIENT_SECRET = "client_secret",
+    REDIRECT_URI = "redirect_uri",
+    CHANGE_SOURCE = "change_source",
+    OUTPUT_DEVICE = "output_device",
+    TRANSFER_PLAYBACK_ON_ERROR = "transfer_playback_on_error",
+
+    // Artistic Settings
+
+    BLUR_BACKGROUND_THUMBNAIL = "blur_background_thumbnail",
+    BACKDROP_BLUR_AMNT = "backdrop_blur_amt",
+    SHOW_CONTROLS = "show_controls",
+    THUMBNAIL_SIZE = "thumbnail_size",
+    TEXT_SETTING = "text_setting", // how to render the text
 }

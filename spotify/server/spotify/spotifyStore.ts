@@ -23,12 +23,13 @@ interface QueueEntry {
   timestamp: number;
 }
 
+
 export class SpotifyStore {
   public readonly BASE_URL = "https://api.spotify.com/v1/me/player";
   private authStore: AuthStore;
   private requestCache: Record<string, CacheEntry | undefined> = {};
   private requestQueue: Record<string, QueueEntry | undefined> = {};
-  private cacheExpiration = 10 * 500; // 5 seconds default expiration
+  private cacheExpiration = 3 * 1000; // 3 seconds default expiration
   private access_token: string | undefined = undefined;
   private rateLimitDelay = 0;
 
@@ -51,6 +52,12 @@ export class SpotifyStore {
       attempt?: number;
     } = {}
   ) {
+
+    // Dont try anything if not logged in
+    if (!this.access_token) {
+      return Promise.reject("Not logged in!");
+    }
+
     // Setup retries
     const retryCount = options.attempt || 0;
     const MAX_RETRIES = 3;
@@ -64,7 +71,7 @@ export class SpotifyStore {
     if (this.requestQueue[cacheKey]) {
       // Check the timestamp to ensure it hasn't expired
       if (this.requestQueue[cacheKey].timestamp + cacheTime > now) {
-        DeskThing.sendDebug(
+        console.debug(
           `SpotifyStore: makeRequest - request already in queue: ${cacheKey}`
         );
         return this.requestQueue[cacheKey].promise;
@@ -75,9 +82,9 @@ export class SpotifyStore {
 
     // Setup error handling
     const internalController = new AbortController();
-    const timeoutId = setTimeout(() => internalController.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => internalController.abort(), 5000); // 5 second timeout
 
-    let combinedSignal = internalController.signal;
+    const combinedSignal = internalController.signal;
     if (options.signal) {
       // If external signal aborts, we need to abort too
       const abortListener = () => {
@@ -89,7 +96,7 @@ export class SpotifyStore {
       // Clean up listener when done
       setTimeout(() => {
         options?.signal?.removeEventListener("abort", abortListener);
-      }, 0);
+      }, 150);
     }
 
     // Then check if the request is in the cache. Only cache requests that are GET requests
@@ -99,7 +106,7 @@ export class SpotifyStore {
       this.requestCache[cacheKey] &&
       now - this.requestCache[cacheKey].timestamp < cacheTime
     ) {
-      DeskThing.sendDebug(
+      console.debug(
         `SpotifyStore: makeRequest - using cached data for request: ${cacheKey}`
       );
       return this.requestCache[cacheKey].data;
@@ -119,7 +126,7 @@ export class SpotifyStore {
           "Content-Type": "application/json",
         };
 
-        DeskThing.sendDebug(
+        console.debug(
           "SpotifyStore: makeRequest - making request: " + url
         );
 
@@ -136,13 +143,13 @@ export class SpotifyStore {
 
           // If there is an error
           if (!response.ok) {
-            DeskThing.sendDebug(
+            console.debug(
               `SpotifyStore: makeRequest - request failed: ${response.status} ${response.statusText || "(no status text)"} ${this.getResponseCodeText(response.status)}`
             );
             if (response.status === 401 && retryCount < MAX_RETRIES) {
               await this.authStore.refreshAccessToken();
 
-              DeskThing.sendDebug(
+              console.debug(
                 `SpotifyStore: makeRequest - Token is invalid for request. Adding to queue until there is a new token`
               );
 
@@ -158,7 +165,7 @@ export class SpotifyStore {
                 10
               );
               this.rateLimitDelay = retryAfter * 1000;
-              DeskThing.sendDebug(
+              console.debug(
                 `Rate limited. Waiting ${retryAfter} seconds before retry.`
               );
               await new Promise((resolve) =>
@@ -188,10 +195,11 @@ export class SpotifyStore {
               }
             }
           } else {
-            DeskThing.sendDebug(
-              `SpotifyStore: makeRequest - response is not JSON: ${cacheKey}`
+            console.debug(
+              `SpotifyStore: makeRequest - response is not parsable ( status: ${response.status} ${response.statusText} ): ${cacheKey}`
             );
           }
+
 
           // Cache the response
           this.requestCache[cacheKey] = {
@@ -204,25 +212,25 @@ export class SpotifyStore {
           clearTimeout(timeoutId); // clear the abort signal
 
           if (!(error instanceof Error)) {
-            DeskThing.sendError(`API request failed: ${error}`);
+            console.error(`API request failed: ${error}`);
             return;
           }
 
           if (error.name == "AbortError") {
-            DeskThing.sendDebug(
+            console.debug(
               `SpotifyStore: makeRequest - request timed out: ${cacheKey}`
             );
             throw new Error("Request timed out after 30 seconds");
           }
 
-          DeskThing.sendError(`API request failed: ${error.message}`);
+          console.error(`API request failed: ${error.message}`);
           // Remove failed requests from cache
           if (this.requestQueue[cacheKey]) {
             delete this.requestQueue[cacheKey];
           }
           throw error;
         }
-      } catch {
+      } catch (error) {
         // Remove failed requests from cache
         if (this.requestQueue[cacheKey]) {
           delete this.requestQueue[cacheKey];
@@ -232,6 +240,8 @@ export class SpotifyStore {
         if (this.requestCache[cacheKey]?.timestamp == now) {
           delete this.requestCache[cacheKey];
         }
+
+        console.warn("SpotifyStore: makeRequest - error", error);
       }
     })();
 
@@ -269,46 +279,34 @@ export class SpotifyStore {
     });
   }
 
-  private getResponseCodeText(code: number) {
-    switch (code) {
-      case 200:
-        return "OK";
-      case 201:
-        return "Created";
-      case 202:
-        return "Accepted";
-      case 204:
-        return "No Content";
-      case 304:
-        return "Not Modified";
-      case 400:
-        return "Bad Request";
-      case 401:
-        return "Unauthorized";
-      case 403:
-        return "Forbidden";
-      case 404:
-        return "Not Found";
-      case 429:
-        return "Too Many Requests";
-      case 500:
-        return "Internal Server Error";
-      case 502:
-        return "Bad Gateway";
-      case 503:
-        return "Service Unavailable";
-      default:
-        return "Unknown Error";
-    }
+  private responseCodeMap: Record<number, string> = {
+    200: "OK",
+    201: "Created",
+    202: "Accepted",
+    204: "No Content",
+    304: "Not Modified",
+    400: "Bad Request",
+    401: "Unauthorized",
+    403: "Forbidden",
+    404: "Not Found",
+    429: "Too Many Requests",
+    500: "Internal Server Error",
+    502: "Bad Gateway",
+    503: "Service Unavailable"
+  };
+
+  private getResponseCodeText(code: number): string {
+    return this.responseCodeMap[code] || "Unknown Error";
   }
 
   async getCurrentPlayback({ signal }: { signal?: AbortSignal } = {}): Promise<
     PlayerResponse | undefined
   > {
-    DeskThing.sendDebug("SpotifyStore: getCurrentPlayback");
+    console.debug("SpotifyStore: getCurrentPlayback");
     const url = `${this.BASE_URL}?additional_types=episode`;
     return this.makeRequest("get", url, undefined, { signal });
   }
+
   async getPlaylists(limit = 20): Promise<PlaylistsResponse | undefined> {
     const url = `https://api.spotify.com/v1/me/playlists?limit=${limit}`;
     return this.makeRequest("get", url);
@@ -351,7 +349,7 @@ export class SpotifyStore {
   }) {
     if (!data) return this.makeRequest("put", `${this.BASE_URL}/play`);
 
-    DeskThing.sendDebug("SpotifyStore: play - data: " + JSON.stringify(data));
+    console.debug("SpotifyStore: play - data: " + JSON.stringify(data));
 
     const url = `${this.BASE_URL}/play${data.device_id ? `?device_id=${data.device_id}` : ""}`;
     const { device_id, ...bodyData } = data;
@@ -384,21 +382,42 @@ export class SpotifyStore {
     );
   }
 
-  async repeat(state: "context" | "track" | "off") {
-    return this.makeRequest("put", `${this.BASE_URL}/repeat?state=${state}`);
+  async repeat(state: "off" | "all" | "track" | "context") {
+    // Converts the state to the spotify state
+    const spotifyState = state === "all" ? "context" : state === "context" ? "context" : state;
+
+    return this.makeRequest("put", `${this.BASE_URL}/repeat?state=${spotifyState}`);
   }
 
   async shuffle(state: boolean) {
     return this.makeRequest("put", `${this.BASE_URL}/shuffle?state=${state}`);
   }
 
-  async addToPlaylist(playlistId: string) {
+  async addToPlaylist(playlistId: string, songId?: string) {
     const url = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
-    const currentPlayback = await this.getCurrentPlayback();
+    
+    if (!songId) {
+      const currentPlayback = await this.getCurrentPlayback();
 
-    if (currentPlayback && currentPlayback.item) {
-      const body = { uris: [currentPlayback.item.uri] };
+      if (currentPlayback && currentPlayback.item) {
+        songId = currentPlayback.item.uri;
+      } else {
+        console.log(`No song playing, cannot add to playlist`);
+        return;
+      }
+    } else {
+      if (!songId.includes('spotify:track:')) {
+        songId = `spotify:track:${songId}`;
+      }
+    }
+
+    console.debug(`Adding ${songId} to playlist ${playlistId}`);
+
+    const body = { uris: [songId] };
+    try {
       return this.makeRequest("post", url, body);
+    } catch (error) {
+      console.error(`Failed to add track ${songId} to playlist: `, error);
     }
   }
 

@@ -1,27 +1,29 @@
 import { DeskThing } from "@deskthing/client";
 import { AbbreviatedSong } from "@shared/spotifyTypes";
-import { FC, useMemo } from "react";
+import { FC, useMemo, useState } from "react";
 import { SwipeContainer } from "@src/components/SwipeContainer";
 import { useControls } from "@src/hooks/useControls"
-import { Heart, X } from "lucide-react"
+import { Heart, Plus, X } from "lucide-react"
+import { AddToPresetOverlay } from "./AddToPresetOverlay";
 
 type SongComponentProps = {
   song: AbbreviatedSong;
 };
 
 export const SongComponent: FC<SongComponentProps> = ({ song }) => {
-  const { addToQueue, nextTrack, likeSong } = useControls()
+  const { addToQueue, nextTrack, likeSong, addSongToPreset } = useControls()
   const decodedImage = useMemo(
     () => song.thumbnail && DeskThing.useProxy(song.thumbnail),
     [song.thumbnail]
   );
+  const [addToPresets, setAddToPreset] = useState(false);
 
   const handleSwipeLeft = () => {
-    likeSong(song.id)
+    setAddToPreset(true);
   };
-
+  
   const handleSwipeRight = () => {
-    // Handle swipe right action
+    likeSong(song.id)
   };
 
   const handleClick = () => {
@@ -29,16 +31,26 @@ export const SongComponent: FC<SongComponentProps> = ({ song }) => {
     setTimeout(() => nextTrack(), 100)
   }
 
+  const onAddClick = (index: number) => {
+    addSongToPreset(index, song.id)
+  };
+
   return (
     <div className="w-full rounded-xl overflow-hidden hover:bg-neutral-900">
+      {addToPresets && (
+        <AddToPresetOverlay
+          onClose={() => setAddToPreset(false)}
+          onPresetSelect={onAddClick}
+        />
+      )}
       <SwipeContainer
         onSwipeLeft={handleSwipeLeft}
         onSwipeRight={handleSwipeRight}
         onTap={handleClick}
-        swipeLeftIcon={<X />}
-        swipeRightIcon={<Heart />}
-        leftTriggerColor="bg-red-500"
-        rightTriggerColor="bg-green-500"
+        swipeLeftIcon={<div className="flex flex-col items-center"><Plus /><p>Add</p></div>}
+        swipeRightIcon={<div className="flex flex-col items-center"><Heart /><p>Like</p></div>}
+        leftTriggerColor="bg-green-500"
+        rightTriggerColor="bg-red-500"
         className="w-full h-fit"
       >
         <div className="rounded-lg w-full flex-nowrap flex items-center">

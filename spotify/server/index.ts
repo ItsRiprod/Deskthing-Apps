@@ -5,7 +5,7 @@ import { initialize } from './initializer'
 const start = async () => {
   // Dynamically import the initializer
   await initialize() 
-  DeskThing.sendLog('Spotify app started!')
+  console.log('Spotify app started!')
 }
 
 

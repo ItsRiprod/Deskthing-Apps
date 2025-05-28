@@ -11,7 +11,7 @@ type PresetComponentProps = {
 };
 
 export const PresetComponent: FC<PresetComponentProps> = ({ preset }) => {
-  const { playPreset, addCurrentToPreset, setCurrentToPreset } = useControls()
+  const { playPreset, addCurrentToPreset, setCurrentToPreset, clearPresetIndex } = useControls()
 
   const decodedImage = useMemo(
     () => preset.thumbnail_url && DeskThing.useProxy(preset.thumbnail_url),
@@ -19,21 +19,23 @@ export const PresetComponent: FC<PresetComponentProps> = ({ preset }) => {
   );
 
   const handleSwipeLeft = () => {
-    // unpin
+    console.log(preset)
     if (preset.id === '-1')  {
-      setCurrentToPreset(preset.index -1)
+      // pin
+      setCurrentToPreset(preset.index)
     } else {
-      console.log('Removing a preset is not available')
+      // unpin
+      clearPresetIndex(preset.index)
     }
   };
 
   const handleSwipeRight = () => {
-    addCurrentToPreset(preset.index -1)
+    addCurrentToPreset(preset.index)
   };
 
   const handleClick = () => {
     if (preset.id == '-1') return
-    playPreset(preset.index -1)
+    playPreset(preset.index)
   }
 
   return (
@@ -42,8 +44,8 @@ export const PresetComponent: FC<PresetComponentProps> = ({ preset }) => {
         onSwipeLeft={handleSwipeLeft}
         onSwipeRight={handleSwipeRight}
         onTap={handleClick}
-        swipeLeftIcon={preset.id === '-1' ? <Plus /> : <X />}
-        swipeRightIcon={<Play />}
+        swipeLeftIcon={preset.id === '-1' ? <div className="flex flex-col items-center"><Plus /><p className="text-nowrap">Set Current</p></div> : <div className="flex flex-col items-center"><X /><p>Unset</p></div>}
+        swipeRightIcon={<div className="flex flex-col items-center"><Plus /><p className="text-nowrap">Add Song</p></div>}
         leftTriggerColor={preset.id === '-1' ? 'bg-cyan-500' : 'bg-red-500'}
         rightTriggerColor="bg-green-500"
         className="w-full h-fit"

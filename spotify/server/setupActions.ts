@@ -1,6 +1,6 @@
 
 import { DeskThing } from "@deskthing/server"
-import { Action, DESKTHING_EVENTS } from "@deskthing/types"
+import { Action, DESKTHING_EVENTS, EventMode } from "@deskthing/types"
 import storeProvider from "./spotify/storeProvider"
 
 export enum SpotifyActionIDs {
@@ -73,9 +73,10 @@ export const setupActions = () => {
     version_code: 10,
   }
   DeskThing.registerAction(likeAction)
-}
-  DeskThing.on(DESKTHING_EVENTS.ACTION, async (data) => {
-    const actionStore = storeProvider.getActionStore()
 
-    await actionStore.handleAction(data.payload)
-  })
+}
+DeskThing.on(DESKTHING_EVENTS.ACTION, async (data) => {
+  const actionStore = storeProvider.getActionStore()
+
+  await actionStore.handleAction(data.payload)
+})

@@ -30,7 +30,6 @@ export const PlaylistComponent: FC<PlaylistComponentProps> = ({ playlist }) => {
   };
 
   const onAddClick = (index: number) => {
-    setAddToPreset(true);
     setPlaylistToPreset(index, playlist.id);
   };
 

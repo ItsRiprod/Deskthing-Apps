@@ -15,7 +15,7 @@ export const Queue = () => {
   }, [currentSong?.id]);
 
   return (
-    <div className="h-full flex flex-col w-full p-4 pt-0">
+    <div className="h-full overflow-y-scroll flex flex-col w-full p-4 pt-0">
       <div className="">
         <h1 className="text-xl font-bold text-neutral-500 mb-2 font-geist">
           Now Playing
@@ -35,12 +35,12 @@ export const Queue = () => {
           Up Next
         </h1>
       </div>
-      <div className="overflow-y-scroll w-full h-full rounded-xl">
+      <div className="w-full rounded-xl">
         {queue.length > 0 ? (
           queue.map((song, index) => (
             <div
               key={index}
-              className="max-w-full w-full overflow-y-hidden mb-2"
+              className="max-w-full w-full mb-2"
             >
               <SongComponent song={song} />
             </div>
