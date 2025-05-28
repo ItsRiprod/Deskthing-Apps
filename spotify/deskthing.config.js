@@ -17,9 +17,9 @@ export default defineConfig({
         prefix: "[DeskThing Client]",
         enableRemoteLogging: false,
       },
-      clientPort: 8888,
+      clientPort: 3000,
       viteLocation: "http://localhost",
-      vitePort: 5173,
+      vitePort: 5174,
       linkPort: 8080,
     },
     server: {

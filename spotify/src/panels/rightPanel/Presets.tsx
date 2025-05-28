@@ -11,7 +11,7 @@ export const Presets = () => {
   }
 
   return (
-    <div className="h-full flex flex-col w-full p-4 pt-0">
+    <div className="h-full flex flex-col max-h-full w-full p-4 pt-0">
       <div className="overflow-y-scroll w-full h-full mb-4 rounded-xl">
         {presets.map((preset, index) => (
           <div key={index} className="max-w-full w-full overflow-y-hidden mb-1">

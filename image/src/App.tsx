@@ -32,7 +32,8 @@ const App: React.FC = () => {
       }
       setDebug("Received data from server");
       if (data.payload) {
-        const url = DeskThing.formatImageUrl(data.payload);
+        // Determine whether or not it is a local file and adjust accordingly
+        const url = data.payload.startsWith('http://localhost') ? DeskThing.formatImageUrl(data.payload) : DeskThing.useProxy(data.payload);
         setImageData(url);
       }
     });

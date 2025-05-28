@@ -27,7 +27,7 @@ export const LeftPanel = ({ className, clickable = true }: LeftPanelTypes) => {
 
   return (
     <div
-      className={`sm:w-5/12 w-full h-screen flex-col items-center bg-neutral-950 flex border-neutral-800 border-r-2 ${className}`}
+      className={`sm:w-5/12 w-full max-h-screen h-screen flex-col items-center bg-neutral-950 flex border-neutral-800 border-r-2 ${className}`}
       style={{ pointerEvents: clickable ? 'auto' : 'none' }}
     >
       <button className="sm:hidden absolute top-4 right-4" onClick={handleClose}>
@@ -40,7 +40,7 @@ export const LeftPanel = ({ className, clickable = true }: LeftPanelTypes) => {
             <p className="text-lg font-medium font-geist pl-1">{otherState}</p>
         </Button>
       </div>
-      <div className="max-h-full w-full overflow-y-hidden">
+      <div className="max-h-full w-full overflow-y-scroll">
         {panelState === "Playlists" && <Playlists />}
         {panelState === "Queue" && <Queue />}
       </div>

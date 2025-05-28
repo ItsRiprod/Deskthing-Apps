@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@deskthing/client": "^0.11.0",
-    "@deskthing/server": "^0.11.1",
+    "@deskthing/server": "^0.11.0",
     "dotenv": "^16.4.7",
     "path": "^0.12.7",
     "react": "^18.3.1",

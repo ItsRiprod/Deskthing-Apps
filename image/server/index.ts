@@ -1,6 +1,7 @@
 import { AppSettings, DESKTHING_EVENTS, SETTING_TYPES } from '@deskthing/types';
 import { createDeskThing } from '@deskthing/server';
 import dotenv from 'dotenv';
+import { saveImageReferenceFromURL } from './utils';
 
 dotenv.config();
 
@@ -20,31 +21,32 @@ const DeskThing = createDeskThing<GenericTransitData, ToClientData>()
 
 const sendImageToClient = async (imagePath: string) => {
   try {
-    const imageUrl = process.env.DESKTHING_ENV == 'development' ? imagePath : await DeskThing.saveImageReferenceFromURL(imagePath)
+    const imageUrl = process.env.DESKTHING_ENV == 'development' ? imagePath : await saveImageReferenceFromURL(imagePath)
 
     if (!imageUrl) {
-      DeskThing.sendError('Error saving image reference');
+      console.error('Error saving image reference');
       return;
     }
 
-    DeskThing.sendDebug('Sending Image ' + imageUrl + ' to client')
+    console.debug('Sending Image ' + imageUrl + ' to client')
 
 
     DeskThing.send({
       type: 'imageData', payload: imageUrl
     });
   } catch (error) {
-    DeskThing.sendError('Error reading image file: ' + error);
+    console.error('Error reading image file: ' + error);
   }
 };
 
 const start = async () => {
   const settings: AppSettings = {
     "image_source": {
-      value: 'prompt',
+      value: '',
       id: 'image_source',
       type: SETTING_TYPES.STRING,
-      label: "Image Source"
+      label: "Image URL",
+      description: 'Use a file path or a web url that will be used to fetch the image'
     },
   }
   DeskThing.initSettings(settings)
@@ -55,29 +57,29 @@ const stop = async () => {
 }
 
 DeskThing.on(DESKTHING_EVENTS.SETTINGS, async (setting) => {
-  if (setting.payload.image_source.value === 'prompt') {
-    DeskThing.sendError('No Image Found')
-  } else if (setting.payload.image_source.value !== 'unset' && setting.payload.image_source.type == SETTING_TYPES.STRING) {
+  if (!setting.payload.image_source.value) {
+    console.warn('No Image Found')
+  } else if (setting.payload.image_source.value && setting.payload.image_source.type == SETTING_TYPES.STRING) {
     await sendImageToClient(setting.payload.image_source.value);
   }
 })
 
 DeskThing.on(IMAGE_REQUESTS.GET, async (data) => {
   if (data.type == null) {
-    DeskThing.sendError('No args provided!')
+    console.warn('No args provided!')
     return
   }
   switch (data.request) {
     case 'image':
       const Data = await DeskThing.getSettings()
-      if (Data?.image_source.value !== 'unset' && Data?.image_source.value !== 'prompt') {
-        await sendImageToClient(Data?.image_source.value as string)
+      if (Data?.image_source.value && Data.image_source.type == SETTING_TYPES.STRING) {
+        await sendImageToClient(Data?.image_source.value)
       } else {
-        DeskThing.sendError('No image source found!')
+        console.warn('No image source found!')
       }
       break
     default:
-      DeskThing.sendError(`Unknown request: ${data.request}`)
+      console.warn(`Unknown request: ${data.request}`)
       break
     // Handle other types ?
   }

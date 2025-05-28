@@ -16,7 +16,7 @@ export const BackgroundComponent: React.FC<BackgroundComponentProps> = ({ childr
                 {currentSong?.thumbnail && (
                     <img 
                         className="absolute w-full h-full object-cover opacity-50" 
-                        style={{ filter: `blur(${backdropBlurAmt || 10}px)` }}
+                        style={{ filter: `blur(${backdropBlurAmt ?? 10}px)` }}
                         src={currentSong.thumbnail} 
                         alt={`${currentSong.album} cover`} 
                     />

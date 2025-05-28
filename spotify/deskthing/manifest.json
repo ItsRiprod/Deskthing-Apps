@@ -22,7 +22,7 @@
         false
     ],
     "requiredVersions": {
-        "server": ">=0.11.0",
+        "server": ">=0.11.7",
         "client": ">=0.11.0"
     },
     "updateUrl": "https://github.com/ItsRiprod/Deskthing-Apps"

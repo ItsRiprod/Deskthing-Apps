@@ -8,7 +8,7 @@ type ClockComponentProps = {
 
 export const ClockComponent: FC<ClockComponentProps> = ({ currentSong }) => {
 
-  const [currentTime, setCurrentTime] = useState('12:00 PM')
+  const [currentTime, setCurrentTime] = useState('Waiting...')
 
   useEffect(() => {
     const removeTimeListener = DeskThing.on(DEVICE_CLIENT.TIME, (data) => {
@@ -31,7 +31,7 @@ export const ClockComponent: FC<ClockComponentProps> = ({ currentSong }) => {
 
   return (
     <div className="pl-5 h-[35vw] flex flex-col justify-center relative">
-      <h1 className={`text-[10vw] ${currentSong.color?.isLight ? 'text-black' : 'text-white'}`}>
+      <h1 className={`text-[10vw] ${currentSong?.color?.isLight ? 'text-black' : 'text-white'}`}>
         {currentTime}
       </h1>
     </div>

@@ -15,7 +15,7 @@ export const Queue = () => {
   }, [currentSong?.id]);
 
   return (
-    <div className="h-full overflow-y-scroll flex flex-col w-full p-4 pt-0">
+    <div className="h-full max-h-full overflow-y-scroll flex flex-col w-full p-4 pt-0">
       <div className="">
         <h1 className="text-xl font-bold text-neutral-500 mb-2 font-geist">
           Now Playing
