@@ -4,22 +4,25 @@ import { DeskThing } from "@deskthing/client"
 
 type ClockComponentProps = {
   currentSong: SongData
+  className?: string
 }
 
-export const ClockComponent: FC<ClockComponentProps> = ({ currentSong }) => {
+export const ClockComponent: FC<ClockComponentProps> = ({ currentSong, className }) => {
 
-  const [currentTime, setCurrentTime] = useState('Waiting...')
+  const [currentTime, setCurrentTime] = useState('XX:XX XX')
 
   useEffect(() => {
     const removeTimeListener = DeskThing.on(DEVICE_CLIENT.TIME, (data) => {
       if (typeof data.payload === 'string') {
         setCurrentTime(data.payload);
       } else {
+        console.log(data.payload)
         const utcOffset = data.payload.timezoneOffset;
         const utcTime = data.payload.utcTime;
         const date = new Date(utcTime);
-        date.setMinutes(date.getMinutes() + utcOffset);
-        setCurrentTime(`${date.getUTCHours()}:${date.getUTCMinutes().toString().padStart(2, '0')}`);
+        const amPm = date.getUTCHours() >= 12 ? 'PM' : 'AM';
+        date.setMinutes(date.getMinutes() - utcOffset); // current bug - time is inverted
+        setCurrentTime(`${date.getUTCHours() % 12 || 12}:${date.getUTCMinutes().toString().padStart(2, '0')} ${amPm}`);
       }
     });
 
@@ -30,10 +33,8 @@ export const ClockComponent: FC<ClockComponentProps> = ({ currentSong }) => {
   })
 
   return (
-    <div className="pl-5 h-[35vw] flex flex-col justify-center relative">
-      <h1 className={`text-[10vw] ${currentSong?.color?.isLight ? 'text-black' : 'text-white'}`}>
+      <h1 className={`text-[10vw] text-nowrap ${currentSong?.color?.isLight ? 'text-black' : 'text-white'} ${className}`}>
         {currentTime}
       </h1>
-    </div>
   )
 }

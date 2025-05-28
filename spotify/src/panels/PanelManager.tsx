@@ -13,14 +13,14 @@ export const PanelManager = () => {
     const newState = isRightSide ? 'right' : 'left'
     console.log('Switching to ', newState)
     setPanel((state) => {
-      
       if (state == newState) return newState
-      
+
       if (state == null) return newState
-      
+
       if (window.innerWidth < 640) return state
 
       return null
+
     }
     );
   }
@@ -74,14 +74,14 @@ export const PanelManager = () => {
   }, [setPanel]);
 
   return (
-    <div className="fixed top-0">
+    <div className="fixed">
 
-      <div className="relative max-h-screen h-screen w-screen overflow-x-hidden">
+      <div className="max-h-screen w-screen overflow-x-hidden">
         <LeftPanel
           className={`absolute ${panel === "left" ? "animate-slide-in-left" : "animate-slide-out-left"}`}
           clickable={clickablePanel}
         />
-        <div className="w-full sm:flex absolute pointer-events-none items-center justify-center h-full hidden">
+        <div className="w-full h-screen sm:flex absolute pointer-events-none items-center justify-center hidden">
           <ArrowLeft
             iconSize="100px"
             className={`${panel == null ? "opacity-0 rotate-90" : panel == "right" ? "rotate-180 -translate-x-12" : "translate-x-12"} ${currentSong?.color?.isLight ? 'text-black' : 'text-white'} transition-all`}

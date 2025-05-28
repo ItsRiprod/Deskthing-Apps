@@ -1,7 +1,7 @@
 import { DeskThing } from "@deskthing/server"
 import { DESKTHING_EVENTS, SETTING_TYPES } from "@deskthing/types"
 import storeProvider from "./spotify/storeProvider"
-import { SpotifySettingIDs } from "../shared/spotifyTypes"
+import { CONTROL_OPTIONS, DISPLAY_ITEMS, SpotifySettingIDs } from "../shared/spotifyTypes"
 
 export const setupSettings = () => {
   DeskThing.initSettings({
@@ -55,15 +55,49 @@ export const setupSettings = () => {
     },
 
     // The rest of these aren't used by the server - rather, they are used by the GUI
-    [SpotifySettingIDs.BLUR_BACKGROUND_THUMBNAIL]: {
-      id: SpotifySettingIDs.BLUR_BACKGROUND_THUMBNAIL,
-      type: SETTING_TYPES.BOOLEAN,
-      description: "Replace the background color with a blurred thumbnail",
-      label: "Blur Background Thumbnail",
-      value: false,
+    [SpotifySettingIDs.DISPLAY_ITEMS]: {
+      id: SpotifySettingIDs.DISPLAY_ITEMS,
+      type: SETTING_TYPES.MULTISELECT,
+      description: "Choose which UI elements to be visible",
+      label: "UI Elements",
+      value: [DISPLAY_ITEMS.THUMBNAIL, DISPLAY_ITEMS.ALBUM, DISPLAY_ITEMS.TITLE, DISPLAY_ITEMS.ARTISTS],
+      options: [
+        {
+          value: DISPLAY_ITEMS.THUMBNAIL,
+          label: 'Thumbnail'
+        },
+        {
+          value: DISPLAY_ITEMS.ALBUM,
+          label: 'Album Text'
+        },
+        {
+          value: DISPLAY_ITEMS.TITLE,
+          label: 'Song Title'
+        },
+        {
+          value: DISPLAY_ITEMS.ARTISTS,
+          label: 'Artists'
+        },
+        {
+          value: DISPLAY_ITEMS.CLOCK,
+          label: 'Large Clock'
+        },
+        {
+          value: DISPLAY_ITEMS.MINI_CLOCK,
+          label: 'Corner Clock'
+        },
+        {
+          value: DISPLAY_ITEMS.CONTROLS,
+          label: 'Playback Controls'
+        },
+        {
+          value: DISPLAY_ITEMS.BACKDROP,
+          label: 'Blurred Backdrop'
+        }
+      ]
     },
-    [SpotifySettingIDs.BACKDROP_BLUR_AMNT]: {
-      id: SpotifySettingIDs.BACKDROP_BLUR_AMNT,
+    [SpotifySettingIDs.BACKDROP_BLUR_AMOUNT]: {
+      id: SpotifySettingIDs.BACKDROP_BLUR_AMOUNT,
       type: SETTING_TYPES.NUMBER,
       description: "Blur amount in pixels",
       min: 0,
@@ -71,59 +105,52 @@ export const setupSettings = () => {
       label: "Background Blur Amount",
       value: 10,
     },
-    [SpotifySettingIDs.SHOW_CONTROLS]: {
-      id: SpotifySettingIDs.SHOW_CONTROLS,
-      type: SETTING_TYPES.BOOLEAN,
-      description: "Show playback controls",
-      label: "Show Controls",
-      value: false,
-    },
-    [SpotifySettingIDs.THUMBNAIL_SIZE]: {
-      id: SpotifySettingIDs.THUMBNAIL_SIZE,
+    [SpotifySettingIDs.CONTROL_OPTIONS]: {
+      id: SpotifySettingIDs.CONTROL_OPTIONS,
       type: SETTING_TYPES.SELECT,
-      description: "Thumbnail Size",
-      label: "Thumbnail Size",
-      value: "small",
+      description: "Playback Control Options",
+      label: "Control Options",
+      value: 'disabled',
       options: [
         {
-          value: "hidden",
-          label: "Hidden"
+          value: CONTROL_OPTIONS.DISABLED,
+          label: 'Disabled'
         },
         {
-          value: "small",
-          label: "Small"
+          value: CONTROL_OPTIONS.BOTTOM,
+          label: 'Bottom Center'
         },
         {
-          value: "medium",
-          label: "Medium"
+          value: CONTROL_OPTIONS.UNDER,
+          label: 'Under Words'
         },
         {
-          value: "large",
-          label: "Large"
+          value: CONTROL_OPTIONS.THUMBNAIL,
+          label: 'In Thumbnail'
         }
       ]
     },
-    [SpotifySettingIDs.TEXT_SETTING]: {
-      id: SpotifySettingIDs.TEXT_SETTING,
+    [SpotifySettingIDs.TEXT_JUSTIFICATION]: {
+      id: SpotifySettingIDs.TEXT_JUSTIFICATION,
       type: SETTING_TYPES.SELECT,
-      description: "Text Setting",
-      label: "Text Setting",
-      value: "normal",
+      description: "Text Justification",
+      label: "Text Justification",
+      value: 'left',
       options: [
         {
-          value: "minimal",
-          label: "Just Title"
+          value: 'left',
+          label: 'Left'
         },
         {
-          value: "normal",
-          label: "All song info"
+          value: 'center',
+          label: 'Center'
         },
         {
-          value: "clock",
-          label: "Clock"
+          value: 'right',
+          label: 'Right'
         }
       ]
-    }
+    },
   })
 }
 

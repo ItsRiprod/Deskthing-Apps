@@ -33,6 +33,24 @@ export type SongQueue = {
   currently_playing: AbbreviatedSong | null
 }
 
+export enum DISPLAY_ITEMS {
+  THUMBNAIL = 'thumbnail',
+  ALBUM = 'album',
+  TITLE = 'title',
+  ARTISTS = 'artists',
+  CLOCK = 'clock',
+  MINI_CLOCK = 'mini_clock',
+  CONTROLS = 'controls',
+  BACKDROP = 'backdrop',
+}
+
+export enum CONTROL_OPTIONS {
+  DISABLED = 'disabled',
+  BOTTOM = 'bottom',
+  UNDER = 'under',
+  THUMBNAIL = 'thumbnail',
+}
+
 export enum SpotifySettingIDs {
     CLIENT_ID = "client_id",
     CLIENT_SECRET = "client_secret",
@@ -43,9 +61,17 @@ export enum SpotifySettingIDs {
 
     // Artistic Settings
 
-    BLUR_BACKGROUND_THUMBNAIL = "blur_background_thumbnail",
-    BACKDROP_BLUR_AMNT = "backdrop_blur_amt",
-    SHOW_CONTROLS = "show_controls",
-    THUMBNAIL_SIZE = "thumbnail_size",
-    TEXT_SETTING = "text_setting", // how to render the text
+    DISPLAY_ITEMS = "display_items",
+
+    CONTROL_OPTIONS = "control_options",
+    TEXT_JUSTIFICATION = "text_options",
+
+    BACKDROP_BLUR_AMOUNT = "backdrop_blur_amount",
+
+
+    // BLUR_BACKGROUND_THUMBNAIL = "blur_background_thumbnail",
+    // BACKDROP_BLUR_AMNT = "backdrop_blur_amt",
+    // SHOW_CONTROLS = "show_controls",
+    // THUMBNAIL_SIZE = "thumbnail_size",
+    // TEXT_SETTING = "text_setting", // how to render the text
 }
