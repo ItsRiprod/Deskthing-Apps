@@ -1,7 +1,7 @@
 {
   "name": "spotify",
   "private": true,
-  "version": "0.11.0",
+  "version": "0.11.1",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -17,15 +17,15 @@
   },
   "dependencies": {
     "@deskthing/client": "^0.11.0",
-    "@deskthing/server": "^0.11.0",
+    "@deskthing/server": "^0.11.1",
     "dotenv": "^16.4.7",
     "lucide-react": "^0.482.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@deskthing/cli": "^0.11.1",
-    "@deskthing/types": "^0.10.22",
+    "@deskthing/cli": "^0.11.2",
+    "@deskthing/types": "^0.11.3",
     "@eslint/js": "^9.9.0",
     "@types/node": "^22.6.1",
     "@types/react": "19.0.12",

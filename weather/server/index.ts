@@ -18,7 +18,7 @@ const start = async () => {
 
 DeskThing.on(WeatherEvents.GET, async (request) => {
   if (request.request === "weather_data") {
-    DeskThing.sendLog("Getting weather data");
+    console.log("Getting weather data");
     const weatherData = await WeatherService.getWeather();
     if (weatherData) {
       DeskThing.send({ type: "weather_data", payload: weatherData });
@@ -41,16 +41,16 @@ DeskThing.on(WeatherEvents.GET, async (request) => {
 DeskThing.on(DESKTHING_EVENTS.SETTINGS, (socketData) => {
   // Syncs the data with the server
   if (socketData) {
-    DeskThing.sendDebug("Settings updating");
+    console.debug("Settings updating");
     WeatherService.updateData(socketData.payload);
 
     if (socketData?.payload.view.type == SETTING_TYPES.SELECT) {
-      DeskThing.sendDebug(`View updated to ${socketData.payload.view.value}`);
+      console.debug(`View updated to ${socketData.payload.view.value}`);
       DeskThing.send({ type: "view", payload: socketData.payload.view.value as ViewOptions });
     }
 
     if (socketData?.payload.temp_type.type == SETTING_TYPES.SELECT) {
-      DeskThing.sendDebug(`Temp type updated to ${socketData.payload.temp_type.value}`);
+      console.debug(`Temp type updated to ${socketData.payload.temp_type.value}`);
       DeskThing.send({ type: "temp_type", payload: socketData.payload.temp_type.value as TemperatureTypes });
     }
   }
@@ -71,10 +71,10 @@ const setupSettings = async () => {
       const { lat, lon } = await response.json();
       latitude = lat;
       longitude = lon;
-      DeskThing.sendDebug(`Latitude: ${latitude}, Longitude: ${longitude}`);
+      console.debug(`Latitude: ${latitude}, Longitude: ${longitude}`);
     }
   } catch (error) {
-    DeskThing.sendWarning("Error getting location: " + (error instanceof Error ? error.message : error));
+    console.warn("Error getting location: " + (error instanceof Error ? error.message : error));
   }
 
   const settings: AppSettings = {

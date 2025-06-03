@@ -10,10 +10,10 @@ const MAINTAINED_APPS = [
   "image",
   "settingstest",
   "spotify",
-/*  "system", not updated yet */
+  /* "system", not updated yet */
   "vinylplayer",
   "weather",
-  "waveweather",
+  "weatherwaves",
   "audio"
 ];
 
@@ -24,7 +24,7 @@ const ensureCLIDownload = async () => {
     console.log("\x1b[32m\x1b[1m✓ @deskthing/cli is installed\x1b[0m\n");
   } catch (e) {
     console.log("\n\x1b[33m\x1b[1m⚡ Installing @deskthing/cli dependency...\x1b[0m\n");
-    execSync("npm install @deskthing/cli --no-save", {
+    execSync("npm install @deskthing/cli@latest --no-save", {
       stdio: "inherit",
     });
   }
@@ -36,7 +36,7 @@ const copyAppToReleaseFolder = async (appName: string) => {
     const distPath = join(appPath, "dist");
     const files = await readdir(distPath);
     const zipFile = files.find(file => file.endsWith('.zip'));
-    
+
     if (zipFile) {
       const sourcePath = join(distPath, zipFile);
       const destPath = join(RELEASE_FOLDER_PATH, zipFile);
@@ -48,13 +48,31 @@ const copyAppToReleaseFolder = async (appName: string) => {
   } catch (e) {
     console.error(`\x1b[31m\x1b[1m❌ Error processing ${appName}: ${e}\x1b[0m`);
     throw e;
-  }};
+  }
+};
+
+const copyAppLatestJson = async (appName: string) => {
+  try {
+    console.log(`\x1b[35m\x1b[1m📄 Copying ${appName} latest.json as ${appName}.json...\x1b[0m`);
+    const latestJsonPath = join(process.cwd(), appName, "dist", "latest.json");
+    const destJsonPath = join(RELEASE_FOLDER_PATH, `${appName}.json`);
+
+    const latestJsonContent = await readFile(latestJsonPath, "utf8");
+    await writeFile(destJsonPath, latestJsonContent);
+
+    console.log(`\x1b[36m\x1b[1m✓ Created ${appName}.json in releases folder\x1b[0m`);
+    return true;
+  } catch (error) {
+    console.error(`\x1b[31m\x1b[1m❌ Error copying latest.json for ${appName}: ${error}\x1b[0m`);
+    return false;
+  }
+};
 
 const buildApp = async (appName: string) => {
   try {
     const appPath = join(process.cwd(), appName);
     console.log(`\x1b[34m\x1b[1m🔨 Building ${appName} ${appPath}...\x1b[0m`);
-    const child = exec("npm run build", { cwd: appPath });
+    const child = exec("npx @deskthing/cli@latest package", { cwd: appPath });
     await new Promise((resolve) => child.on("close", resolve));
     console.log(`\x1b[36m\x1b[1m🛠️ ${appName} built successfully!\x1b[0m`);
   } catch (error) {
@@ -63,20 +81,8 @@ const buildApp = async (appName: string) => {
   }
 };
 
-const combineLatestJson = async () => {
-  const releases = [];
-  for (const appName of MAINTAINED_APPS) {
-    try {
-      console.log(`\x1b[35m\x1b[1mAdding ${appName} to latest.json...\x1b[0m`);
-      const latestJsonPath = join(process.cwd(), appName, "dist", "latest.json");
-      const latestJson = JSON.parse(await readFile(latestJsonPath, "utf8"));
-      releases.push(latestJson);
-    } catch (error) {
-      console.error(`\x1b[31m\x1b[1m❌ Error reading latest.json for ${appName}: ${error}\x1b[0m`);
-    }
-  }
-
-  let thisVersion = "0.10.4"
+const createMultiReleaseJson = async (successfulApps: string[]) => {
+  let thisVersion = "0.11.8";
 
   try {
     const packageJsonPath = join(process.cwd(), "package.json");
@@ -87,15 +93,13 @@ const combineLatestJson = async () => {
     console.error(`\x1b[31m\x1b[1m❌ Error reading package.json: ${error}\x1b[0m`);
   }
 
-  const combinedJson = {
-    version: thisVersion,
-    id: "deskthing-apps",
-    type: "multi",
+  const multiReleaseJson = {
+    meta_version: "0.11.8",
     repository: "https://github.com/itsriprod/deskthing-apps",
-    releases
+    fileIds: successfulApps
   };
 
-  return combinedJson;
+  return multiReleaseJson;
 };
 
 const buildAllApps = async () => {
@@ -103,25 +107,37 @@ const buildAllApps = async () => {
     try {
       await buildApp(appName);
       await copyAppToReleaseFolder(appName);
-      console.log(`\x1b[32m\x1b[1m🚀 ${appName} published\x1b[0m\n\n`);
-      return { appName, success: true };    } catch (error) {
-      return { 
-        appName, 
-        success: false, 
+      const latestJsonSuccess = await copyAppLatestJson(appName);
+      if (latestJsonSuccess) {
+        console.log(`\x1b[32m\x1b[1m🚀 ${appName} published successfully\x1b[0m\n\n`);
+        return { appName, success: true };
+      } else {
+        return { appName, success: false, error: "Failed to copy latest.json" };
+      }
+    } catch (error) {
+      return {
+        appName,
+        success: false,
         error: error instanceof Error ? error.message : String(error)
-      };    }
+      };
+    }
   }));
-  
+
   const failures = results.filter(result => !result.success);
-  
+  const successes = results.filter(result => result.success).map(result => result.appName);
+
   if (failures.length > 0) {
     console.error("\x1b[31m\x1b[1m❌ The following apps failed to build:\x1b[0m");
     failures.forEach(failure => {
       console.error(`\x1b[31m\x1b[1m  ⨯ ${failure.appName}: ${failure.error}\x1b[0m`);
     });
-  } else {
-    console.log("\x1b[32m\x1b[1m🎉 All apps built successfully!\x1b[0m");
   }
+
+  if (successes.length > 0) {
+    console.log(`\x1b[32m\x1b[1m🎉 ${successes.length} apps built successfully!\x1b[0m`);
+  }
+
+  return successes
 };
 
 const ensureReleasesFolderExists = async (clean: boolean = false) => {
@@ -145,13 +161,15 @@ const Main = async () => {
   console.log(`\n\n\x1b[34m\x1b[1m⬇️ Installing @deskthing/cli dependency...\x1b[0m`);
   await ensureCLIDownload();
   console.log(`\n\n\x1b[33m\x1b[1m🔨 Building all apps...\x1b[0m`);
-  await buildAllApps();
+  const successfulApps = await buildAllApps();
   console.log(`\n\n\x1b[36m\x1b[1m🔄 Combining latest.json files...\x1b[0m`);
-  const combinedJson = await combineLatestJson();
+  const multiReleaseJson = await createMultiReleaseJson(successfulApps);
   await writeFile(
     join(RELEASE_FOLDER_PATH, "latest.json"),
-    JSON.stringify(combinedJson, null, 2)
+    JSON.stringify(multiReleaseJson, null, 2)
   );
   console.log("\n\n\x1b[32m\x1b[1m✅ Build process completed successfully!\x1b[0m\n");
+  console.log(`\x1b[36m\x1b[1m📋 Successfully processed apps: ${successfulApps.join(", ")}\x1b[0m`);
+
 };
 Main();

@@ -3,7 +3,7 @@ import { AbbreviatedSong } from "@shared/spotifyTypes";
 import { FC, useMemo, useState } from "react";
 import { SwipeContainer } from "@src/components/SwipeContainer";
 import { useControls } from "@src/hooks/useControls"
-import { Heart, Plus, X } from "lucide-react"
+import { Heart, Plus } from "lucide-react"
 import { AddToPresetOverlay } from "./AddToPresetOverlay";
 
 type SongComponentProps = {

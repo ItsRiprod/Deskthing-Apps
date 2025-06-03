@@ -48,7 +48,6 @@ DeskThing.on(SpotifyEvent.GET, async (data) => {
 
   console.debug(`Received spotify GET event for ${data?.request || "unknown"}`);
 
-
   switch (data.request) {
     case "playlists": {
       const playlists = await playlistStore.getAllPlaylists();

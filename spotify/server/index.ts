@@ -3,7 +3,6 @@ import { DeskThing } from '@deskthing/server'
 import { initialize } from './initializer'
 
 const start = async () => {
-  // Dynamically import the initializer
   await initialize() 
   console.log('Spotify app started!')
 }
