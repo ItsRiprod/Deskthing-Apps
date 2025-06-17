@@ -1,8 +1,16 @@
 button {
-  background: transparent
+  background: transparent;
+  background-color: transparent;
+
+  border: none;
 }
 button:focus {
   outline: none;
+  border: none;
+}
+button:active {
+  outline: none;
+  border: none;
 }
 
 @tailwind base;
