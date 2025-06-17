@@ -22,7 +22,14 @@
     "noImplicitAny": false,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
+    /* Path Aliases */
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["./shared/*"],
+      "@src/*": ["./src/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "shared"]
 }
