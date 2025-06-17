@@ -2,6 +2,8 @@ import { exec, execSync } from "node:child_process";
 import { stat, readFile, writeFile, mkdir, rm, readdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 
+import { MultiReleaseJSONLatest } from '@deskthing/types'
+
 const RELEASE_FOLDER_PATH = join(process.cwd(), "build", "releases");
 
 
@@ -14,7 +16,8 @@ const MAINTAINED_APPS = [
   "vinylplayer",
   "weather",
   "weatherwaves",
-  "audio"
+  "audio",
+  "gamething"
 ];
 
 const ensureCLIDownload = async () => {
@@ -43,7 +46,7 @@ const copyAppToReleaseFolder = async (appName: string) => {
       await rename(sourcePath, destPath);
       console.log(`\x1b[36m\x1b[1m📦 Moved ${zipFile} to releases folder\x1b[0m`);
     } else {
-      console.log(`\x1b[33m\x1b[1m⚠ No zip file found in ${appName}/dist\x1b[0m`);
+      console.log(`\x1b[33m\x1b[1m⚠ No zip file found in ${appName}/dist. Found ${files.join(", ")}\x1b[0m`);
     }
   } catch (e) {
     console.error(`\x1b[31m\x1b[1m❌ Error processing ${appName}: ${e}\x1b[0m`);
@@ -72,7 +75,14 @@ const buildApp = async (appName: string) => {
   try {
     const appPath = join(process.cwd(), appName);
     console.log(`\x1b[34m\x1b[1m🔨 Building ${appName} ${appPath}...\x1b[0m`);
-    const child = exec("npx @deskthing/cli@latest package", { cwd: appPath });
+    const child = exec("npx @deskthing/cli@latest package", { 
+      cwd: appPath
+    });
+
+    child.stderr?.on('data', (data) => {
+      console.error(data.toString());
+    });
+
     await new Promise((resolve) => child.on("close", resolve));
     console.log(`\x1b[36m\x1b[1m🛠️ ${appName} built successfully!\x1b[0m`);
   } catch (error) {
@@ -80,8 +90,7 @@ const buildApp = async (appName: string) => {
     throw error;
   }
 };
-
-const createMultiReleaseJson = async (successfulApps: string[]) => {
+const createMultiReleaseJson = async (successfulApps: string[]): Promise<MultiReleaseJSONLatest> => {
   let thisVersion = "0.11.8";
 
   try {
@@ -93,9 +102,10 @@ const createMultiReleaseJson = async (successfulApps: string[]) => {
     console.error(`\x1b[31m\x1b[1m❌ Error reading package.json: ${error}\x1b[0m`);
   }
 
-  const multiReleaseJson = {
+  const multiReleaseJson: MultiReleaseJSONLatest = {
     meta_version: "0.11.8",
-    repository: "https://github.com/itsriprod/deskthing-apps",
+    meta_type: "multi",
+    repository: "https://api.github.com/repos/itsriprod/deskthing-apps",
     fileIds: successfulApps
   };
 

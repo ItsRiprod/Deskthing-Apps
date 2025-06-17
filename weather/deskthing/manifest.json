@@ -5,8 +5,8 @@
         ""
     ],
     "label": "Weather App",
-    "version": "0.11.1",
-    "version_code": "10.1",
+    "version": "0.11.2",
+    "version_code": "11.2",
     "compatible_server": [
         "10"
     ],
@@ -21,7 +21,7 @@
         "linux"
     ],
     "homepage": "https://deskthing.app",
-    "repository": "https://github.com/Riprod/deskthing-apps",
+    "repository": "https://github.com/ItsRiprod/Deskthing-Apps",
     "tags": [
         false,
         false
@@ -30,5 +30,5 @@
         "server": ">=0.11.0",
         "client": ">=0.11.0"
     },
-    "updateUrl": "https://github.com/Riprod/deskthing-apps/releases/latest/"
+    "updateUrl": "https://github.com/ItsRiprod/Deskthing-Apps"
 }

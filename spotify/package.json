@@ -1,7 +1,7 @@
 {
   "name": "spotify",
   "private": true,
-  "version": "0.11.1",
+  "version": "0.11.2",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -24,8 +24,8 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@deskthing/cli": "^0.11.2",
-    "@deskthing/types": "^0.11.3",
+    "@deskthing/cli": "^0.11.4",
+    "@deskthing/types": "^0.11.8",
     "@eslint/js": "^9.9.0",
     "@types/node": "^22.6.1",
     "@types/react": "19.0.12",

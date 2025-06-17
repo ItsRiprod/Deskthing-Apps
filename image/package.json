@@ -1,7 +1,7 @@
 {
   "name": "image",
   "private": true,
-  "version": "0.10.1",
+  "version": "0.11.2",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
