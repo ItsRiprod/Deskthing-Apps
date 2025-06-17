@@ -11,6 +11,7 @@ const Shuffle: React.FC = () => {
 
 	useEffect(() => {
 		setShuffle(serverShuffle ?? false)
+		setIconColor(serverShuffle ? '#1cd660ff' : 'white')
 	}, [serverShuffle])
 
 	const toggleShuffle = () => {
