@@ -72,4 +72,6 @@ export type RecordSettings = AppSettings & {
 	bgBlur: AppSettings['bgBlur'] & { type: SETTING_TYPES.NUMBER }
 	bgColor: AppSettings['bgColor'] & { type: SETTING_TYPES.COLOR }
 	textColor: AppSettings['textColor'] & { type: SETTING_TYPES.COLOR }
+	recordXOffset: AppSettings['recordXOffset'] & { type: SETTING_TYPES.RANGE }
+	recordYOffset: AppSettings['recordYOffset'] & { type: SETTING_TYPES.RANGE }
 }

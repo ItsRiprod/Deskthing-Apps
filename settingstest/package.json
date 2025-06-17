@@ -1,7 +1,7 @@
 {
   "name": "settingstest",
   "private": true,
-  "version": "0.11.2",
+  "version": "0.11.3",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -17,13 +17,13 @@
   },
   "dependencies": {
     "@deskthing/client": "^0.10.14",
-    "@deskthing/server": "^0.10.17",
+    "@deskthing/server": "^0.11.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@deskthing/cli": "^0.11.6",
-    "@deskthing/types": "^0.10.19",
+    "@deskthing/types": "^0.11.11",
     "@eslint/js": "^9.9.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

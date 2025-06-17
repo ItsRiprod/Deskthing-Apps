@@ -20,7 +20,7 @@ export const setupWorkers = async () => {
         const [worker] = DeskThing.addThread("./workers/workerEx.js", data); // use JS because that is what it will be compiled into
 
         worker.on("message", (message) => {
-          DeskThing.sendDebug("Worker Message: " + message);
+          console.debug("Worker Message: " + message);
         });
     }
 

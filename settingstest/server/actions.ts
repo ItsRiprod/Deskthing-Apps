@@ -38,7 +38,7 @@ export const setupActions = () => {
 DeskThing.on(DESKTHING_EVENTS.ACTION, (data) => {
     switch (data.payload.id) {
         case 'settingAction':
-            DeskThing.sendLog('Action settingAction was pressed!')
+            console.log('Action settingAction was pressed!')
             if ('version' in data.payload && data.payload.icon == 'WandIcon') {
                 DeskThing.updateIcon('settingIcon', 'WandIcon2')
             } else {

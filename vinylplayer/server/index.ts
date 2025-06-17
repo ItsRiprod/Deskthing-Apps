@@ -207,6 +207,24 @@ const start = async () => {
 			id: "textColor",
 			type: SETTING_TYPES.COLOR,
 			value: "#FFFFFF"
+		},
+		recordXOffset: {
+			label: "Record X Offset",
+			description: "Horizontal offset of the record",
+			id: "recordXOffset",
+			type: SETTING_TYPES.RANGE,
+			value: 0,
+			min: -100,
+			max: 100,
+		},
+		recordYOffset: {
+			label: "Record Y Offset",
+			description: "Vertical offset of the record",
+			id: "recordYOffset",
+			type: SETTING_TYPES.RANGE,
+			value: 0,
+			min: -100,
+			max: 100,
 		}
 	}
 

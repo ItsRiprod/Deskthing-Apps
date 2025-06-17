@@ -2,12 +2,10 @@ import { DeskThing } from '@deskthing/server';
 import { setupActions } from './actions';
 import { setupSettings } from './settings';
 import { setupTasks } from './tasks/tasks';
-import { userInput } from './userInput';
 import { setupWorkers } from './workerExample';
 // This is triggered at the end of this file with the on('start') listener. It runs when the DeskThing starts your app. It serves as the entrypoint for your app
 const start = async () => {
     setupSettings();
-    userInput();
     setupWorkers()
     setupActions()
     setupTasks()

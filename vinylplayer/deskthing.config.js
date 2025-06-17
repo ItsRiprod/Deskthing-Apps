@@ -16,7 +16,7 @@ export default defineConfig({
       },
       clientPort: 3000,
       viteLocation: "http://localhost",
-      vitePort: 5173,
+      vitePort: 5174,
       linkPort: 8080,
     },
     server: {
@@ -24,8 +24,8 @@ export default defineConfig({
       mockData: {
         settings: {
           recordSize: "large",
-          recordPosX: "left",
-          recordPosY: "top",
+          recordPosX: "right",
+          recordPosY: "middle",
           display: ["album", "title", "artists", "mini_clock", "controls", "record_thumbnail", "bg_darkened", "custom_color", "custom_text"],
           controls: ["play_pause", "previous", "next", "shuffle", "repeat", "vol_down", "vol_up"],
           textPos: "center",

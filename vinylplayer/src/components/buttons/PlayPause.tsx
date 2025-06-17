@@ -7,9 +7,7 @@ const PlayPause: React.FC = () => {
   const isPlaying = useMusicStore((state) => state.isPlaying);
   const playPause = useMusicStore((state) => state.playPause);
   const textColor = useMusicStore((state) => state.textColor);
-  const color = useMusicStore((state) => state.color);
-
-  const bgColor = color.isLight ? "white" : "black";
+  const bgColor = useMusicStore((state) => state.bgColor);
 
   return (
     <button onClick={playPause} className="rounded-full p-2">

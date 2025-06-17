@@ -20,6 +20,17 @@ export const setupSettings = async () => {
       id: 'image',
       label: "Image URL",
       description: "Enter the URL or filepath to an image",
+      type: SETTING_TYPES.FILE,
+      value: "",
+      fileTypes: [{
+        name: "Image",
+        extensions: ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp"],
+      }],
+    },
+    text: {
+      id: 'text',
+      label: "Custom Text",
+      description: "Enter some text",
       type: SETTING_TYPES.STRING,
       value: "",
     },
