@@ -2,7 +2,7 @@ import { exec, execSync } from "node:child_process";
 import { stat, readFile, writeFile, mkdir, rm, readdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 
-import { MultiReleaseJSONLatest } from '@deskthing/types'
+import { GitRepoUrl, MultiReleaseJSONLatest } from '@deskthing/types'
 
 const RELEASE_FOLDER_PATH = join(process.cwd(), "build", "releases");
 
@@ -19,6 +19,19 @@ const MAINTAINED_APPS = [
   "audio",
   "gamething"
 ];
+
+const COMMUNITY_REPOS: GitRepoUrl[] = [
+  'https://github.com/espeon/LyrThing',
+  'https://github.com/TylStres/DeskThing-Timer',
+  'https://github.com/dakota-kallas/DeskThing-GitHub',
+  'https://github.com/dakota-kallas/DeskThing-MarketHub',
+  'https://github.com/dakota-kallas/DeskThing-SportsHub',
+  'https://github.com/ankziety/DeskThingDiscord',
+  'https://github.com/grahamplace/pomodoro-thing',
+  'https://github.com/Jarsa132/deskthing-volctrl',
+  'https://github.com/nwo122383/sonos-webapp',
+  'https://github.com/RandomDebugGuy/DeskThing-GMP',
+]
 
 const ensureCLIDownload = async () => {
   const cliPath = join(process.cwd(), "node_modules", "@deskthing", "cli");
@@ -105,6 +118,7 @@ const createMultiReleaseJson = async (successfulApps: string[]): Promise<MultiRe
   const multiReleaseJson: MultiReleaseJSONLatest = {
     meta_version: "0.11.8",
     meta_type: "multi",
+    repositories: COMMUNITY_REPOS,
     repository: "https://api.github.com/repos/itsriprod/deskthing-apps",
     fileIds: successfulApps
   };

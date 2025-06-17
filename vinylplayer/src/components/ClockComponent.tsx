@@ -8,7 +8,7 @@ type ClockComponentProps = {
 }
 
 export const ClockComponent: FC<ClockComponentProps> = ({ className }) => {
-  const color = useMusicStore((state) => state.color)
+  const textColor = useMusicStore((state) => state.textColor)
   const [currentTime, setCurrentTime] = useState('XX:XX XX')
 
   useEffect(() => {
@@ -16,7 +16,6 @@ export const ClockComponent: FC<ClockComponentProps> = ({ className }) => {
       if (typeof data.payload === 'string') {
         setCurrentTime(data.payload);
       } else {
-        console.log(data.payload)
         const utcOffset = data.payload.timezoneOffset;
         const utcTime = data.payload.utcTime;
         const date = new Date(utcTime);
@@ -33,7 +32,7 @@ export const ClockComponent: FC<ClockComponentProps> = ({ className }) => {
   })
 
   return (
-      <p className={`text-xl text-nowrap ${color?.isLight ? 'text-black' : 'text-white'} ${className}`}>
+      <p style={{ color: textColor }} className={`text-xl text-nowrap ${className}`}>
         {currentTime}
       </p>
   )

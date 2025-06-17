@@ -11,8 +11,8 @@ const StoreInitializer = () => {
   // Initializes the stores on render - stores ensure they arent initialized more than once with the initialized flag
 
   useEffect(() => {
-    initMusic();
     initSettings();
+    initMusic();
   }, [initMusic, initSettings]);
 
   return null;

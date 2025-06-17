@@ -1,6 +1,6 @@
 import { DeskThing } from "@deskthing/server";
 import { AppSettings, DESKTHING_EVENTS, SETTING_TYPES } from "@deskthing/types";
-import { DISPLAY_ITEMS, RECORD_SIZE, RECORD_OPTIONS, TEXT_OPTIONS, RecordSettings } from "../shared/recordTypes"
+import { DISPLAY_ITEMS, RECORD_SIZE, RECORD_OPTIONS, TEXT_OPTIONS, RecordSettings, CONTROLS } from "../shared/recordTypes"
 
 const start = async () => {
 	console.log('Server Started!')
@@ -108,6 +108,15 @@ const start = async () => {
 					value: DISPLAY_ITEMS.BG_DARKENED,
 					label: "Darken Background",
 				},
+				{
+					value: DISPLAY_ITEMS.CUSTOM_BG,
+					label: "Custom Background Color",
+				},
+				{
+					value: DISPLAY_ITEMS.CUSTOM_TEXT,
+					label: "Custom Text Color",
+				}
+
 			],
 			value: [
 				DISPLAY_ITEMS.ALBUM,
@@ -117,7 +126,45 @@ const start = async () => {
 				DISPLAY_ITEMS.CONTROLS,
 			]
 		},
+		controls: {
+			label: "Controls",
+			description: "Select which controls to display",
+			id: "controls",
+			type: SETTING_TYPES.MULTISELECT,
+			options: [
+				{
+					value: CONTROLS.NEXT,
+					label: "Skip Song",
+				},
+				{
+					value: CONTROLS.PREVIOUS,
+					label: "Previous Song",
+				},
+				{
+					value: CONTROLS.PLAY_PAUSE,
+					label: "Play/Pause",
+				},
+				{
+					value: CONTROLS.SHUFFLE,
+					label: "Shuffle",
+				},
+				{
+					value: CONTROLS.REPEAT,
+					label: "Repeat",
+				},
+				{
+					value: CONTROLS.VOL_DOWN,
+					label: "Volume Down",
+				},
+				{
+					value: CONTROLS.VOL_UP,
+					label: "Volume Up",
+				}
+			],
+			value: [CONTROLS.NEXT, CONTROLS.PREVIOUS, CONTROLS.PLAY_PAUSE, CONTROLS.SHUFFLE, CONTROLS.REPEAT]
+		},
 		textPos: {
+
 			label: "Text Position",
 			description: "Position of the text on the screen",
 			id: "textPos",
@@ -146,9 +193,23 @@ const start = async () => {
 			value: 10,
 			min: 0,
 			max: 100,
+		},
+		bgColor: {
+			label: "Background Color",
+			description: "Color of the background",
+			id: "bgColor",
+			type: SETTING_TYPES.COLOR,
+			value: "#000000"
+		},
+		textColor: {
+			label: "Text Color",
+			description: "Color of the text",
+			id: "textColor",
+			type: SETTING_TYPES.COLOR,
+			value: "#FFFFFF"
 		}
 	}
-	
+
 	DeskThing.initSettings(settings)
 };
 

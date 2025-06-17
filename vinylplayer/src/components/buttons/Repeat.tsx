@@ -8,25 +8,26 @@ const RepeatButton: React.FC = () => {
 
   const updateRepeat = useMusicStore((state) => state.repeat);
   const serverRepeat = useMusicStore((state) => state.songData?.repeat_state);
+  const textColor = useMusicStore((state) => state.textColor)
 
   useEffect(() => {
     // update the local repeat
     setRepeat(serverRepeat != "off");
-    setIconColor(serverRepeat == "off" ? "white" : "#1cd660ff");
+    setIconColor(serverRepeat == "off" ? textColor : "#1cd660ff");
   }, [serverRepeat]);
 
   const toggleRepeat = () => {
     const newRepeat = !repeat;
     setRepeat((prev) => !prev);
 
-    setIconColor(newRepeat ? "#1cd660ff" : "white");
+    setIconColor(newRepeat ? "#1cd660ff" : textColor);
 
     updateRepeat(newRepeat);
   };
 
   return (
     <button onClick={toggleRepeat} className="p-2">
-      <IconRepeat style={{ color: iconColor }} iconSize={45} />
+      <IconRepeat color={iconColor} iconSize={45} />
     </button>
   );
 };

@@ -16,13 +16,15 @@ const App: React.FC = () => {
   const isPlaying = useMusicStore((state) => state.isPlaying);
   const songData = useMusicStore((state) => state.songData);
   const color = useMusicStore((state) => state.color);
+  const textColor = useMusicStore((state) => state.textColor);
+  const bgColor = useMusicStore((state) => state.bgColor);
 
   return (
     settings && (
       <div
         className="flex-col w-screen h-screen flex justify-center items-center p-8"
         style={{
-          background: `${color?.rgba || "rgb(0, 0, 0)"}`,
+          background: bgColor,
         }}
       >
         {settings?.display?.value?.includes(DISPLAY_ITEMS.BG_THUMBNAIL) && (
@@ -83,27 +85,21 @@ const App: React.FC = () => {
         >
           {settings?.display?.value?.includes(DISPLAY_ITEMS.ALBUM) && (
             <p
-              className={`text-xl text-left ${
-                color?.isLight ? "text-black" : "text-white"
-              } font-light`}
+              className={`text-xl text-left font-light`} style={{ color: textColor }}
             >
               {songData?.album || "Nothing"}
             </p>
           )}
           {settings?.display?.value?.includes(DISPLAY_ITEMS.TITLE) && (
             <p
-              className={`text-4xl text-left ${
-                color?.isLight ? "text-black" : "text-white"
-              } font-bold`}
+              className={`text-4xl text-left font-bold`} style={{ color: textColor }}
             >
               {songData?.track_name || "Nothing"}
             </p>
           )}
           {settings?.display?.value?.includes(DISPLAY_ITEMS.ARTISTS) && (
             <p
-              className={`text-3xl text-left ${
-                color?.isLight ? "text-black" : "text-white"
-              } font-normal`}
+              className={`text-3xl text-left font-normal`} style={{ color: textColor }}
             >
               {songData?.artist || "Nothing"}
             </p>

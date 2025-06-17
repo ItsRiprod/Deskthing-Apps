@@ -8,24 +8,25 @@ const Shuffle: React.FC = () => {
 
 	const updateShuffle = useMusicStore((state) => state.shuffle)
 	const serverShuffle = useMusicStore((state) => state.songData?.shuffle_state)
+	const textColor = useMusicStore((state) => state.textColor)
 
 	useEffect(() => {
 		setShuffle(serverShuffle ?? false)
-		setIconColor(serverShuffle ? '#1cd660ff' : 'white')
+		setIconColor(serverShuffle ? '#1cd660ff' : textColor)
 	}, [serverShuffle])
 
 	const toggleShuffle = () => {
 		const newShuffle = !shuffle
 		setShuffle((prev) => !prev)
 
-		setIconColor(newShuffle ? '#1cd660ff' : 'white')
+		setIconColor(newShuffle ? '#1cd660ff' : textColor)
 
 		updateShuffle()
 	}
 
 	return (
 		<button onClick={toggleShuffle} className="p-2">
-			<IconShuffle style={{ color: iconColor }} iconSize={45} />
+			<IconShuffle color={iconColor} iconSize={45} />
 		</button>
 	)
 }

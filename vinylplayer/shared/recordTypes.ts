@@ -10,6 +10,19 @@ export enum DISPLAY_ITEMS {
 	RECORD_THUMBNAIL = "record_thumbnail",
 	// Asserts the bg to be darker and keep the text white
 	BG_DARKENED = "bg_darkened",
+	CUSTOM_BG = "custom_color",
+	CUSTOM_TEXT = "custom_text",
+}
+
+export enum CONTROLS {
+	PLAY_PAUSE = "play_pause",
+	PREVIOUS = "previous",
+	NEXT = "next",
+	SHUFFLE = "shuffle",
+	REPEAT = "repeat",
+	VOL_DOWN = "vol_down",
+	VOL_UP = "vol_up",
+
 }
 
 export enum RECORD_SIZE {
@@ -54,6 +67,9 @@ export type RecordSettings = AppSettings & {
 	recordPosX: SelectSetting<'recordPosX', RECORD_OPTIONS> & { type: SETTING_TYPES.SELECT }
 	recordPosY: SelectSetting<'recordPosY', RECORD_OPTIONS> & { type: SETTING_TYPES.SELECT }
 	display: MultiSelectSetting<'display', DISPLAY_ITEMS> & { type: SETTING_TYPES.MULTISELECT }
+	controls: MultiSelectSetting<'controls', CONTROLS> & { type: SETTING_TYPES.MULTISELECT }
 	textPos: SelectSetting<'textPos', TEXT_OPTIONS> & { type: SETTING_TYPES.SELECT }
 	bgBlur: AppSettings['bgBlur'] & { type: SETTING_TYPES.NUMBER }
+	bgColor: AppSettings['bgColor'] & { type: SETTING_TYPES.COLOR }
+	textColor: AppSettings['textColor'] & { type: SETTING_TYPES.COLOR }
 }

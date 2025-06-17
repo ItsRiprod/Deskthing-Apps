@@ -1,17 +1,25 @@
-import React from 'react'
-import IconPlay from '../../svgs/Play'
-import IconPause from '../../svgs/Pause'
-import { useMusicStore } from '../../stores/musicStore'
+import React from "react";
+import IconPlay from "../../svgs/Play";
+import IconPause from "../../svgs/Pause";
+import { useMusicStore } from "../../stores/musicStore";
 
 const PlayPause: React.FC = () => {
-	const isPlaying = useMusicStore((state) => state.isPlaying)
-	const playPause = useMusicStore((state) => state.playPause)
+  const isPlaying = useMusicStore((state) => state.isPlaying);
+  const playPause = useMusicStore((state) => state.playPause);
+  const textColor = useMusicStore((state) => state.textColor);
+  const color = useMusicStore((state) => state.color);
 
-	return (
-		<button onClick={playPause} style={{background: 'var(--background-contrast)'}} className="rounded-full p-2">
-			{isPlaying ? <IconPause style={{color: 'var(--background-color)'}} iconSize={75} /> : <IconPlay style={{color: 'var(--background-color)'}} iconSize={75} />}
-		</button>
-	)
-}
+  const bgColor = color.isLight ? "white" : "black";
 
-export default PlayPause
+  return (
+    <button onClick={playPause} className="rounded-full p-2">
+      {isPlaying ? (
+        <IconPause stroke={bgColor} fill={bgColor} color={textColor} iconSize={75} />
+      ) : (
+        <IconPlay stroke={bgColor} fill={bgColor} color={textColor} iconSize={75} />
+      )}
+    </button>
+  );
+};
+
+export default PlayPause;
