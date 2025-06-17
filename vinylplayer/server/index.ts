@@ -1,11 +1,12 @@
 import { DeskThing } from "@deskthing/server";
 import { AppSettings, DESKTHING_EVENTS, SETTING_TYPES } from "@deskthing/types";
-import { DISPLAY_ITEMS, RECORD_SIZE, RECORD_OPTIONS, TEXT_OPTIONS } from "../shared/recordTypes"
+import { DISPLAY_ITEMS, RECORD_SIZE, RECORD_OPTIONS, TEXT_OPTIONS, RecordSettings } from "../shared/recordTypes"
 
 const start = async () => {
 	console.log('Server Started!')
 
-    const settings: AppSettings = {
+	// Use stronger typing for the specific settings here
+	const settings: RecordSettings = {
 		recordSize: {
 			label: "Record Size",
 			description: "Size of the record on the screen",
@@ -95,6 +96,18 @@ const start = async () => {
 					value: DISPLAY_ITEMS.CONTROLS,
 					label: "Controls",
 				},
+				{
+					value: DISPLAY_ITEMS.BG_THUMBNAIL,
+					label: "Thumbnail Background",
+				},
+				{
+					value: DISPLAY_ITEMS.RECORD_THUMBNAIL,
+					label: "Record Thumbnail",
+				},
+				{
+					value: DISPLAY_ITEMS.BG_DARKENED,
+					label: "Darken Background",
+				},
 			],
 			value: [
 				DISPLAY_ITEMS.ALBUM,
@@ -124,10 +137,19 @@ const start = async () => {
 				}
 			],
 			value: TEXT_OPTIONS.CENTER
+		},
+		bgBlur: {
+			label: "Background Blur",
+			description: "Blur the background thumbnail if applicable",
+			id: "bgBlur",
+			type: SETTING_TYPES.NUMBER,
+			value: 10,
+			min: 0,
+			max: 100,
 		}
-  	}
-
-  	DeskThing.initSettings(settings)
+	}
+	
+	DeskThing.initSettings(settings)
 };
 
 const stop = async () => {

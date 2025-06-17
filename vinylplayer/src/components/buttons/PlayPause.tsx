@@ -1,37 +1,14 @@
-import React, { useEffect, useState } from 'react'
-import { DeskThing } from '@deskthing/client'
-import { AUDIO_REQUESTS, SocketData, SongData } from '@deskthing/types'
+import React from 'react'
 import IconPlay from '../../svgs/Play'
 import IconPause from '../../svgs/Pause'
+import { useMusicStore } from '../../stores/musicStore'
 
 const PlayPause: React.FC = () => {
-	const [isPlaying, setIsPlaying] = useState(false)
-
-	useEffect(() => {
-		const handlePlayStateChange = async (musicData: SocketData) => {
-			const songData = musicData.payload as SongData
-			setIsPlaying(songData.is_playing)
-		}
-
-		const listener = DeskThing.on('music', handlePlayStateChange)
-
-		return () => {
-			listener()
-		}
-	}, [DeskThing])
-
-	const togglePlayPause = () => {
-		setIsPlaying(!isPlaying)
-
-		DeskThing.triggerAction({
-			id: AUDIO_REQUESTS.PLAY,
-			source: 'server',
-			enabled: true
-		})
-	}
+	const isPlaying = useMusicStore((state) => state.isPlaying)
+	const playPause = useMusicStore((state) => state.playPause)
 
 	return (
-		<button onClick={togglePlayPause} style={{background: 'var(--background-contrast)'}} className="rounded-full p-2">
+		<button onClick={playPause} style={{background: 'var(--background-contrast)'}} className="rounded-full p-2">
 			{isPlaying ? <IconPause style={{color: 'var(--background-color)'}} iconSize={75} /> : <IconPlay style={{color: 'var(--background-color)'}} iconSize={75} />}
 		</button>
 	)

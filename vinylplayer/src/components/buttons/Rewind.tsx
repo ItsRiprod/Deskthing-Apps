@@ -1,20 +1,14 @@
 import React from 'react'
-import { DeskThing } from '@deskthing/client'
 import IconPrev from '../../svgs/Prev'
-import { AUDIO_REQUESTS } from '@deskthing/types'
+import { useMusicStore } from '../../stores/musicStore'
 
 const Rewind: React.FC = () => {
-
-	const Rewind = () => {
-		DeskThing.triggerAction({
-			id: "rewind",
-			source: 'server'
-		})
-	}
+	const rewind = useMusicStore((state) => state.rewind)
+	const color = useMusicStore((state) => state.color)
 
 	return (
-		<button onClick={Rewind} className="p-2">
-			<IconPrev style={{color: 'var(--background-contrast)'}} iconSize={50} />
+		<button onClick={rewind} className="p-2">
+			<IconPrev style={{color: color.isDark ? 'white' : 'black'}} iconSize={50} />
 		</button>
 	)
 }

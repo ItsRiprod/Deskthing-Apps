@@ -1,30 +1,30 @@
-import React, {useState} from 'react'
-import { DeskThing } from '@deskthing/client'
+import React, { useEffect, useState } from 'react'
 import IconShuffle from '../../svgs/Shuffle'
-import { AUDIO_REQUESTS } from '@deskthing/types'
+import { useMusicStore } from '@src/stores/musicStore'
 
 const Shuffle: React.FC = () => {
 	const [shuffle, setShuffle] = useState(false)
+	const [iconColor, setIconColor] = useState('white')
 
-	const Shuffle = () => {
+	const updateShuffle = useMusicStore((state) => state.shuffle)
+	const serverShuffle = useMusicStore((state) => state.songData?.shuffle_state)
+
+	useEffect(() => {
+		setShuffle(serverShuffle ?? false)
+	}, [serverShuffle])
+
+	const toggleShuffle = () => {
 		const newShuffle = !shuffle
-		setShuffle(newShuffle)
-		const shuffleIcon = document.getElementById('shuffle_ico') as HTMLElement | null;
-		
-		if (shuffleIcon && shuffleIcon.style) {
-			shuffleIcon.style.color = newShuffle ? '#1cd660ff' : 'white';
-		}
+		setShuffle((prev) => !prev)
 
-		DeskThing.triggerAction({
-			id: AUDIO_REQUESTS.SHUFFLE,
-			source: 'server',
-			enabled: true
-		})
+		setIconColor(newShuffle ? '#1cd660ff' : 'white')
+
+		updateShuffle()
 	}
 
 	return (
-		<button onClick={Shuffle} className="p-2">
-			<IconShuffle id="shuffle_ico" style={{color: 'white'}} iconSize={45} />
+		<button onClick={toggleShuffle} className="p-2">
+			<IconShuffle style={{ color: iconColor }} iconSize={45} />
 		</button>
 	)
 }

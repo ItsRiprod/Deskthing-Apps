@@ -1,20 +1,14 @@
 import React from 'react'
-import { DeskThing } from '@deskthing/client'
 import IconSkip from '../../svgs/Skip'
-import { AUDIO_REQUESTS } from '@deskthing/types'
+import { useMusicStore } from '../../stores/musicStore'
 
 const Skip: React.FC = () => {
-
-	const Skip = () => {
-		DeskThing.triggerAction({
-			id: "skip",
-			source: 'server'
-		})
-	}
+	const skip = useMusicStore((state) => state.skip)
+	const color = useMusicStore((state) => state.color)
 
 	return (
-		<button onClick={Skip} className="p-2">
-			<IconSkip style={{color: 'var(--background-contrast)'}} iconSize={50} />
+		<button onClick={skip} className="p-2">
+			<IconSkip style={{color: color.isDark ? 'white' : 'black'}} iconSize={50} />
 		</button>
 	)
 }

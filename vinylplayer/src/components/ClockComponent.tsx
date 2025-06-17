@@ -1,14 +1,14 @@
-import { DEVICE_CLIENT, SongData } from "@deskthing/types"
+import { DEVICE_CLIENT } from "@deskthing/types"
 import { FC, useEffect, useState } from "react"
 import { DeskThing } from "@deskthing/client"
+import { useMusicStore } from "@src/stores/musicStore"
 
 type ClockComponentProps = {
-  currentSong: SongData
   className?: string
 }
 
-export const ClockComponent: FC<ClockComponentProps> = ({ currentSong, className }) => {
-
+export const ClockComponent: FC<ClockComponentProps> = ({ className }) => {
+  const color = useMusicStore((state) => state.color)
   const [currentTime, setCurrentTime] = useState('XX:XX XX')
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export const ClockComponent: FC<ClockComponentProps> = ({ currentSong, className
   })
 
   return (
-      <p className={`text-xl text-nowrap ${currentSong?.color?.isLight ? 'text-black' : 'text-white'} ${className}`}>
+      <p className={`text-xl text-nowrap ${color?.isLight ? 'text-black' : 'text-white'} ${className}`}>
         {currentTime}
       </p>
   )
