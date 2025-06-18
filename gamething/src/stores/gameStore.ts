@@ -14,7 +14,7 @@ type GameEvent = {
 
 export interface GameStore extends BaseStore {
   gameState: GameState | null;
-  setGameState: (gameState: GameState | null, sendToServer?: boolean) => void;
+  setGameState: (gameState: GameState | null | ((prev: GameState | null) => GameState | null), sendToServer?: boolean) => void;
   sendGameData: (data: ClientGamePayload) => void;
   endGame: (winnerIds: string[]) => void;
   startGame: () => void;
@@ -43,6 +43,10 @@ export const useGameStore = create<GameStore>((set, get) => {
     },
     gameState: null,
     setGameState: (gameState, sendToServer = true) => {
+      if (typeof gameState == 'function') {
+        set((prev) => ({ gameState: gameState(prev.gameState) }));
+        return;
+      }
       set({ gameState });
       // sending to server not implemented yet
     },

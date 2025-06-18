@@ -189,7 +189,7 @@ export type ClientGamePayload =
     gameId: string
   }
   | {
-    game_type: GAME_OPTIONS.DUAL_SOLO
+    game_type: GAME_OPTIONS.FLAPPY_BIRD
     action_type: 'null'
     action: DualGameState
   }
@@ -215,7 +215,7 @@ export type ServerGamePayload =
     gameId: string
   }
   | {
-    game_type: GAME_OPTIONS.DUAL_SOLO
+    game_type: GAME_OPTIONS.FLAPPY_BIRD
     action_type: 'null'
     action: DualGameState
   }

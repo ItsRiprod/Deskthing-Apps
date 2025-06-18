@@ -193,14 +193,14 @@ const RoomScreen: React.FC = () => {
                       Dual
                     </button>
                     <button
-                      onClick={() => handleChangeGame(GAME_OPTIONS.DUAL_SOLO)}
+                      onClick={() => handleChangeGame(GAME_OPTIONS.FLAPPY_BIRD)}
                       className={`bg-gray-700 text-white p-1.5 sm:p-2 rounded text-sm hover:bg-gray-600 ${
-                        currentRoom.game === GAME_OPTIONS.DUAL_SOLO
+                        currentRoom.game === GAME_OPTIONS.FLAPPY_BIRD
                           ? "border-2 border-blue-500"
                           : ""
                       }`}
                     >
-                      Solo Dual
+                      Flappy Bird
                     </button>
                     <button
                       onClick={() => handleChangeGame(GAME_OPTIONS.PONG_MULTI)}

@@ -4,7 +4,7 @@ import { ClientGamePayload, GAME_SERVER } from "../../shared/types/transit";
 import { GameEngine } from "../types/engineInterface";
 import { DualEngine } from "./games/dualEngine";
 import { PongEngine } from "./games/pongEngine";
-import { DualEngineSolo } from "./games/dualEngineSolo";
+import { FlappyEngine } from "./games/flappyEngine";
 import { PongEngineSolo } from "./games/pongEngineSolo";
 import { GAME_OPTIONS } from "@shared/types";
 import { eventBus } from "../eventBus";
@@ -18,7 +18,7 @@ class GameRegistry {
   constructor() {
     this.registerEngine(new DualEngine());
     this.registerEngine(new PongEngine());
-    this.registerEngine(new DualEngineSolo());
+    this.registerEngine(new FlappyEngine());
     this.registerEngine(new PongEngineSolo());
     eventBus.on('startGame', this.handleGameStart.bind(this));
   }

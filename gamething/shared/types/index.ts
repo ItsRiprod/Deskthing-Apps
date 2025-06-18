@@ -1,5 +1,6 @@
 export * from './games/dual'
 export * from './games/pong'
+export * from './games/flappy'
 export * from './lobby'
 export * from './states'
 export * from './transit'

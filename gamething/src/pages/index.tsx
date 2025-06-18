@@ -5,9 +5,8 @@ import RoomScreen from "./room/RoomScreen";
 import PongMultiGameScreen from "./pong/PongMultiGameScreen";
 import PongSoloGameScreen from "./pong/PongSoloGameScreen";
 import DualMultiGameScreen from "./dual/DualMultiGamesScreen";
-import { DualSoloGameScreen } from "./dual/DualSoloGamesScreen";
-import { usePlayerStore } from "@src/stores/playerStore";
 import { PlayerSetup } from "./player";
+import { FlappyGameScreen } from "./flappy/FlappyGameScreen";
 
 export const PageManager = () => {
   const currentPage = useUIStore((state) => state.currentPage);
@@ -20,8 +19,8 @@ export const PageManager = () => {
       return <RoomScreen />;
     case GAME_OPTIONS.DUAL_MULTI:
       return <DualMultiGameScreen />;
-    case GAME_OPTIONS.DUAL_SOLO:
-      return <DualSoloGameScreen />;
+    case GAME_OPTIONS.FLAPPY_BIRD:
+      return <FlappyGameScreen />;
     case GAME_OPTIONS.PONG_MULTI:
       return <PongMultiGameScreen />;
     case GAME_OPTIONS.PONG_SOLO:

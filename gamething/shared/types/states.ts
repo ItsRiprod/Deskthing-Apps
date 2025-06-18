@@ -1,4 +1,5 @@
 import { DualGameState } from "./games/dual"
+import { FlappyGameState } from "./games/flappy"
 import { PongGameState } from "./games/pong"
 import { Room } from "./lobby"
 import { GAME_OPTIONS } from "./types"
@@ -26,11 +27,11 @@ export type GameState = BaseGameState & (
     state: PongGameState
   }
   | {
-    game_type: GAME_OPTIONS.DUAL_MULTI
-    state: DualGameState
+    game_type: GAME_OPTIONS.FLAPPY_BIRD
+    state: FlappyGameState
   }
   | {
-    game_type: GAME_OPTIONS.DUAL_SOLO
+    game_type: GAME_OPTIONS.DUAL_MULTI
     state: DualGameState
   }
 )

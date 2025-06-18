@@ -4,8 +4,8 @@ import { Room } from "../../../shared/types/lobby";
 import { GameState } from "../../../shared/types/states";
 import { ClientGamePayload } from "../../../shared/types/transit";
 
-export class DualEngineSolo implements GameEngine {
-  gameType: GAME_OPTIONS = GAME_OPTIONS.DUAL_SOLO;
+export class FlappyEngine implements GameEngine {
+  gameType: GAME_OPTIONS = GAME_OPTIONS.FLAPPY_BIRD;
   numberOfPlayers = 1;
   createInitialGame(room: Room): Promise<GameState> {
     throw new Error("Method not implemented.");
