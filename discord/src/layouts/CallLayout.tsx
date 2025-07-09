@@ -2,12 +2,12 @@ import React, { JSX } from 'react';
 import ParticipantGrid from '../components/call/ParticipantGrid';
 import CallTimer from '../components/call/CallTimer';
 import UserList from '../components/user/UserList'
-import { useAppSelector } from '../hooks/useAppSelector'
 import { ChatEmbed } from '../components/chat/ChatEmbed'
+import { useCallStore } from '@src/stores/callStore'
 
 export function CallLayout(): JSX.Element {
 
-  const callStatus = useAppSelector((state) => state.callStatus)
+  const callStatus = useCallStore((state) => state.callStatus)
   
   
   // Safety check - this should not typically happen due to the check in MainLayout

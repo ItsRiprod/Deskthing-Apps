@@ -1,10 +1,10 @@
-import React, { JSX } from "react";
+import { JSX } from "react";
 import { Chat } from "../../pages/Chat";
-import { useAppSelector } from "../../hooks/useAppSelector";
 import { IconX } from "../../assets/icons";
+import { useChatStore } from "@src/stores/chatStore"
 
 export function ChatEmbed(): JSX.Element {
-  const isLoading = useAppSelector(
+  const isLoading = useChatStore(
     (state) => state.chatStatus?.isLoading ?? false
   );
 

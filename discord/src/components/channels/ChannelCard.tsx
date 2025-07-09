@@ -1,6 +1,5 @@
 import { ChannelStatus } from "@shared/types/discord";
-import { useAppSelector } from "@src/hooks/useAppSelector";
-import { useAppState } from "@src/hooks/useAppState";
+import { useChatStore } from "@src/stores/chatStore"
 import { FC, useEffect } from "react";
 
 interface ChannelCardProps {
@@ -9,8 +8,8 @@ interface ChannelCardProps {
 }
 
 export const ChannelCard: FC<ChannelCardProps> = ({ channel }) => {
-  const { setSelectedChannelID } = useAppState();
-  const isSelected = useAppSelector(
+  const setSelectedChannelID = useChatStore(state => state.setSelectedChannelID);
+  const isSelected = useChatStore(
     (state) => state.chatStatus?.currentChannelId == channel.id
   );
 

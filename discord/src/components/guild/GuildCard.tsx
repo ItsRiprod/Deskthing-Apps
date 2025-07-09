@@ -1,13 +1,14 @@
 import { GuildStatus } from "@shared/types/discord";
-import { useAppState } from "@src/hooks/useAppState";
-import { FC, useMemo, useState } from "react";
+import { useChatStore } from "@src/stores/chatStore"
+import { FC, useMemo } from "react";
 
 interface GuildCardProps {
   guild: GuildStatus;
 }
 
 export const GuildCard: FC<GuildCardProps> = ({ guild }) => {
-  const { setSelectedGuildID, guildList } = useAppState();
+  const setSelectedGuildID = useChatStore(state => state.setSelectedGuildID);
+  const guildList = useChatStore(state => state.guildList);
 
   const selected = useMemo(() => guildList?.selectedGuildId === guild.id, [guildList?.selectedGuildId])
 

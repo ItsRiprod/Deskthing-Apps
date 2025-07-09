@@ -1,19 +1,15 @@
-import { JSX } from 'react';
-import { AppStateProvider } from './context/AppStateProvidor'
-import { MainLayout } from './layouts/MainLayout';
-import OverlayWrapper from './overlays/OverlayWrapper'
-import { UIProvider } from './context/UIProvider'
+import { JSX } from "react";
+import { MainLayout } from "./layouts/MainLayout";
+import OverlayWrapper from "./overlays/OverlayWrapper";
+import { StoreInitializer } from "./stores/storeInitializer"
 
 function App(): JSX.Element {
   return (
-    <AppStateProvider>
-      <UIProvider>
-        <div className="h-screen w-screen overflow-hidden bg-gray-900">
-          <MainLayout />
-          <OverlayWrapper />
-        </div>
-      </UIProvider>
-    </AppStateProvider>
+    <div className="h-screen w-screen overflow-hidden bg-gray-900">
+      <StoreInitializer />
+      <MainLayout />
+      <OverlayWrapper />
+    </div>
   );
 }
 

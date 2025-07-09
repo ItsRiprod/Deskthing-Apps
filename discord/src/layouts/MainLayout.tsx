@@ -1,18 +1,17 @@
 import { JSX, useMemo } from 'react';
 import { CallLayout } from './CallLayout';
 import { ChatLayout } from './ChatLayout';
-import Controls from '../overlays/Controls';
-import { useAppSelector } from '../hooks/useAppSelector'
-import { useAppState } from '../hooks/useAppState'
 import { Loading } from '../pages/Loading'
-import { useUI } from '../hooks/useUI'
 import { GuildLayout } from './GuildLayout'
+import { useUIStore } from '@src/stores/uiStore'
+import { useCallStore } from '@src/stores/callStore'
+import { useChatStore } from '@src/stores/chatStore'
 
 export function MainLayout(): JSX.Element {
-  const { currentPage } = useUI()
-  const isInCall = useAppSelector((state) => state.callStatus?.isConnected);
-  const isChatExpanded = useAppSelector((state) => state.chatStatus?.isLoading);
-  const { isLoading } = useAppState()
+  const currentPage = useUIStore((state) => state.currentPage)
+  const isInCall = useCallStore((state) => state.callStatus?.isConnected);
+  const isChatExpanded = useChatStore((state) => state.chatStatus?.isLoading);
+  const isLoading = useChatStore((state) => state.isLoading)
 
   const currentPageComponent = useMemo(() => {
     switch (currentPage) {

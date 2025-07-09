@@ -1,3 +1,5 @@
+import { SETTING_TYPES } from "@deskthing/types";
+
 export interface CallStatus {
   channelId: string | null;
   participants: CallParticipant[];
@@ -119,5 +121,65 @@ export enum AppSettingIDs {
     REDIRECT_URL = 'redirect_url',
     SET_MAIN_TEXT = 'set_main_text',
     SET_SECONDARY_TEXT = 'set_secondary_text',
-    HAVE_TIMER = 'have_timer'
+    HAVE_TIMER = 'have_timer',
+    LEFT_DASHBOARD_PANEL = 'left_dashboard_panel',
+    RIGHT_DASHBOARD_PANEL = 'right_dashboard_panel',
+    DASHBOARD_ELEMENTS = 'dashboard_elements',
 }
+
+export enum DASHBOARD_ELEMENTS {
+  CALL_STATUS = 'call_status',
+  MINI_CALL = 'mini_call',
+  CALL_CONTROLS = 'call_controls',
+  GUILD_LIST = 'guild_list',
+  CHAT = 'chat',
+  CLOCK = 'clock',
+  NOTIFICATIONS = 'notifications',
+  SHORTCUTS = 'shortcuts',
+  SONG = 'song',
+}
+
+type StringSetting = {
+  id: AppSettingIDs.CLIENT_ID | AppSettingIDs.CLIENT_SECRET | AppSettingIDs.SET_MAIN_TEXT | AppSettingIDs.SET_SECONDARY_TEXT;
+  type: typeof SETTING_TYPES.STRING;
+  description: string;
+  label: string;
+  value: string;
+};
+
+type BooleanSetting = {
+  id: AppSettingIDs.HAVE_TIMER;
+  type: typeof SETTING_TYPES.BOOLEAN;
+  description: string;
+  label: string;
+  value: boolean;
+};
+
+type SelectSetting = {
+  id: AppSettingIDs.LEFT_DASHBOARD_PANEL | AppSettingIDs.RIGHT_DASHBOARD_PANEL;
+  type: typeof SETTING_TYPES.SELECT;
+  description: string;
+  label: string;
+  value: DASHBOARD_ELEMENTS;
+  options: { value: DASHBOARD_ELEMENTS; label: string }[];
+};
+
+type MultiSelectSetting = {
+  id: AppSettingIDs.DASHBOARD_ELEMENTS;
+  type: typeof SETTING_TYPES.MULTISELECT;
+  description: string;
+  label: string;
+  value: DASHBOARD_ELEMENTS[];
+  options: { value: DASHBOARD_ELEMENTS; label: string }[];
+};
+
+export type DiscordSettings = {
+  [AppSettingIDs.CLIENT_ID]: StringSetting & { id: AppSettingIDs.CLIENT_ID };
+  [AppSettingIDs.CLIENT_SECRET]: StringSetting & { id: AppSettingIDs.CLIENT_SECRET };
+  [AppSettingIDs.SET_MAIN_TEXT]: StringSetting & { id: AppSettingIDs.SET_MAIN_TEXT };
+  [AppSettingIDs.SET_SECONDARY_TEXT]: StringSetting & { id: AppSettingIDs.SET_SECONDARY_TEXT };
+  [AppSettingIDs.HAVE_TIMER]: BooleanSetting;
+  [AppSettingIDs.LEFT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.LEFT_DASHBOARD_PANEL };
+  [AppSettingIDs.RIGHT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.RIGHT_DASHBOARD_PANEL };
+  [AppSettingIDs.DASHBOARD_ELEMENTS]: MultiSelectSetting;
+};

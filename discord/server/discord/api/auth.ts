@@ -99,7 +99,7 @@ export class DiscordAuth {
       });
       
       if (!tokenResponse.ok) {
-        throw new Error(`Failed to exchange code for token: ${tokenResponse.status}`);
+        throw new Error(`Failed to exchange code for token: ${tokenResponse.status}: ${tokenResponse.statusText}`);
       }
       
       const { access_token } = await tokenResponse.json();

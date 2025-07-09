@@ -1,17 +1,16 @@
 import { FC, JSX, useEffect } from "react";
 import { Chat } from "../pages/Chat";
-import { useAppState } from "../hooks/useAppState"
 import { GuildCard } from "@src/components/guild/GuildCard";
 import { ChannelCard } from "@src/components/channels/ChannelCard";
-import { useAppSelector } from "@src/hooks/useAppSelector"
+import { useChatStore } from "@src/stores/chatStore"
 
 interface GuildLayoutProps {}
 
 export const GuildLayout: FC<GuildLayoutProps> = (): JSX.Element => {
-  const { getGuildList } = useAppState()
+  const getGuildList = useChatStore((state) => state.getGuildList)
 
-  const guilds = useAppSelector((state) => state.guildList?.guilds)
-  const channels = useAppSelector((state) => state.guildList?.textChannels)
+  const guilds = useChatStore((state) => state.guildList?.guilds)
+  const channels = useChatStore((state) => state.guildList?.textChannels)
 
   const handleGuildRefresh = () => {
     getGuildList()

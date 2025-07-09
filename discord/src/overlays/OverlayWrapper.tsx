@@ -1,10 +1,10 @@
 import NotificationOverlay from './Notification'
-import { useAppSelector } from '../hooks/useAppSelector'
-import { useAppState } from '../hooks/useAppState'
+import { useChatStore } from '@src/stores/chatStore'
+
 
 export default function OverlayWrapper() {
-    const { markNotificationAsRead } = useAppState()
-    const notifications = useAppSelector((state) => state.notificationStatus?.notifications);
+    const markNotificationAsRead = useChatStore((state) => state.markNotificationAsRead)
+    const notifications = useChatStore((state) => state.notificationStatus?.notifications);
   
 
   return (

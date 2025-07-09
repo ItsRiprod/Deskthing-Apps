@@ -2,7 +2,7 @@ import { JSX } from "react";
 import MessageItem from "../components/chat/MessageItem";
 import { useChatStore } from "@src/stores/chatStore"
 
-export function Chat(): JSX.Element {
+export function Browsing(): JSX.Element {
   const messages = useChatStore((state) => state.chatStatus?.messages);
   const isLoading = useChatStore(
     (state) => state.chatStatus?.isLoading ?? false
