@@ -15,15 +15,15 @@
   },
   "dependencies": {
     "@deskthing/client": "^0.11.1",
-    "@deskthing/server": "latest",
+    "@deskthing/server": "^0.11.2",
     "autoprefixer": "^10.4.21",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
-    "@deskthing/cli": "latest",
-    "@deskthing/types": "latest",
+    "@deskthing/cli": "^0.11.6",
+    "@deskthing/types": "^0.11.11",
     "@eslint/js": "^9.9.0",
     "@types/node": "^22.10.7",
     "@types/react": "^18.3.3",
@@ -39,6 +39,6 @@
     "tsm": "^2.3.0",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
-    "vite": "^5.4.15"
+    "vite": "^5.4.19"
   }
 }

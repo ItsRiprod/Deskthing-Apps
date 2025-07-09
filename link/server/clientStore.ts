@@ -16,13 +16,13 @@ export class ClientStore extends EventEmitter<ClientStoreEvents> {
 
   private constructor() {
     super();
-    DeskThing.sendDebug("ClientStore initialized");
+    console.debug("ClientStore initialized");
   }
 
   public static getInstance(): ClientStore {
     if (!ClientStore.instance) {
       ClientStore.instance = new ClientStore();
-      DeskThing.sendDebug("ClientStore instance created");
+      console.debug("ClientStore instance created");
     }
     return ClientStore.instance;
   }
@@ -31,14 +31,14 @@ export class ClientStore extends EventEmitter<ClientStoreEvents> {
     try {
       if (!this.clients.find((c) => c.id === client.id)) {
         this.clients.push(client);
-        DeskThing.sendDebug(`Client added: ${client.id}`);
+        console.debug(`Client added: ${client.id}`);
       } else {
-        DeskThing.sendDebug(`Client already exists: ${client.id}`);
+        console.debug(`Client already exists: ${client.id}`);
       }
       this.emit("client-added", client);
       this.emit("clients-updated", this.clients);
     } catch (error) {
-      DeskThing.sendLog(`Error adding client: ${error}`);
+      console.log(`Error adding client: ${error}`);
     }
   }
 
@@ -55,7 +55,7 @@ export class ClientStore extends EventEmitter<ClientStoreEvents> {
       this.emit("clients-updated", this.clients);
       return client;
     } catch (error) {
-      DeskThing.sendLog(`Error adding client by ID: ${error}`);
+      console.log(`Error adding client by ID: ${error}`);
     }
   }
 
@@ -64,14 +64,14 @@ export class ClientStore extends EventEmitter<ClientStoreEvents> {
       const initialLength = this.clients.length;
       this.clients = this.clients.filter((c) => c.id !== id);
       if (this.clients.length === initialLength) {
-        DeskThing.sendDebug(`Client not found for removal: ${id}`);
+        console.debug(`Client not found for removal: ${id}`);
       } else {
-        DeskThing.sendDebug(`Client removed: ${id}`);
+        console.debug(`Client removed: ${id}`);
       }
       this.emit("client-removed", id);
       this.emit("clients-updated", this.clients);
     } catch (error) {
-      DeskThing.sendLog(`Error removing client: ${error}`);
+      console.log(`Error removing client: ${error}`);
     }
   }
 
@@ -79,7 +79,7 @@ export class ClientStore extends EventEmitter<ClientStoreEvents> {
     try {
       return this.clients;
     } catch (error) {
-      DeskThing.sendLog(`Error getting clients: ${error}`);
+      console.log(`Error getting clients: ${error}`);
       return [];
     }
   }
@@ -88,12 +88,12 @@ export class ClientStore extends EventEmitter<ClientStoreEvents> {
     try {
       const client = this.clients.find((c) => c.id === id);
       if (!client) {
-        DeskThing.sendDebug(`Client not found: ${id}`);
+        console.debug(`Client not found: ${id}`);
         return this.addClientId(id)
       }
       return client;
     } catch (error) {
-      DeskThing.sendLog(`Error getting client: ${error}`);
+      console.log(`Error getting client: ${error}`);
       return this.addClientId(id)
     }
   }
@@ -104,17 +104,17 @@ export class ClientStore extends EventEmitter<ClientStoreEvents> {
       const client = this.clients.find((c) => c.id === id);
       if (client) {
         client.score += inc;
-        DeskThing.sendDebug(
+        console.debug(
           `Score incremented for client ${id}: ${client.score}`
         );
         this.emit("score-updated", id, client);
         this.emit("clients-updated", this.clients);
       } else {
-        DeskThing.sendDebug(`Client not found for score increment: ${id}`);
+        console.debug(`Client not found for score increment: ${id}`);
         this.addClientId(id, inc)
       }
     } catch (error) {
-      DeskThing.sendLog(`Error incrementing score: ${error}`);
+      console.log(`Error incrementing score: ${error}`);
     }
   }
 
@@ -123,16 +123,16 @@ export class ClientStore extends EventEmitter<ClientStoreEvents> {
       const client = this.clients.find((c) => c.id === id);
       if (client && client.score > 0) {
         client.score -= 1;
-        DeskThing.sendDebug(
+        console.debug(
           `Score decremented for client ${id}: ${client.score}`
         );
         this.emit("score-updated", id, client);
         this.emit("clients-updated", this.clients);
       } else {
-        DeskThing.sendDebug(`Client not found or score already 0: ${id}`);
+        console.debug(`Client not found or score already 0: ${id}`);
       }
     } catch (error) {
-      DeskThing.sendLog(`Error decrementing score: ${error}`);
+      console.log(`Error decrementing score: ${error}`);
     }
   }
 
@@ -141,14 +141,14 @@ export class ClientStore extends EventEmitter<ClientStoreEvents> {
       const client = this.clients.find((c) => c.id === id);
       if (client) {
         client.score = 0;
-        DeskThing.sendDebug(`Score reset for client ${id}`);
+        console.debug(`Score reset for client ${id}`);
         this.emit("score-updated", id, client);
         this.emit("clients-updated", this.clients);
       } else {
-        DeskThing.sendDebug(`Client not found for score reset: ${id}`);
+        console.debug(`Client not found for score reset: ${id}`);
       }
     } catch (error) {
-      DeskThing.sendLog(`Error resetting score: ${error}`);
+      console.log(`Error resetting score: ${error}`);
     }
   }
 
@@ -157,13 +157,13 @@ export class ClientStore extends EventEmitter<ClientStoreEvents> {
       const client = this.clients.find((c) => c.id === id);
       if (client) {
         client.color = color;
-        DeskThing.sendDebug(`Color updated for client ${id}: ${color}`);
+        console.debug(`Color updated for client ${id}: ${color}`);
         this.emit("clients-updated", this.clients);
       } else {
-        DeskThing.sendDebug(`Client not found for color update: ${id}`);
+        console.debug(`Client not found for color update: ${id}`);
       }
     } catch (error) {
-      DeskThing.sendLog(`Error updating color: ${error}`);
+      console.log(`Error updating color: ${error}`);
     }
   }
 
@@ -174,10 +174,10 @@ export class ClientStore extends EventEmitter<ClientStoreEvents> {
       for (let i = 0; i < 6; i++) {
         color += letters[Math.floor(Math.random() * 16)];
       }
-      DeskThing.sendDebug(`Generated random color: ${color}`);
+      console.debug(`Generated random color: ${color}`);
       return color;
     } catch (error) {
-      DeskThing.sendLog(`Error generating random color: ${error}`);
+      console.log(`Error generating random color: ${error}`);
       return "#000000";
     }
   }

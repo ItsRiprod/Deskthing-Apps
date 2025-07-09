@@ -18,7 +18,7 @@ const start = async () => {
 
 DeskThing.on(WeatherEvents.GET, async (request) => {
   if (request.request === "weather_data") {
-    DeskThing.sendLog("Getting weather data");
+    console.log("Getting weather data");
     const weatherData = await WeatherService.getWeather();
     if (weatherData) {
       DeskThing.send({ type: "weather_data", payload: weatherData });
@@ -31,7 +31,7 @@ DeskThing.on(WeatherEvents.GET, async (request) => {
 DeskThing.on(DESKTHING_EVENTS.SETTINGS, (settings) => {
   // Syncs the data with the server
   if (settings) {
-    DeskThing.sendDebug("Settings updating");
+    console.debug("Settings updating");
     WeatherService.updateData(settings.payload);
   }
 });
@@ -51,10 +51,10 @@ const setupSettings = async () => {
       const { lat, lon } = await response.json();
       latitude = lat;
       longitude = lon;
-      DeskThing.sendDebug(`Latitude: ${latitude}, Longitude: ${longitude}`);
+      console.debug(`Latitude: ${latitude}, Longitude: ${longitude}`);
     }
   } catch (error) {
-    DeskThing.sendWarning("Error getting location: " + (error instanceof Error ? error.message : error));
+    console.warn("Error getting location: " + (error instanceof Error ? error.message : error));
   }
 
   const settings: AppSettings = {

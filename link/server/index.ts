@@ -3,13 +3,13 @@ import { DESKTHING_EVENTS } from "@deskthing/types";
 import { initListeners } from "./deskthing"
 
 const start = async () => {
-  DeskThing.sendLog('Server Started!')
+  console.log('Server Started!')
   initListeners()
 };
 
 const stop = async () => {
   // Function called when the server is stopped
-  DeskThing.sendLog('Server Stopped');
+  console.log('Server Stopped');
 };
 
 // Main Entrypoint of the server

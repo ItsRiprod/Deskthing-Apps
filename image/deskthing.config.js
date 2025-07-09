@@ -1,4 +1,5 @@
 // version 0.10.18
+// @ts-check
 import { defineConfig } from "@deskthing/cli";
 
 export default defineConfig({

@@ -16,13 +16,13 @@
     "build-workers": "esbuild server/workers/*.ts --bundle --platform=node --outdir=dist/workers --format=cjs"
   },
   "dependencies": {
-    "@deskthing/client": "^0.10.14",
+    "@deskthing/client": "^0.11.1",
     "@deskthing/server": "^0.11.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@deskthing/cli": "^0.11.6",
+    "@deskthing/cli": "^0.11.7",
     "@deskthing/types": "^0.11.11",
     "@eslint/js": "^9.9.0",
     "@types/react": "^18.3.3",
@@ -39,6 +39,6 @@
     "tsm": "^2.3.0",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
-    "vite": "^5.4.18"
+    "vite": "^5.4.19"
   }
 }

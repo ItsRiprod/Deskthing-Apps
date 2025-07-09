@@ -24,10 +24,10 @@ DeskThing.on(LINK_TO_SERVER.DATA, async (data) => {
           clients: clients
         }
       });
-      DeskThing.sendDebug(`Sent client data to client`);
+      console.debug(`Sent client data to client`);
     }
   } catch (error) {
-    DeskThing.sendLog(`Error handling DATA event: ${error}`);
+    console.log(`Error handling DATA event: ${error}`);
   }
 });
 
@@ -35,7 +35,7 @@ DeskThing.on(LINK_TO_SERVER.SCORE, (data) => {
   try {
     if (data.request === "add") {
       clientStore.incrementScore(data.clientId, data.payload.inc);
-      DeskThing.sendDebug(`Score increment requested for client: ${data.clientId}`);
+      console.debug(`Score increment requested for client: ${data.clientId}`);
     } else if (data.request === "get") {
       const client = clientStore.getClient(data.clientId);
       if (client) {
@@ -46,13 +46,13 @@ DeskThing.on(LINK_TO_SERVER.SCORE, (data) => {
             clients: clientStore.getClients()
           }
         });
-        DeskThing.sendDebug(`Sent score data for client: ${client.id}`);
+        console.debug(`Sent score data for client: ${client.id}`);
       } else {
-        DeskThing.sendDebug(`Client not found for score request: ${data.clientId}`);
+        console.debug(`Client not found for score request: ${data.clientId}`);
       }
     }
   } catch (error) {
-    DeskThing.sendLog(`Error handling SCORE event: ${error}`);
+    console.log(`Error handling SCORE event: ${error}`);
   }
 });
 
@@ -67,7 +67,7 @@ DeskThing.on(LINK_TO_SERVER.COLOR, (data) => {
           clients: clientStore.getClients()
         }
       });
-      DeskThing.sendDebug(`Color update requested for client: ${data.clientId}`);
+      console.debug(`Color update requested for client: ${data.clientId}`);
     } else if (data.request === "get") {
       const client = clientStore.getClient(data.clientId);
       if (client) {
@@ -79,13 +79,13 @@ DeskThing.on(LINK_TO_SERVER.COLOR, (data) => {
             color: client.color
           }
         });
-        DeskThing.sendDebug(`Sent color data for client: ${client.id}`);
+        console.debug(`Sent color data for client: ${client.id}`);
       } else {
-        DeskThing.sendDebug(`Client not found for color request: ${data.clientId}`);
+        console.debug(`Client not found for color request: ${data.clientId}`);
       }
     }
   } catch (error) {
-    DeskThing.sendLog(`Error handling COLOR event: ${error}`);
+    console.log(`Error handling COLOR event: ${error}`);
   }
 });
 
@@ -95,7 +95,7 @@ DeskThing.on(LINK_TO_SERVER.REQUEST_NEW_CLIENT, (data) => {
       const clientId = data.clientId;
 
       if (!clientId) {
-        DeskThing.sendWarning(`Client ID not provided for request`);
+        console.warn(`Client ID not provided for request`);
         return;
       }
 
@@ -103,7 +103,7 @@ DeskThing.on(LINK_TO_SERVER.REQUEST_NEW_CLIENT, (data) => {
       const client = clientStore.getClient(clientId);
 
       if (!client) {
-        DeskThing.sendWarning(`Client not found for request: ${clientId}`);
+        console.warn(`Client not found for request: ${clientId}`);
         return;
       }
 
@@ -118,10 +118,10 @@ DeskThing.on(LINK_TO_SERVER.REQUEST_NEW_CLIENT, (data) => {
       });
 
 
-      DeskThing.sendDebug(`Request for new client resolved`);
+      console.debug(`Request for new client resolved`);
     }
   } catch (error) {
-    DeskThing.sendLog(`Error handling REQUEST_NEW_CLIENT event: ${error}`);
+    console.log(`Error handling REQUEST_NEW_CLIENT event: ${error}`);
   }
 });
 
@@ -144,22 +144,22 @@ DeskThing.on(DESKTHING_EVENTS.CLIENT_STATUS, async (data) => {
               clients: clientStore.getClients()
             }
           });
-          DeskThing.sendDebug(`Client initialized: ${clientId}`);
+          console.debug(`Client initialized: ${clientId}`);
         } else {
-          DeskThing.sendDebug(`Client not found for initialization: ${clientId}`);
+          console.debug(`Client not found for initialization: ${clientId}`);
         }
         break;
       case 'closed':
         clientStore.removeClient(data.payload.clientId);
-        DeskThing.sendDebug(`Client closed: ${data.payload.clientId}`);
+        console.debug(`Client closed: ${data.payload.clientId}`);
         break;
       case 'disconnected':
         clientStore.removeClient(data.payload);
-        DeskThing.sendDebug(`Client disconnected: ${data.payload}`);
+        console.debug(`Client disconnected: ${data.payload}`);
         break;
     }
   } catch (error) {
-    DeskThing.sendLog(`Error handling CLIENT_STATUS event: ${error}`);
+    console.log(`Error handling CLIENT_STATUS event: ${error}`);
   }
 });
 
@@ -177,7 +177,7 @@ export const initListeners = () => {
           clients: clients
         }
       });
-      DeskThing.sendDebug(`Clients updated event emitted`);
+      console.debug(`Clients updated event emitted`);
     });
     
     clientStore.on("score-updated", (clientId, client) => {
@@ -189,12 +189,12 @@ export const initListeners = () => {
           client: client
         }
       });
-      DeskThing.sendDebug(`Score updated event emitted for client: ${clientId}`);
+      console.debug(`Score updated event emitted for client: ${clientId}`);
     });
 
     listenersInitialized = true;
-    DeskThing.sendDebug(`Listeners initialized`);
+    console.debug(`Listeners initialized`);
   } catch (error) {
-    DeskThing.sendLog(`Error initializing listeners: ${error}`);
+    console.log(`Error initializing listeners: ${error}`);
   }
 }

@@ -23,7 +23,7 @@
     "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
-    "@deskthing/cli": "^0.10.31",
+    "@deskthing/cli": "^0.11.6",
     "@deskthing/types": "^0.10.22",
     "@eslint/js": "^9.17.0",
     "@types/discord-rpc": "^4.0.9",

@@ -29,14 +29,14 @@ class WeatherService {
   }
 
   private async updateWeather() {
-    DeskThing.sendDebug("Updating weather data...");
+    console.debug("Updating weather data...");
     
     if (!this.latitude || !this.longitude || this.latitude == "0" || this.longitude == "0") {
-        DeskThing.sendWarning("No latitude or longitude set! Not updating weather data");
+        console.warn("No latitude or longitude set! Not updating weather data");
         return
     }
     
-    DeskThing.sendDebug("Updating weather data...");
+    console.debug("Updating weather data...");
     
     const params = {
       latitude: this.latitude,
@@ -82,7 +82,7 @@ class WeatherService {
       models: "best_match",
     };
     const url = weatherUtils.url;
-    DeskThing.sendLog(
+    console.log(
       `Fetching weather data from OpenMeteo API with params: ${JSON.stringify(
         params
       )}`
@@ -97,7 +97,7 @@ class WeatherService {
     const daily = response.daily()!;
     const utcOffsetSeconds = response.utcOffsetSeconds();
 
-    DeskThing.sendLog(`Weather data received from OpenMeteo API.`);
+    console.log(`Weather data received from OpenMeteo API.`);
 
     this.weatherData = {
       hourly: {
@@ -157,7 +157,7 @@ class WeatherService {
 
     this.lastUpdateTime = new Date();
 
-    DeskThing.sendLog("Weather updated");
+    console.log("Weather updated");
     DeskThing.send({ type: "weather_data", payload: this.weatherData });
   }
 
@@ -177,11 +177,11 @@ class WeatherService {
 
   public updateData(data: AppSettings) {
     if (!data) {
-      DeskThing.sendLog("No settings defined");
+      console.log("No settings defined");
       return;
     }
     try {
-      DeskThing.sendLog("Updating settings");
+      console.log("Updating settings");
       const new_speed_unit = (data.speed_unit.value as string) || "mph";
       const new_temp_unit = (data.temp_unit.value as string) || "f";
       const new_longitude = (data.longitude.value as string) || "0";
@@ -199,17 +199,17 @@ class WeatherService {
       this.latitude = new_latitude;
 
       if (changes) {
-          DeskThing.sendDebug(
+          console.debug(
             `New values for weather data: ${this.speed_unit}, ${this.temp_unit}, ${this.longitude}, ${this.latitude}`
           );
           this.updateWeather();
         } else {
-          DeskThing.sendDebug(
+          console.debug(
             `No settings changed: ${this.speed_unit}, ${this.temp_unit}, ${this.longitude}, ${this.latitude}`
           );
       }
     } catch (error) {
-      DeskThing.sendLog("Error updating weather data: " + error);
+      console.log("Error updating weather data: " + error);
     }
   }
 
@@ -223,12 +223,12 @@ class WeatherService {
       !this.lastUpdateTime ||
       new Date().getTime() - this.lastUpdateTime.getTime() > 15 * 60 * 1000
     ) {
-      DeskThing.sendLog("Fetching weather data...");
+      console.log("Fetching weather data...");
       await this.updateWeather();
     } else {
-      DeskThing.sendLog("Returning cached weather data");
+      console.log("Returning cached weather data");
     }
-    DeskThing.sendLog("Returning weather data");
+    console.log("Returning weather data");
     return this.weatherData;
   }
 }
