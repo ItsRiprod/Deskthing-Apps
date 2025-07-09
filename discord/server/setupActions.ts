@@ -1,7 +1,8 @@
 import { DeskThing } from "@deskthing/server";
 import { DESKTHING_EVENTS, Action } from "@deskthing/types";
 import StoreProvider from "./storeProvider";
-import { AppSettingIDs } from "./discord/types/deskthingTypes"
+import { AppSettingIDs } from "../shared/types/discord"
+import { DISCORD_ACTIONS } from "../shared/types/discord"
 
 // Organize actions by category
 const voiceActions: Action[] = [
@@ -133,7 +134,7 @@ type actionHandler = (value: string | undefined) => void;
 
 const actionHandlers: Record<string, actionHandler> = {
   // Voice
-  mute: (value) => {
+  [DISCORD_ACTIONS.MUTE]: (value) => {
     switch (value) {
       case "mute":
         return StoreProvider.getCallControls().mute();
@@ -144,7 +145,7 @@ const actionHandlers: Record<string, actionHandler> = {
         return StoreProvider.getCallControls().toggleMute();
     }
   },
-  deafen: (value) => {
+  [DISCORD_ACTIONS.DEAFEN]: (value) => {
     switch (value) {
       case "deafen":
         return StoreProvider.getCallControls().deafen();
@@ -155,34 +156,34 @@ const actionHandlers: Record<string, actionHandler> = {
         return StoreProvider.getCallControls().toggleDeafen();
     }
   },
-  disconnect: () => {
+  [DISCORD_ACTIONS.DISCONNECT]: () => {
     return StoreProvider.getCallControls().disconnect();
   },
 
   // Utility
-  reauth: async () => {
+  [DISCORD_ACTIONS.REAUTH]: async () => {
     StoreProvider.getAuth().authenticate();
   },
 
-  represence: async () => {
+  [DISCORD_ACTIONS.REPRESENCE]: async () => {
     return StoreProvider.getRichPresence().resetActivity();
   },
 
   // Actions
-  expandChat: () => {
+  [DISCORD_ACTIONS.EXPAND_CHAT]: () => {
     return StoreProvider.getChatStatus().setChatExpand(true);
   },
-  collapseChat: () => {
+  [DISCORD_ACTIONS.COLLAPSE_CHAT]: () => {
     return StoreProvider.getChatStatus().setChatExpand(false);
   },
-  selectTextChannel: (value) => {
+  [DISCORD_ACTIONS.SELECT_TEXT_CHANNEL]: (value) => {
     return StoreProvider.getChatStatus().selectTextChannel(value);
   },
   // Notifications
-  markNotificationAsRead: (value) => {
+  [DISCORD_ACTIONS.MARK_NOTIFICATION_AS_READ]: (value) => {
     return StoreProvider.getNotificationStatus().markNotificationAsRead(value || '');
   },
-  markAllNotificationsAsRead: () => {
+  [DISCORD_ACTIONS.MARK_ALL_NOTIFICATIONS_AS_READ]: () => {
     return StoreProvider.getNotificationStatus().markAllNotificationsAsRead();
   },
 };

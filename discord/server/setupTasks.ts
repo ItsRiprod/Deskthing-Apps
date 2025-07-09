@@ -1,6 +1,6 @@
 import { DeskThing } from "@deskthing/server"
 import { DESKTHING_EVENTS, SETTING_TYPES, Step, STEP_TYPES, Task } from "@deskthing/types"
-import { AppSettingIDs } from "./discord/types/deskthingTypes"
+import { AppSettingIDs } from "../shared/types/discord"
 
 export const setupTasks = () => {
     DeskThing.tasks.initTasks({

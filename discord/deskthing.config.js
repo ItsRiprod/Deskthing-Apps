@@ -1,8 +1,8 @@
 // @ts-check
 import { defineConfig } from '@deskthing/cli';
-import dotEnv from 'dotenv'
+import { config } from 'dotenv'
 
-dotEnv.config()
+config()
 
 export default defineConfig({
   development: {
@@ -28,4 +28,3 @@ export default defineConfig({
     },
   }
 });
-  

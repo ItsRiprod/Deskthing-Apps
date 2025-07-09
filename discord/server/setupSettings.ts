@@ -3,7 +3,7 @@ import {
   DESKTHING_EVENTS,
   SETTING_TYPES,
 } from "@deskthing/types";
-import { AppSettingIDs } from "./discord/types/deskthingTypes";
+import { AppSettingIDs } from "../shared/types/discord";
 import StoreProvider from "./storeProvider";
 
 export const setupSettings = () => {

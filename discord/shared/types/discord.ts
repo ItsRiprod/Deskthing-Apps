@@ -37,15 +37,15 @@ export interface CallParticipant {
 }
 
 export interface ChatMessage {
+  id: string;
+  content: string;
+  author: {
     id: string;
-    content: string;
-    author: {
-      id: string;
-      username: string;
-      profileUrl?: string;
-    };
-    timestamp: number;
-  }
+    username: string;
+    profileUrl?: string;
+  };
+  timestamp: number;
+}
 
 export interface ChatStatus {
   isLoading?: boolean;
@@ -55,21 +55,21 @@ export interface ChatStatus {
 }
 
 export interface NotificationStatus {
-    notifications: Notification[];
-  }
+  notifications: Notification[];
+}
 export interface Notification {
+  id: string;
+  title: string
+  channelId: string;
+  author: {
     id: string;
-    title: string
-    channelId: string;
-    author: {
-      id: string;
-      username: string;
-      profileUrl?: string;
-    };
-    content: string;
-    timestamp: number;
-    read: boolean;
-  }
+    username: string;
+    profileUrl?: string;
+  };
+  content: string;
+  timestamp: number;
+  read: boolean;
+}
 
 export interface GuildStatus {
   id: string;
@@ -98,4 +98,26 @@ export type DMListStatus = {
 
 export type DMStatus = {
   id: string
+}
+
+export enum DISCORD_ACTIONS {
+  MUTE = 'mute',
+  DEAFEN = 'deafen',
+  DISCONNECT = 'disconnect',
+  REAUTH = 'reauth',
+  REPRESENCE = 'represence',
+  EXPAND_CHAT = 'expandChat',
+  COLLAPSE_CHAT = 'collapseChat',
+  SELECT_TEXT_CHANNEL = 'selectTextChannel',
+  MARK_NOTIFICATION_AS_READ = 'markNotificationAsRead',
+  MARK_ALL_NOTIFICATIONS_AS_READ = 'markAllNotificationsAsRead',
+}
+
+export enum AppSettingIDs {
+    CLIENT_ID = 'client_id',
+    CLIENT_SECRET = 'client_secret',
+    REDIRECT_URL = 'redirect_url',
+    SET_MAIN_TEXT = 'set_main_text',
+    SET_SECONDARY_TEXT = 'set_secondary_text',
+    HAVE_TIMER = 'have_timer'
 }
