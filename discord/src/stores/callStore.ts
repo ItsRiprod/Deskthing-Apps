@@ -40,6 +40,26 @@ export const useCallStore = create<CallStoreState>((set, get) => ({
         get().setTalkingStatus(event.payload.userId, event.payload.isSpeaking);
       }
     });
+
+    // Listen for call status updates
+    DeskThing.on(DiscordEvents.VOICE_STATE, (event) => {
+      if (event.request === "update" && event.payload) {
+        set((state) => {
+          if (!state.callStatus || !state.callStatus.user) return {};
+          // Ensure all required fields are present and not undefined
+          return {
+            callStatus: {
+              ...state.callStatus,
+              user: {
+                ...state.callStatus.user,
+                isDeafened: event.payload.isDeafened,
+                isMuted: event.payload.isMuted,
+              },
+            },
+          };
+        });
+      }
+    });
   },
 
   setCallStatus: (callStatus) => {
@@ -57,6 +77,9 @@ export const useCallStore = create<CallStoreState>((set, get) => ({
               ? { ...participant, isSpeaking }
               : participant
           ),
+          user: state.callStatus.user?.id === userId
+            ? { ...state.callStatus.user, isSpeaking }
+            : state.callStatus.user,
         },
       };
     });

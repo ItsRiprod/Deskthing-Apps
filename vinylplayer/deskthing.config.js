@@ -16,7 +16,7 @@ export default defineConfig({
       },
       clientPort: 3000,
       viteLocation: "http://localhost",
-      vitePort: 5174,
+      vitePort: 5173,
       linkPort: 8080,
     },
     server: {

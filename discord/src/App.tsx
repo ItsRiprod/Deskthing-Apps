@@ -1,14 +1,12 @@
 import { JSX } from "react";
-import { MainLayout } from "./layouts/MainLayout";
-import OverlayWrapper from "./overlays/OverlayWrapper";
 import { StoreInitializer } from "./stores/storeInitializer"
+import { PageManager } from "./pages";
 
 function App(): JSX.Element {
   return (
-    <div className="h-screen w-screen overflow-hidden bg-gray-900">
+    <div className="h-screen w-screen bg-black overflow-hidden">
       <StoreInitializer />
-      <MainLayout />
-      <OverlayWrapper />
+      <PageManager />
     </div>
   );
 }

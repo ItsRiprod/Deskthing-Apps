@@ -2,7 +2,7 @@ import { useUIStore } from "@src/stores/uiStore";
 import { Chat } from "./Chat";
 import { Browsing } from "./Browsing";
 import { Call } from "./Call";
-import { Dashboard } from "./Dashboard";
+import { Dashboard } from "./dashboard/Dashboard";
 import { Loading } from "./Loading";
 
 export const PageManager = () => {

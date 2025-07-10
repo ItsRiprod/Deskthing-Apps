@@ -1,11 +1,16 @@
-import { DeskThing } from "@deskthing/server";
+import { createDeskThing } from "@deskthing/server";
 import { DESKTHING_EVENTS, SETTING_TYPES } from "@deskthing/types";
 import {
   AppSettingIDs,
   DASHBOARD_ELEMENTS,
   DiscordSettings,
+  PANEL_ELEMENTS,
 } from "../shared/types/discord";
 import StoreProvider from "./storeProvider";
+import { DiscordEvents, ToClientTypes, ToServerTypes } from "../shared/types/transit";
+
+
+const DeskThing = createDeskThing<ToServerTypes, ToClientTypes>();
 
 export const setupSettings = () => {
   const discordSettings: DiscordSettings = {
@@ -49,27 +54,27 @@ export const setupSettings = () => {
       type: SETTING_TYPES.SELECT,
       description: "What elements to show on the dashboard?",
       label: "Dashboard Elements",
-      value: DASHBOARD_ELEMENTS.CALL_STATUS,
+      value: PANEL_ELEMENTS.CALL_STATUS,
       options: [
         {
-          value: DASHBOARD_ELEMENTS.CALL_STATUS,
+          value: PANEL_ELEMENTS.CALL_STATUS,
           label: "Call Status",
         },
         {
-          value: DASHBOARD_ELEMENTS.GUILD_LIST,
+          value: PANEL_ELEMENTS.GUILD_LIST,
           label: "Guild List",
         },
         {
-          value: DASHBOARD_ELEMENTS.CHAT,
+          value: PANEL_ELEMENTS.CHAT,
           label: "Current Chat",
         },
         {
-          value: DASHBOARD_ELEMENTS.SHORTCUTS,
-          label: "Shortcuts",
+          value: PANEL_ELEMENTS.SONG,
+          label: "Song",
         },
         {
-          value: DASHBOARD_ELEMENTS.SONG,
-          label: "Song",
+          value: PANEL_ELEMENTS.BLANK,
+          label: "Nothing",
         },
       ],
     },
@@ -78,27 +83,27 @@ export const setupSettings = () => {
       type: SETTING_TYPES.SELECT,
       description: "What elements to show on the dashboard?",
       label: "Dashboard Elements",
-      value: DASHBOARD_ELEMENTS.SONG,
+      value: PANEL_ELEMENTS.SONG,
       options: [
         {
-          value: DASHBOARD_ELEMENTS.CALL_STATUS,
+          value: PANEL_ELEMENTS.CALL_STATUS,
           label: "Call Status",
         },
         {
-          value: DASHBOARD_ELEMENTS.GUILD_LIST,
+          value: PANEL_ELEMENTS.GUILD_LIST,
           label: "Guild List",
         },
         {
-          value: DASHBOARD_ELEMENTS.CHAT,
+          value: PANEL_ELEMENTS.CHAT,
           label: "Current Chat",
         },
         {
-          value: DASHBOARD_ELEMENTS.SHORTCUTS,
-          label: "Shortcuts",
+          value: PANEL_ELEMENTS.SONG,
+          label: "Song",
         },
         {
-          value: DASHBOARD_ELEMENTS.SONG,
-          label: "Song",
+          value: PANEL_ELEMENTS.BLANK,
+          label: "Nothing",
         },
       ],
     },
@@ -129,11 +134,16 @@ export const setupSettings = () => {
           value: DASHBOARD_ELEMENTS.CALL_CONTROLS,
           label: "Call Controls",
         },
+        {
+          value: DASHBOARD_ELEMENTS.BG_ALBUM,
+          label: "Background Album",
+        },
       ],
     },
   };
   DeskThing.initSettings(discordSettings);
 };
+
 
 // Updates redirect url, id, and secret from user input from either settings OR from the task
 DeskThing.on(DESKTHING_EVENTS.SETTINGS, async (settingData) => {
@@ -157,4 +167,10 @@ DeskThing.on(DESKTHING_EVENTS.SETTINGS, async (settingData) => {
         break;
     }
   });
+
+  DeskThing.send({
+    type: DiscordEvents.SETTINGS,
+    request: 'set',
+    payload: settings as DiscordSettings
+  })
 });

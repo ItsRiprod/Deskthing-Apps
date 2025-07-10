@@ -4,6 +4,7 @@ import { ChatStatusManager } from './chatStore'
 import { GuildListManager } from './guildStore'
 import { NotificationStatusManager } from './notificationStore'
 import { DiscordEvents, ToClientTypes, ToServerTypes } from '../../../shared/types/transit'
+import { CallControls } from './controlsStore'
 
 const DeskThing = createDeskThing<ToServerTypes, ToClientTypes>()
 
@@ -14,7 +15,8 @@ export class DeskthingStore {
     private callStore: CallStatusManager,
     private chatStore: ChatStatusManager,
     private guildStore: GuildListManager,
-    private notificationStore: NotificationStatusManager
+    private notificationStore: NotificationStatusManager,
+    private controlStore: CallControls,
   ) {
     this.setupEventListeners();
   }
@@ -111,6 +113,14 @@ private debounce<T>(eventType: string, fn: (data: T) => void, delay: number = 50
         type: DiscordEvents.NOTIFICATION,
         payload: { notificationId },
         request: "read",
+      });
+    }))
+
+    this.controlStore.on("voiceStateChanged", this.debounce("voiceStateChanged", (voiceState) => {
+      DeskThing.send({
+        type: DiscordEvents.VOICE_STATE,
+        payload: voiceState,
+        request: "update",
       });
     }))
   }

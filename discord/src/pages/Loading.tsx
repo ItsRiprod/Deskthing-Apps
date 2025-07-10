@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { hints } from "../assets/static/messages"
+import { DeskThing } from "@deskthing/client";
 
 export function Loading() {
   const [currentHint, setCurrentHint] = useState(0);
@@ -9,8 +10,11 @@ export function Loading() {
     const interval = setInterval(() => {
       setCurrentHint(Math.floor(Math.random() * hints.length));
     }, 10000);
+
+    DeskThing.overrideKeys(['wheel'])
     return () => {
       clearInterval(interval);
+      DeskThing.restoreKeys(['wheel']);
     };
   }, []);
 
@@ -36,7 +40,7 @@ export function Loading() {
   }, []);
 
   return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center gap-8">
+    <div className="h-screen w-screen flex flex-col items-center bg-gray-900 justify-center gap-8">
       <button
         onClick={handleChangeHint}
         className="animate-pop-in relative flex items-center justify-center w-96 h-96 flex-col"

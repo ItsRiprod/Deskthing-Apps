@@ -127,16 +127,19 @@ export enum AppSettingIDs {
     DASHBOARD_ELEMENTS = 'dashboard_elements',
 }
 
-export enum DASHBOARD_ELEMENTS {
+export enum PANEL_ELEMENTS {
   CALL_STATUS = 'call_status',
-  MINI_CALL = 'mini_call',
-  CALL_CONTROLS = 'call_controls',
   GUILD_LIST = 'guild_list',
   CHAT = 'chat',
+  SONG = 'song',
+  BLANK = 'blank'
+}
+export enum DASHBOARD_ELEMENTS {
+  MINI_CALL = 'mini_call',
+  CALL_CONTROLS = 'call_controls',
   CLOCK = 'clock',
   NOTIFICATIONS = 'notifications',
-  SHORTCUTS = 'shortcuts',
-  SONG = 'song',
+  BG_ALBUM = 'bg_album'
 }
 
 type StringSetting = {
@@ -160,8 +163,8 @@ type SelectSetting = {
   type: typeof SETTING_TYPES.SELECT;
   description: string;
   label: string;
-  value: DASHBOARD_ELEMENTS;
-  options: { value: DASHBOARD_ELEMENTS; label: string }[];
+  value: PANEL_ELEMENTS;
+  options: { value: PANEL_ELEMENTS; label: string }[];
 };
 
 type MultiSelectSetting = {
@@ -179,7 +182,7 @@ export type DiscordSettings = {
   [AppSettingIDs.SET_MAIN_TEXT]: StringSetting & { id: AppSettingIDs.SET_MAIN_TEXT };
   [AppSettingIDs.SET_SECONDARY_TEXT]: StringSetting & { id: AppSettingIDs.SET_SECONDARY_TEXT };
   [AppSettingIDs.HAVE_TIMER]: BooleanSetting;
-  [AppSettingIDs.LEFT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.LEFT_DASHBOARD_PANEL };
-  [AppSettingIDs.RIGHT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.RIGHT_DASHBOARD_PANEL };
-  [AppSettingIDs.DASHBOARD_ELEMENTS]: MultiSelectSetting;
+  [AppSettingIDs.LEFT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.LEFT_DASHBOARD_PANEL, value: PANEL_ELEMENTS };
+  [AppSettingIDs.RIGHT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.RIGHT_DASHBOARD_PANEL, value: PANEL_ELEMENTS };
+  [AppSettingIDs.DASHBOARD_ELEMENTS]: MultiSelectSetting & { id: AppSettingIDs.DASHBOARD_ELEMENTS, value: DASHBOARD_ELEMENTS[]  };
 };

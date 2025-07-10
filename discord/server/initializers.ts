@@ -1,7 +1,6 @@
 import { createDeskThing } from "@deskthing/server";
-import { AppSettingIDs } from "../shared/types/discord";
+import { AppSettingIDs, DiscordSettings } from "../shared/types/discord";
 import StoreProvider from "./storeProvider";
-import { DESKTHING_EVENTS } from "@deskthing/types";
 import {
   DiscordEvents,
   ToClientTypes,
@@ -94,6 +93,20 @@ DeskThing.on(DiscordEvents.GET, async (socketData) => {
     case "refreshGuildList":
       {
         guildStore.refreshGuildList();
+      }
+
+      break;
+    case "settings":
+      {
+        const settings = await DeskThing.getSettings() as DiscordSettings | undefined
+        if (settings) {
+          DeskThing.send({
+            type: DiscordEvents.SETTINGS,
+            request: 'set',
+            payload: settings,
+            clientId: socketData.clientId // will be filled in by the server
+          })
+        }
       }
 
       break;

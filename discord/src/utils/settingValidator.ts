@@ -5,11 +5,6 @@ import { DiscordSettings, AppSettingIDs } from "../../shared/types/discord";
 export function validateDiscordSettings(obj: AppSettings): asserts obj is DiscordSettings {
 
   const requiredIds = [
-    AppSettingIDs.CLIENT_ID,
-    AppSettingIDs.CLIENT_SECRET,
-    AppSettingIDs.SET_MAIN_TEXT,
-    AppSettingIDs.SET_SECONDARY_TEXT,
-    AppSettingIDs.HAVE_TIMER,
     AppSettingIDs.LEFT_DASHBOARD_PANEL,
     AppSettingIDs.RIGHT_DASHBOARD_PANEL,
     AppSettingIDs.DASHBOARD_ELEMENTS,

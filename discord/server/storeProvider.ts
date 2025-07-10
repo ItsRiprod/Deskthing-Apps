@@ -34,9 +34,10 @@ export class StoreProvider {
     this.chatStatus = new ChatStatusManager(this.rpc, this.guildList);
     this.notificationStatus = new NotificationStatusManager(this.rpc);
     this.richPresence = new RichPresence(this.rpc);
-    this.deskthingStore = new DeskthingStore(this.callStatus, this.chatStatus, this.guildList, this.notificationStatus);
+    this.deskthingStore = new DeskthingStore(this.callStatus, this.chatStatus, this.guildList, this.notificationStatus, this.callControls);
   }
 
+  
   public static getInstance(): StoreProvider {
     if (!StoreProvider.instance) {
       StoreProvider.instance = new StoreProvider();

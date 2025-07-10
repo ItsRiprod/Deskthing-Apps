@@ -7,15 +7,15 @@ config()
 export default defineConfig({
   development: {
     logging: {
-      level: "info",
+      level: "debug",
     },
     client: {
       logging: {
-        level: "info",
+        level: "debug",
       },
     },
     server: {
-      editCooldownMs: 5000,
+      editCooldownMs: 8000,
       mockData: {
         settings: {
           "client_id": process.env.DISCORD_CLIENT_ID,
@@ -23,6 +23,11 @@ export default defineConfig({
           "set_main_text": 'DiscordThing',
           "set_secondary_text": 'The ultimate deskthing app',
           "have_timer": true,
+          "left_dashboard_panel": "guild_list",
+          "right_dashboard_panel": "call_status",
+          "dashboard_elements": [
+            "clock",
+            "notifications",]
         }
       }
     },

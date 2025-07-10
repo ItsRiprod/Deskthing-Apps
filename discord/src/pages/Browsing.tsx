@@ -1,5 +1,4 @@
 import { JSX } from "react";
-import MessageItem from "../components/chat/MessageItem";
 import { useChatStore } from "@src/stores/chatStore"
 
 export function Browsing(): JSX.Element {
@@ -22,9 +21,7 @@ export function Browsing(): JSX.Element {
           </div>
         ) : (
           <div className="space-y-4">
-            {messages.map((message) => (
-              <MessageItem key={message.id} message={message} />
-            ))}
+          
           </div>
         )}
       </div>

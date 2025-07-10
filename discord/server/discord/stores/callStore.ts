@@ -164,11 +164,6 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
       }
     }
 
-    if (participant.id == this.currentStatus.user?.id) {
-      console.debug('User has not changed, skipping update')
-      return
-    }
-
     this.currentStatus.user = participant;
     this.emit("update", this.currentStatus);
   }
