@@ -16,6 +16,7 @@ type ChatStoreState = {
   setSelectedGuildID: (guildId: string) => void;
   setSelectedChannelID: (channelId: string) => void;
   getGuildList: () => void;
+  clearSelectedGuild: () => void;
   markNotificationAsRead: (notificationId: string) => void;
   markAllNotificationsAsRead: () => void;
 };
@@ -60,14 +61,15 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
     );
     DeskThing.on(DiscordEvents.GUILD_LIST, (event) => {
       if (event.request === "set" && event.payload) {
-        set({ guildList: event.payload });
+        console.log('Got the guild list')
+        set({ guildList: event.payload, isLoading: false });
       }
     });
 
     // Channels listener
     DeskThing.on(DiscordEvents.CHANNELS, (event) => {
       if (event.request === "set" && event.payload) {
-        set({ channels: event.payload.channels });
+        set({ channels: event.payload.channels, isLoading: false });
       }
     });
 
@@ -118,6 +120,10 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
   getGuildList: () => {
     set({ isLoading: true });
     DeskThing.send({ type: DiscordEvents.GET, request: "refreshGuildList" });
+  },
+
+  clearSelectedGuild: () => {
+    set({ selectedGuildId: null, channels: [] });
   },
 
   markNotificationAsRead: (notificationId) => {
