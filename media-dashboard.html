@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Dashboard - DeskThing Monitor</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dashboard {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0 0 5px 0;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .header p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .artwork {
+            width: 100%;
+            height: 300px;
+            border-radius: 15px;
+            object-fit: cover;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 18px;
+        }
+
+        .track-info {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .track-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 8px 0;
+            word-wrap: break-word;
+        }
+
+        .track-artist {
+            font-size: 16px;
+            color: #666;
+            margin: 0 0 4px 0;
+        }
+
+        .track-source {
+            font-size: 14px;
+            color: #999;
+            margin: 0;
+            text-transform: capitalize;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 24px;
+            color: #666;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
+            color: #333;
+        }
+
+        .control-btn.play-pause {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 80px;
+            height: 80px;
+            font-size: 32px;
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .control-btn.play-pause:hover {
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+
+        .control-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .status.playing {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .status.error {
+            background: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+        }
+
+        .refresh-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .last-update {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>Media Dashboard</h1>
+            <p>Monitoring currently playing media</p>
+        </div>
+
+        <div id="artwork" class="artwork">No media detected</div>
+        
+        <div class="track-info">
+            <h2 id="title" class="track-title">No track playing</h2>
+            <p id="artist" class="track-artist">Unknown artist</p>
+            <p id="source" class="track-source">No source</p>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar">
+                <div id="progress" class="progress-fill"></div>
+            </div>
+            <div class="time-display">
+                <span id="currentTime">--:--</span>
+                <span id="duration">--:--</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="prevBtn" class="control-btn" title="Previous Track">⏮</button>
+            <button id="playPauseBtn" class="control-btn play-pause" title="Play/Pause">▶️</button>
+            <button id="nextBtn" class="control-btn" title="Next Track">⏭</button>
+        </div>
+
+        <div id="status" class="status">Checking for media...</div>
+        
+        <button id="refreshBtn" class="refresh-btn">Refresh Media Detection</button>
+        <div id="lastUpdate" class="last-update">Never updated</div>
+    </div>
+
+    <script>
+        class MediaDashboard {
+            constructor() {
+                this.currentMedia = null;
+                this.updateInterval = null;
+                this.lastDetectionTime = null;
+                
+                this.initializeElements();
+                this.setupEventListeners();
+                this.startMonitoring();
+            }
+
+            initializeElements() {
+                this.artworkEl = document.getElementById('artwork');
+                this.titleEl = document.getElementById('title');
+                this.artistEl = document.getElementById('artist');
+                this.sourceEl = document.getElementById('source');
+                this.progressEl = document.getElementById('progress');
+                this.progressBarEl = document.getElementById('progressBar');
+                this.currentTimeEl = document.getElementById('currentTime');
+                this.durationEl = document.getElementById('duration');
+                this.statusEl = document.getElementById('status');
+                this.playPauseBtn = document.getElementById('playPauseBtn');
+                this.prevBtn = document.getElementById('prevBtn');
+                this.nextBtn = document.getElementById('nextBtn');
+                this.refreshBtn = document.getElementById('refreshBtn');
+                this.lastUpdateEl = document.getElementById('lastUpdate');
+            }
+
+            setupEventListeners() {
+                this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
+                this.prevBtn.addEventListener('click', () => this.previousTrack());
+                this.nextBtn.addEventListener('click', () => this.nextTrack());
+                this.refreshBtn.addEventListener('click', () => this.detectMedia());
+                
+                // Seek functionality
+                this.progressBarEl.addEventListener('click', (e) => this.handleSeek(e));
+            }
+
+            async startMonitoring() {
+                // Initial detection
+                await this.detectMedia();
+                
+                // Set up regular updates every 2 seconds
+                this.updateInterval = setInterval(() => {
+                    this.detectMedia();
+                }, 2000);
+
+                console.log('Media monitoring started');
+            }
+
+            async detectMedia() {
+                try {
+                    console.log('🔍 [Dashboard] Starting media detection...');
+                    const response = await this.callDetectionAPI();
+                    
+                    console.log('📡 [Dashboard] API Response:', response);
+                    
+                    if (response.success && response.data) {
+                        console.log('✅ [Dashboard] Media detected, updating display...');
+                        this.updateMediaDisplay(response.data);
+                        this.lastDetectionTime = new Date();
+                        this.updateLastUpdateTime();
+                    } else {
+                        console.log('❌ [Dashboard] No media found');
+                        this.showNoMedia();
+                    }
+                } catch (error) {
+                    console.error('❌ [Dashboard] Detection failed:', error);
+                    this.showError('Detection failed: ' + error.message);
+                }
+            }
+
+            async callDetectionAPI() {
+                try {
+                    const response = await fetch('/api/media/status');
+                    const result = await response.json();
+                    
+                    if (result.success && result.data) {
+                        return result;
+                    } else {
+                        throw new Error(result.error || 'Detection failed');
+                    }
+                } catch (error) {
+                    console.error('API call failed:', error);
+                    
+                    // Fallback: check for active Media Session in this browser
+                    if ('mediaSession' in navigator && navigator.mediaSession.metadata) {
+                        const metadata = navigator.mediaSession.metadata;
+                        const playbackState = navigator.mediaSession.playbackState || 'none';
+                        
+                        return {
+                            success: true,
+                            data: {
+                                title: metadata.title || 'Unknown Track',
+                                artist: metadata.artist || 'Unknown Artist',
+                                album: metadata.album || '',
+                                source: 'Browser Media Session',
+                                artwork: metadata.artwork?.[0]?.src || null,
+                                isPlaying: playbackState === 'playing',
+                                position: 0,
+                                duration: 0
+                            }
+                        };
+                    }
+                    
+                    throw error;
+                }
+            }
+
+            updateMediaDisplay(mediaData) {
+                console.log('🎨 [Dashboard] Updating media display with data:', mediaData);
+                this.currentMedia = mediaData;
+                
+                // Update track info
+                this.titleEl.textContent = mediaData.title;
+                this.artistEl.textContent = mediaData.artist;
+                this.sourceEl.textContent = mediaData.source;
+                console.log(`📝 [Dashboard] Updated track info: "${mediaData.title}" by "${mediaData.artist}" from ${mediaData.source}`);
+                
+                // Update artwork
+                if (mediaData.artwork) {
+                    console.log('🖼️  [Dashboard] Setting artwork:', mediaData.artwork.substring(0, 100) + '...');
+                    this.artworkEl.innerHTML = `<img src="${mediaData.artwork}" alt="Album Artwork" style="width: 100%; height: 100%; object-fit: cover; border-radius: 15px;" onload="console.log('✅ [Dashboard] Artwork loaded successfully')" onerror="console.error('❌ [Dashboard] Artwork failed to load')">`;
+                } else {
+                    console.log('📷 [Dashboard] No artwork available, using placeholder');
+                    this.artworkEl.innerHTML = `<div style="color: #999; font-size: 18px;">🎵<br>${mediaData.source}</div>`;
+                }
+                
+                // Update playback state
+                this.playPauseBtn.textContent = mediaData.isPlaying ? '⏸️' : '▶️';
+                this.statusEl.textContent = mediaData.isPlaying ? 'Playing' : 'Paused';
+                this.statusEl.className = mediaData.isPlaying ? 'status playing' : 'status';
+                console.log(`▶️  [Dashboard] Playback state: ${mediaData.isPlaying ? 'Playing' : 'Paused'}`);
+                
+                // Update progress
+                this.updateProgress(mediaData.position, mediaData.duration);
+                console.log(`⏱️  [Dashboard] Progress: ${mediaData.position}s / ${mediaData.duration}s`);
+                
+                // Enable controls
+                this.enableControls();
+                console.log('🎛️  [Dashboard] Controls enabled');
+            }
+
+            updateProgress(position, duration) {
+                if (duration > 0) {
+                    const progress = (position / duration) * 100;
+                    this.progressEl.style.width = `${Math.min(progress, 100)}%`;
+                    this.currentTimeEl.textContent = this.formatTime(position);
+                    this.durationEl.textContent = this.formatTime(duration);
+                } else {
+                    this.progressEl.style.width = '0%';
+                    this.currentTimeEl.textContent = '--:--';
+                    this.durationEl.textContent = '--:--';
+                }
+            }
+
+            showNoMedia() {
+                this.currentMedia = null;
+                this.artworkEl.innerHTML = 'No media detected';
+                this.titleEl.textContent = 'No track playing';
+                this.artistEl.textContent = 'Unknown artist';
+                this.sourceEl.textContent = 'No source';
+                this.statusEl.textContent = 'No active media found';
+                this.statusEl.className = 'status';
+                this.playPauseBtn.textContent = '▶️';
+                this.updateProgress(0, 0);
+                this.disableControls();
+            }
+
+            showError(message) {
+                this.statusEl.textContent = message;
+                this.statusEl.className = 'status error';
+            }
+
+            enableControls() {
+                this.playPauseBtn.disabled = false;
+                this.prevBtn.disabled = false;
+                this.nextBtn.disabled = false;
+            }
+
+            disableControls() {
+                this.playPauseBtn.disabled = true;
+                this.prevBtn.disabled = true;
+                this.nextBtn.disabled = true;
+            }
+
+            async togglePlayPause() {
+                if (!this.currentMedia) return;
+                
+                try {
+                    await this.sendControlCommand('play-pause');
+                    this.statusEl.textContent = 'Sent play/pause command';
+                    
+                    // Refresh immediately to get updated state
+                    setTimeout(() => this.detectMedia(), 500);
+                } catch (error) {
+                    this.showError('Control failed: ' + error.message);
+                }
+            }
+
+            async previousTrack() {
+                if (!this.currentMedia) return;
+                
+                try {
+                    await this.sendControlCommand('previous');
+                    this.statusEl.textContent = 'Sent previous track command';
+                    setTimeout(() => this.detectMedia(), 500);
+                } catch (error) {
+                    this.showError('Control failed: ' + error.message);
+                }
+            }
+
+            async nextTrack() {
+                if (!this.currentMedia) return;
+                
+                try {
+                    await this.sendControlCommand('next');
+                    this.statusEl.textContent = 'Sent next track command';
+                    setTimeout(() => this.detectMedia(), 500);
+                } catch (error) {
+                    this.showError('Control failed: ' + error.message);
+                }
+            }
+
+            async sendControlCommand(command) {
+                try {
+                    console.log(`Sending control command: ${command}`);
+                    
+                    const response = await fetch('/api/media/control', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ action: command })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (!result.success) {
+                        throw new Error(result.error || 'Control command failed');
+                    }
+                    
+                    console.log('✅ Control command successful:', result.message);
+                    
+                } catch (error) {
+                    console.error('❌ Control command failed:', error);
+                    throw error;
+                }
+            }
+
+            handleSeek(event) {
+                if (!this.currentMedia || !this.currentMedia.duration) return;
+                
+                const rect = this.progressBarEl.getBoundingClientRect();
+                const clickX = event.clientX - rect.left;
+                const percentage = clickX / rect.width;
+                const seekTime = percentage * this.currentMedia.duration;
+                
+                console.log(`Seeking to: ${this.formatTime(Math.floor(seekTime))}`);
+                // In real implementation, would send seek command
+            }
+
+            updateLastUpdateTime() {
+                if (this.lastDetectionTime) {
+                    this.lastUpdateEl.textContent = `Last updated: ${this.lastDetectionTime.toLocaleTimeString()}`;
+                }
+            }
+
+            formatTime(seconds) {
+                if (!seconds || seconds < 0) return '--:--';
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = Math.floor(seconds % 60);
+                return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+            }
+        }
+
+        // Initialize the dashboard when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.dashboard = new MediaDashboard();
+            console.log('Media Dashboard initialized');
+            console.log('This dashboard monitors and controls media playing in other tabs/apps');
+        });
+    </script>
+</body>
+</html> 
