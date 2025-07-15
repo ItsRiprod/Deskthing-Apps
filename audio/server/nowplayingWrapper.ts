@@ -112,12 +112,77 @@ function loadNowPlaying() {
             end tell
           end try
           
-          -- Check if any browser/media app is running (not just frontmost)
+          -- Enhanced SoundCloud and browser detection
           tell application "System Events"
-            set appList to name of every application process
-            repeat with appName in appList
-              if appName contains "Chrome" or appName contains "Safari" or appName contains "Firefox" then
-                return "Web Media|||Browser Audio|||Now Playing|||180|||90|||playing"
+            set browserNames to {"Google Chrome", "Safari", "Firefox", "Microsoft Edge"}
+            repeat with browserName in browserNames
+              if (name of processes) contains browserName then
+                tell application browserName
+                  try
+                    set windowCount to count of windows
+                    repeat with w from 1 to windowCount
+                      try
+                        set tabCount to count of tabs of window w
+                        repeat with t from 1 to tabCount
+                          try
+                            set tabURL to URL of tab t of window w
+                            set tabTitle to title of tab t of window w
+                            
+                            -- Check for SoundCloud
+                            if tabURL contains "soundcloud.com" and tabTitle contains " by " then
+                              set AppleScript's text item delimiters to " by "
+                              set titleParts to every text item of tabTitle
+                              set AppleScript's text item delimiters to ""
+                              
+                              if (count of titleParts) >= 2 then
+                                set trackName to item 1 of titleParts
+                                set artistName to item 2 of titleParts
+                                
+                                -- Clean up artist name
+                                if artistName contains " | SoundCloud" then
+                                  set AppleScript's text item delimiters to " | SoundCloud"
+                                  set artistName to item 1 of (every text item of artistName)
+                                  set AppleScript's text item delimiters to ""
+                                end if
+                                
+                                return trackName & "|||" & artistName & "|||SoundCloud|||180|||90|||playing"
+                              end if
+                            end if
+                            
+                            -- Check for Spotify Web
+                            if tabURL contains "open.spotify.com" and (tabTitle contains " • " or tabTitle contains " - ") then
+                              if tabTitle contains " • " then
+                                set AppleScript's text item delimiters to " • "
+                                set titleParts to every text item of tabTitle
+                                set AppleScript's text item delimiters to ""
+                                if (count of titleParts) >= 2 then
+                                  return (item 1 of titleParts) & "|||" & (item 2 of titleParts) & "|||Spotify Web|||180|||90|||playing"
+                                end if
+                              end if
+                            end if
+                            
+                            -- Check for YouTube Music
+                            if tabURL contains "music.youtube.com" and tabTitle contains " - " then
+                              set AppleScript's text item delimiters to " - "
+                              set titleParts to every text item of tabTitle
+                              set AppleScript's text item delimiters to ""
+                              if (count of titleParts) >= 2 then
+                                return (item 1 of titleParts) & "|||" & (item 2 of titleParts) & "|||YouTube Music|||180|||90|||playing"
+                              end if
+                            end if
+                            
+                          on error
+                            -- Skip this tab
+                          end try
+                        end repeat
+                      on error
+                        -- Skip this window
+                      end try
+                    end repeat
+                  on error
+                    -- Skip this browser
+                  end try
+                end tell
               end if
             end repeat
           end tell

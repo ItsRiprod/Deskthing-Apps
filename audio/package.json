@@ -12,14 +12,15 @@
     "setup": "node setup.js",
     "lint": "eslint .",
     "preview": "vite preview",
-    "debug-music": "osascript debug-music.applescript"
+    "debug-music": "osascript debug-music.applescript",
+    "test-soundcloud": "osascript test-soundcloud.applescript"
   },
   "dependencies": {
     "@deskthing/client": "latest",
     "@deskthing/server": "latest",
     "autoprefixer": "^10.4.21",
     "node-nowplaying": "^0.1.0",
-
+    "nowplaying": "github:dkordik/nowplaying",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
