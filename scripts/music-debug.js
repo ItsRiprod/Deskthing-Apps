@@ -65,58 +65,99 @@ class MusicDetector {
     try {
       console.log('🔍 No system media found, checking browser...');
       
-      // Execute JavaScript in the active Chrome tab (only as fallback)
-      const jsCode = `
-        (function() {
-          try {
-            if (!navigator.mediaSession || !navigator.mediaSession.metadata) {
-              return null;
-            }
-            
-            const metadata = navigator.mediaSession.metadata;
-            const playbackState = navigator.mediaSession.playbackState || 'none';
-            
-            return JSON.stringify({
-              url: window.location.href,
-              title: metadata.title || null,
-              artist: metadata.artist || null,
-              album: metadata.album || null,
-              playbackState: playbackState,
-              artwork: metadata.artwork ? metadata.artwork.map(art => ({
-                src: art.src,
-                sizes: art.sizes,
-                type: art.type
-              })) : []
-            });
-          } catch (e) {
-            return null;
-          }
-        })();
-      `.replace(/\s+/g, ' ').trim();
-
-      // Use AppleScript to execute JavaScript in active Chrome tab
-      const appleScript = `tell application "Google Chrome" to tell front window to tell active tab to execute javascript "${jsCode}"`;
-      
-      const result = execSync(`osascript -e '${appleScript}'`, {
+      // Use our enhanced AppleScript file for reliable detection
+      const result = execSync('osascript ./audio/debug-music.applescript', {
         encoding: 'utf8',
-        timeout: 5000
+        timeout: 10000,
+        cwd: '/Users/joe/Desktop/Repos/Personal/DeskThing-Apps'
       }).trim();
 
-      if (result && result !== 'null' && result !== '""') {
-        const mediaData = JSON.parse(result);
+      if (result && result !== 'null' && result !== '""' && !result.includes('No music currently playing')) {
+        // Parse the AppleScript result (e.g., "SoundCloud: Track by Artist")
+        const sourceMatch = result.match(/^(\w+):\s*(.+?)\s*by\s*(.+)$/);
+        if (sourceMatch) {
+          const [, source, title, artist] = sourceMatch;
+          
+          console.log('✅ Browser media detected:', { title, artist, source });
+          
+          // Get enhanced info for SoundCloud
+          if (source === 'SoundCloud') {
+            try {
+              const enhancedInfo = await this.getSoundCloudEnhancedInfo();
+              return {
+                title: title.trim(),
+                artist: artist.trim(),
+                album: null,
+                source: source,
+                url: enhancedInfo.url || null,
+                playbackState: 'playing',
+                artwork: enhancedInfo.artwork || null,
+                supportsControl: true,
+                isPlaying: true,
+                duration: enhancedInfo.duration || 0,
+                position: enhancedInfo.position || 0
+              };
+            } catch (error) {
+              console.log('⚠️ Could not get enhanced SoundCloud info:', error.message);
+            }
+          }
+          
+          return {
+            title: title.trim(),
+            artist: artist.trim(),
+            album: null,
+            source: source,
+            url: null,
+            playbackState: 'playing',
+            artwork: null,
+            supportsControl: true,
+            isPlaying: true,
+            duration: 0,
+            position: 0
+          };
+        }
         
-        console.log('✅ Browser media detected');
-        
-        return {
-          title: mediaData.title,
-          artist: mediaData.artist, 
-          album: mediaData.album,
-          source: this.getSourceFromUrl(mediaData.url),
-          url: mediaData.url,
-          playbackState: mediaData.playbackState,
-          artwork: mediaData.artwork?.length > 0 ? mediaData.artwork[0].src : null,
-          supportsControl: true
-        };
+        // Handle single title results (like YouTube)
+        const ytMatch = result.match(/^YouTube:\s*(.+)$/);
+        if (ytMatch) {
+          const [, title] = ytMatch;
+          
+          console.log('✅ YouTube video detected:', title);
+          
+          // Get enhanced info for YouTube
+          try {
+            const youtubeInfo = await this.getYouTubeEnhancedInfo();
+            return {
+              title: title.trim(),
+              artist: youtubeInfo.channelName || 'YouTube',
+              album: null,
+              source: 'YouTube',
+              url: youtubeInfo.url || null,
+              playbackState: 'playing',
+              artwork: youtubeInfo.thumbnail || null,
+              supportsControl: true,
+              isPlaying: true,
+              duration: youtubeInfo.duration || 0,
+              position: youtubeInfo.position || 0
+            };
+          } catch (error) {
+            console.log('⚠️ Could not get enhanced YouTube info:', error.message);
+          }
+          
+          return {
+            title: title.trim(),
+            artist: 'YouTube',
+            album: null,
+            source: 'YouTube',
+            url: null,
+            playbackState: 'playing',
+            artwork: null,
+            supportsControl: true,
+            isPlaying: true,
+            duration: 0,
+            position: 0
+          };
+        }
       }
       
     } catch (error) {
@@ -127,6 +168,151 @@ class MusicDetector {
     }
     
     return null;
+  }
+
+  async getSoundCloudEnhancedInfo() {
+    try {
+      // Get enhanced SoundCloud info using JavaScript injection
+      const enhancedScript = `
+        tell application "Google Chrome"
+          try
+            repeat with w from 1 to count of windows
+              repeat with t from 1 to count of tabs of window w
+                set tabURL to URL of tab t of window w
+                
+                if tabURL contains "soundcloud.com" then
+                  try
+                    -- Get track info, duration, position, and artwork
+                    set trackInfo to (execute tab t of window w javascript "
+                      try {
+                        // Get progress info
+                        const progressBar = document.querySelector('.playbackTimeline__progressWrapper');
+                        const currentTime = document.querySelector('.playbackTimeline__timePassed');
+                        const totalTime = document.querySelector('.playbackTimeline__duration');
+                        
+                        // Get artwork
+                        const artworkImg = document.querySelector('.image__full, .sc-artwork, [class*=\\"image\\"][class*=\\"artwork\\"], .sound__coverArt img');
+                        const artworkUrl = artworkImg ? (artworkImg.src || artworkImg.getAttribute('src')) : null;
+                        
+                        // Convert time strings to seconds
+                        const parseTime = (timeStr) => {
+                          if (!timeStr) return 0;
+                          const parts = timeStr.trim().split(':');
+                          if (parts.length === 2) {
+                            return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+                          }
+                          return 0;
+                        };
+                        
+                        const position = parseTime(currentTime ? currentTime.textContent : '0:00');
+                        const duration = parseTime(totalTime ? totalTime.textContent : '0:00');
+                        
+                        return JSON.stringify({
+                          duration: duration,
+                          position: position,
+                          artwork: artworkUrl,
+                          url: window.location.href
+                        });
+                      } catch (e) {
+                        return JSON.stringify({ duration: 0, position: 0, artwork: null, url: window.location.href });
+                      }
+                    ")
+                    
+                    return trackInfo
+                  on error
+                    return "{\\"duration\\": 0, \\"position\\": 0, \\"artwork\\": null}"
+                  end try
+                end if
+              end repeat
+            end repeat
+          on error
+            return "{\\"duration\\": 0, \\"position\\": 0, \\"artwork\\": null}"
+          end try
+        end tell
+        
+        return "{\\"duration\\": 0, \\"position\\": 0, \\"artwork\\": null}"
+      `;
+      
+      const result = execSync(`osascript -e '${enhancedScript}'`, {
+        encoding: 'utf8',
+        timeout: 10000
+      }).trim();
+      
+      if (result && result !== 'null') {
+        const enhancedData = JSON.parse(result);
+        console.log('✅ Enhanced SoundCloud info:', enhancedData);
+        return enhancedData;
+      }
+      
+    } catch (error) {
+      console.log('⚠️ Enhanced SoundCloud info failed:', error.message);
+    }
+    
+    return { duration: 0, position: 0, artwork: null, url: null };
+  }
+
+  async getYouTubeEnhancedInfo() {
+    try {
+      // Get enhanced YouTube info using JavaScript injection
+      const enhancedScript = `
+        tell application "Google Chrome"
+          try
+            repeat with w from 1 to count of windows
+              repeat with t from 1 to count of tabs of window w
+                set tabURL to URL of tab t of window w
+                
+                if tabURL contains "youtube.com/watch" then
+                  try
+                    -- Get YouTube video info
+                    set videoInfo to (execute tab t of window w javascript "
+                      try {
+                        const video = document.querySelector('video');
+                        const channelName = document.querySelector('#channel-name a, .ytd-channel-name a, .ytd-video-owner-renderer a');
+                        const thumbnail = document.querySelector('meta[property=\\"og:image\\"]');
+                        
+                        return JSON.stringify({
+                          duration: video ? Math.floor(video.duration) : 0,
+                          position: video ? Math.floor(video.currentTime) : 0,
+                          channelName: channelName ? channelName.textContent.trim() : 'YouTube',
+                          thumbnail: thumbnail ? thumbnail.getAttribute('content') : null,
+                          url: window.location.href
+                        });
+                      } catch (e) {
+                        return JSON.stringify({ duration: 0, position: 0, channelName: 'YouTube', thumbnail: null, url: window.location.href });
+                      }
+                    ")
+                    
+                    return videoInfo
+                  on error
+                    return "{\\"duration\\": 0, \\"position\\": 0, \\"channelName\\": \\"YouTube\\", \\"thumbnail\\": null}"
+                  end try
+                end if
+              end repeat
+            end repeat
+          on error
+            return "{\\"duration\\": 0, \\"position\\": 0, \\"channelName\\": \\"YouTube\\", \\"thumbnail\\": null}"
+          end try
+        end tell
+        
+        return "{\\"duration\\": 0, \\"position\\": 0, \\"channelName\\": \\"YouTube\\", \\"thumbnail\\": null}"
+      `;
+      
+      const result = execSync(`osascript -e '${enhancedScript}'`, {
+        encoding: 'utf8',
+        timeout: 10000
+      }).trim();
+      
+      if (result && result !== 'null') {
+        const enhancedData = JSON.parse(result);
+        console.log('✅ Enhanced YouTube info:', enhancedData);
+        return enhancedData;
+      }
+      
+    } catch (error) {
+      console.log('⚠️ Enhanced YouTube info failed:', error.message);
+    }
+    
+    return { duration: 0, position: 0, channelName: 'YouTube', thumbnail: null, url: null };
   }
 
   getSourceFromSystemMedia(title, artist) {

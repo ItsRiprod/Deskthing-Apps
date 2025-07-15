@@ -112,77 +112,129 @@ function loadNowPlaying() {
             end tell
           end try
           
-          -- Enhanced SoundCloud and browser detection
+          -- Enhanced browser media detection with JavaScript state checking
+          tell application "Google Chrome"
+            try
+              repeat with w from 1 to count of windows
+                repeat with t from 1 to count of tabs of window w
+                  set tabURL to URL of tab t of window w
+                  set tabTitle to title of tab t of window w
+                  
+                  try
+                    if tabURL contains "youtube.com/watch" then
+                      -- Check if YouTube video is actually playing
+                      set isPlaying to (execute tab t of window w javascript "document.querySelector('video') && !document.querySelector('video').paused")
+                      
+                      if isPlaying then
+                        -- Parse video title (remove view count and " - YouTube" suffix)
+                        set cleanTitle to tabTitle
+                        if cleanTitle contains " - YouTube" then
+                          set AppleScript's text item delimiters to " - YouTube"
+                          set titleParts to every text item of cleanTitle
+                          set cleanTitle to item 1 of titleParts
+                          set AppleScript's text item delimiters to ""
+                        end if
+                        
+                        -- Remove view count prefix like "(1412) "
+                        if cleanTitle starts with "(" and cleanTitle contains ") " then
+                          set AppleScript's text item delimiters to ") "
+                          set titleParts to every text item of cleanTitle
+                          set AppleScript's text item delimiters to ""
+                          if (count of titleParts) > 1 then
+                            set cleanTitle to ""
+                            repeat with i from 2 to count of titleParts
+                              set cleanTitle to cleanTitle & item i of titleParts
+                              if i < count of titleParts then set cleanTitle to cleanTitle & ") "
+                            end repeat
+                          end if
+                        end if
+                        
+                        return cleanTitle & "|||YouTube|||YouTube Video|||180|||90|||playing"
+                      end if
+                      
+                    else if tabURL contains "soundcloud.com" then
+                      -- Check if SoundCloud is actually playing
+                      set isPlaying to (execute tab t of window w javascript "document.querySelector('.playControl') && document.querySelector('.playControl').title.includes('Pause')")
+                      
+                      if isPlaying then
+                        -- Parse track info from title
+                        if tabTitle contains " by " then
+                          set AppleScript's text item delimiters to " by "
+                          set titleParts to every text item of tabTitle
+                          set trackName to item 1 of titleParts
+                          set artistPart to item 2 of titleParts
+                          set AppleScript's text item delimiters to ""
+                          
+                          -- Clean up track name
+                          if trackName starts with "Stream " then
+                            set trackName to text 8 thru -1 of trackName
+                          end if
+                          
+                          -- Clean up artist (remove " | Listen online..." part)
+                          if artistPart contains " | " then
+                            set AppleScript's text item delimiters to " | "
+                            set artistParts to every text item of artistPart
+                            set artistPart to item 1 of artistParts
+                            set AppleScript's text item delimiters to ""
+                          end if
+                          
+                          return trackName & "|||" & artistPart & "|||SoundCloud|||180|||90|||playing"
+                        else
+                          return tabTitle & "|||SoundCloud|||Browser Audio|||180|||90|||playing"
+                        end if
+                      end if
+                      
+                    else if tabURL contains "open.spotify.com" then
+                      -- Check if Spotify Web Player is actually playing
+                      set isPlaying to (execute tab t of window w javascript "document.querySelector('[data-testid=\"control-button-playpause\"]') && document.querySelector('[data-testid=\"control-button-playpause\"]').getAttribute('aria-label').includes('Pause')")
+                      
+                      if isPlaying then
+                        if tabTitle contains " • " then
+                          set AppleScript's text item delimiters to " • "
+                          set titleParts to every text item of tabTitle
+                          set AppleScript's text item delimiters to ""
+                          if (count of titleParts) >= 2 then
+                            return (item 1 of titleParts) & "|||" & (item 2 of titleParts) & "|||Spotify Web|||180|||90|||playing"
+                          end if
+                        else
+                          return tabTitle & "|||Spotify|||Spotify Web Player|||180|||90|||playing"
+                        end if
+                      end if
+                      
+                    else if tabURL contains "music.youtube.com" then
+                      -- Check if YouTube Music is actually playing
+                      set isPlaying to (execute tab t of window w javascript "document.querySelector('video') && !document.querySelector('video').paused")
+                      
+                      if isPlaying then
+                        if tabTitle contains " - " then
+                          set AppleScript's text item delimiters to " - "
+                          set titleParts to every text item of tabTitle
+                          set AppleScript's text item delimiters to ""
+                          if (count of titleParts) >= 2 then
+                            return (item 1 of titleParts) & "|||" & (item 2 of titleParts) & "|||YouTube Music|||180|||90|||playing"
+                          end if
+                        else
+                          return tabTitle & "|||YouTube Music|||Browser Audio|||180|||90|||playing"
+                        end if
+                      end if
+                      
+                    end if
+                  on error
+                    -- Skip tabs that can't execute JavaScript or don't support the selectors
+                  end try
+                end repeat
+              end repeat
+            on error
+              -- Chrome not available or accessible
+            end try
+          end tell
+          
+          -- Fallback: Check other browsers with basic detection
           tell application "System Events"
-            set browserNames to {"Google Chrome", "Safari", "Firefox", "Microsoft Edge"}
+            set browserNames to {"Safari", "Firefox", "Microsoft Edge"}
             repeat with browserName in browserNames
               if (name of processes) contains browserName then
-                tell application browserName
-                  try
-                    set windowCount to count of windows
-                    repeat with w from 1 to windowCount
-                      try
-                        set tabCount to count of tabs of window w
-                        repeat with t from 1 to tabCount
-                          try
-                            set tabURL to URL of tab t of window w
-                            set tabTitle to title of tab t of window w
-                            
-                            -- Check for SoundCloud
-                            if tabURL contains "soundcloud.com" and tabTitle contains " by " then
-                              set AppleScript's text item delimiters to " by "
-                              set titleParts to every text item of tabTitle
-                              set AppleScript's text item delimiters to ""
-                              
-                              if (count of titleParts) >= 2 then
-                                set trackName to item 1 of titleParts
-                                set artistName to item 2 of titleParts
-                                
-                                -- Clean up artist name
-                                if artistName contains " | SoundCloud" then
-                                  set AppleScript's text item delimiters to " | SoundCloud"
-                                  set artistName to item 1 of (every text item of artistName)
-                                  set AppleScript's text item delimiters to ""
-                                end if
-                                
-                                return trackName & "|||" & artistName & "|||SoundCloud|||180|||90|||playing"
-                              end if
-                            end if
-                            
-                            -- Check for Spotify Web
-                            if tabURL contains "open.spotify.com" and (tabTitle contains " • " or tabTitle contains " - ") then
-                              if tabTitle contains " • " then
-                                set AppleScript's text item delimiters to " • "
-                                set titleParts to every text item of tabTitle
-                                set AppleScript's text item delimiters to ""
-                                if (count of titleParts) >= 2 then
-                                  return (item 1 of titleParts) & "|||" & (item 2 of titleParts) & "|||Spotify Web|||180|||90|||playing"
-                                end if
-                              end if
-                            end if
-                            
-                            -- Check for YouTube Music
-                            if tabURL contains "music.youtube.com" and tabTitle contains " - " then
-                              set AppleScript's text item delimiters to " - "
-                              set titleParts to every text item of tabTitle
-                              set AppleScript's text item delimiters to ""
-                              if (count of titleParts) >= 2 then
-                                return (item 1 of titleParts) & "|||" & (item 2 of titleParts) & "|||YouTube Music|||180|||90|||playing"
-                              end if
-                            end if
-                            
-                          on error
-                            -- Skip this tab
-                          end try
-                        end repeat
-                      on error
-                        -- Skip this window
-                      end try
-                    end repeat
-                  on error
-                    -- Skip this browser
-                  end try
-                end tell
+                return "Web Media|||Browser Audio|||Now Playing|||180|||90|||playing"
               end if
             end repeat
           end tell

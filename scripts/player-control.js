@@ -27,15 +27,40 @@ class PlayerController {
       console.log('🎵 Toggling play/pause...');
       
       try {
-        // For web players (SoundCloud, YouTube, Spotify Web), use media keys that trigger Media Session API
-        if (this.currentPlayer.source === 'soundcloud' || 
-            this.currentPlayer.source === 'youtube-music' ||
-            this.currentPlayer.source === 'spotify-web') {
-          
-          // Use space key (key code 49) which Chrome maps to Media Session API
-          execSync(`osascript -e 'tell application "System Events" to key code 49'`);
-          console.log('✅ Media key play/pause sent');
-          return { success: true, method: 'Media Session API key' };
+        // For SoundCloud, use direct JavaScript control
+        if (this.currentPlayer.source === 'SoundCloud') {
+          try {
+            execSync(`osascript -e 'tell application "Google Chrome" to tell front window to tell (first tab whose URL contains "soundcloud.com") to execute javascript "document.querySelector(\\".playControl\\").click()"'`);
+            console.log('✅ SoundCloud direct control executed');
+            return { success: true, method: 'SoundCloud direct click' };
+          } catch (error) {
+            console.log('❌ SoundCloud control failed:', error.message);
+            return { success: false, error: error.message };
+          }
+        }
+        
+        // For YouTube, use direct video control
+        if (this.currentPlayer.source === 'YouTube') {
+          try {
+            execSync(`osascript -e 'tell application "Google Chrome" to tell front window to tell (first tab whose URL contains "youtube.com") to execute javascript "document.querySelector(\\"video\\").paused ? document.querySelector(\\"video\\").play() : document.querySelector(\\"video\\").pause()"'`);
+            console.log('✅ YouTube direct control executed');
+            return { success: true, method: 'YouTube direct control' };
+          } catch (error) {
+            console.log('❌ YouTube control failed:', error.message);
+            return { success: false, error: error.message };
+          }
+        }
+        
+        // For Spotify Web, use direct button control
+        if (this.currentPlayer.source === 'Spotify Web') {
+          try {
+            execSync(`osascript -e 'tell application "Google Chrome" to tell front window to tell (first tab whose URL contains "spotify.com") to execute javascript "document.querySelector(\\"[data-testid=\\\\\\"control-button-playpause\\\\\\"]\\").click()"'`);
+            console.log('✅ Spotify Web direct control executed');
+            return { success: true, method: 'Spotify Web direct click' };
+          } catch (error) {
+            console.log('❌ Spotify Web control failed:', error.message);
+            return { success: false, error: error.message };
+          }
         }
         
         // For native apps, use direct app control
