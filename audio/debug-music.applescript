@@ -158,8 +158,9 @@ on run
         end tell
     end try
     
-    -- Display comprehensive results
-    display dialog "Current Music Status:" & return & return & trackInfo & return & return & "Relevant running apps: " & runningApps buttons {"OK"} default button "OK"
+    -- Log comprehensive results to terminal instead of showing dialog
+    log "Current Music Status: " & trackInfo
+    log "Relevant running apps: " & runningApps
     
     return trackInfo
 end run 

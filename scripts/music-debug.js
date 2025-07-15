@@ -68,8 +68,7 @@ class MusicDetector {
       // Use our enhanced AppleScript file for reliable detection
       const result = execSync('osascript ./audio/debug-music.applescript', {
         encoding: 'utf8',
-        timeout: 10000,
-        cwd: '/Users/joe/Desktop/Repos/Personal/DeskThing-Apps'
+        timeout: 10000
       }).trim();
 
       if (result && result !== 'null' && result !== '""' && !result.includes('No music currently playing')) {
@@ -171,147 +170,16 @@ class MusicDetector {
   }
 
   async getSoundCloudEnhancedInfo() {
-    try {
-      // Get enhanced SoundCloud info using JavaScript injection
-      const enhancedScript = `
-        tell application "Google Chrome"
-          try
-            repeat with w from 1 to count of windows
-              repeat with t from 1 to count of tabs of window w
-                set tabURL to URL of tab t of window w
-                
-                if tabURL contains "soundcloud.com" then
-                  try
-                    -- Get track info, duration, position, and artwork
-                    set trackInfo to (execute tab t of window w javascript "
-                      try {
-                        // Get progress info
-                        const progressBar = document.querySelector('.playbackTimeline__progressWrapper');
-                        const currentTime = document.querySelector('.playbackTimeline__timePassed');
-                        const totalTime = document.querySelector('.playbackTimeline__duration');
-                        
-                        // Get artwork
-                        const artworkImg = document.querySelector('.image__full, .sc-artwork, [class*=\\"image\\"][class*=\\"artwork\\"], .sound__coverArt img');
-                        const artworkUrl = artworkImg ? (artworkImg.src || artworkImg.getAttribute('src')) : null;
-                        
-                        // Convert time strings to seconds
-                        const parseTime = (timeStr) => {
-                          if (!timeStr) return 0;
-                          const parts = timeStr.trim().split(':');
-                          if (parts.length === 2) {
-                            return parseInt(parts[0]) * 60 + parseInt(parts[1]);
-                          }
-                          return 0;
-                        };
-                        
-                        const position = parseTime(currentTime ? currentTime.textContent : '0:00');
-                        const duration = parseTime(totalTime ? totalTime.textContent : '0:00');
-                        
-                        return JSON.stringify({
-                          duration: duration,
-                          position: position,
-                          artwork: artworkUrl,
-                          url: window.location.href
-                        });
-                      } catch (e) {
-                        return JSON.stringify({ duration: 0, position: 0, artwork: null, url: window.location.href });
-                      }
-                    ")
-                    
-                    return trackInfo
-                  on error
-                    return "{\\"duration\\": 0, \\"position\\": 0, \\"artwork\\": null}"
-                  end try
-                end if
-              end repeat
-            end repeat
-          on error
-            return "{\\"duration\\": 0, \\"position\\": 0, \\"artwork\\": null}"
-          end try
-        end tell
-        
-        return "{\\"duration\\": 0, \\"position\\": 0, \\"artwork\\": null}"
-      `;
-      
-      const result = execSync(`osascript -e '${enhancedScript}'`, {
-        encoding: 'utf8',
-        timeout: 10000
-      }).trim();
-      
-      if (result && result !== 'null') {
-        const enhancedData = JSON.parse(result);
-        console.log('✅ Enhanced SoundCloud info:', enhancedData);
-        return enhancedData;
-      }
-      
-    } catch (error) {
-      console.log('⚠️ Enhanced SoundCloud info failed:', error.message);
-    }
-    
+    // Temporarily disabled due to AppleScript quote escaping issues
+    // TODO: Implement enhanced SoundCloud detection without complex JavaScript injection
+    console.log('⏸️ Enhanced SoundCloud detection temporarily disabled (quote escaping issues)');
     return { duration: 0, position: 0, artwork: null, url: null };
   }
 
   async getYouTubeEnhancedInfo() {
-    try {
-      // Get enhanced YouTube info using JavaScript injection
-      const enhancedScript = `
-        tell application "Google Chrome"
-          try
-            repeat with w from 1 to count of windows
-              repeat with t from 1 to count of tabs of window w
-                set tabURL to URL of tab t of window w
-                
-                if tabURL contains "youtube.com/watch" then
-                  try
-                    -- Get YouTube video info
-                    set videoInfo to (execute tab t of window w javascript "
-                      try {
-                        const video = document.querySelector('video');
-                        const channelName = document.querySelector('#channel-name a, .ytd-channel-name a, .ytd-video-owner-renderer a');
-                        const thumbnail = document.querySelector('meta[property=\\"og:image\\"]');
-                        
-                        return JSON.stringify({
-                          duration: video ? Math.floor(video.duration) : 0,
-                          position: video ? Math.floor(video.currentTime) : 0,
-                          channelName: channelName ? channelName.textContent.trim() : 'YouTube',
-                          thumbnail: thumbnail ? thumbnail.getAttribute('content') : null,
-                          url: window.location.href
-                        });
-                      } catch (e) {
-                        return JSON.stringify({ duration: 0, position: 0, channelName: 'YouTube', thumbnail: null, url: window.location.href });
-                      }
-                    ")
-                    
-                    return videoInfo
-                  on error
-                    return "{\\"duration\\": 0, \\"position\\": 0, \\"channelName\\": \\"YouTube\\", \\"thumbnail\\": null}"
-                  end try
-                end if
-              end repeat
-            end repeat
-          on error
-            return "{\\"duration\\": 0, \\"position\\": 0, \\"channelName\\": \\"YouTube\\", \\"thumbnail\\": null}"
-          end try
-        end tell
-        
-        return "{\\"duration\\": 0, \\"position\\": 0, \\"channelName\\": \\"YouTube\\", \\"thumbnail\\": null}"
-      `;
-      
-      const result = execSync(`osascript -e '${enhancedScript}'`, {
-        encoding: 'utf8',
-        timeout: 10000
-      }).trim();
-      
-      if (result && result !== 'null') {
-        const enhancedData = JSON.parse(result);
-        console.log('✅ Enhanced YouTube info:', enhancedData);
-        return enhancedData;
-      }
-      
-    } catch (error) {
-      console.log('⚠️ Enhanced YouTube info failed:', error.message);
-    }
-    
+    // Temporarily disabled due to AppleScript quote escaping issues
+    // TODO: Implement enhanced YouTube detection without complex JavaScript injection
+    console.log('⏸️ Enhanced YouTube detection temporarily disabled (quote escaping issues)');
     return { duration: 0, position: 0, channelName: 'YouTube', thumbnail: null, url: null };
   }
 

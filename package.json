@@ -19,7 +19,8 @@
     "build:compile": "tsc",
     "start": "node scripts/dist/index.js",
     "debug-music": "node scripts/music-debug.js",
-    "player:control": "node scripts/player-control.js"
+    "player:control": "node scripts/player-control.js",
+    "dashboard": "node dashboard-server.js"
   },
   "devDependencies": {
     "@deskthing/cli": "^0.11.4",
