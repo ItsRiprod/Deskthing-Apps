@@ -1,7 +1,7 @@
 {
   "name": "audio",
   "private": true,
-  "version": "0.11.7-macos-fix",
+  "version": "0.11.9-macos-fix",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -11,7 +11,8 @@
     "build": "npx @deskthing/cli package",
     "setup": "node setup.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "debug-music": "osascript debug-music.applescript"
   },
   "dependencies": {
     "@deskthing/client": "latest",
