@@ -4,12 +4,12 @@
     "audiosource"
   ],
   "requires": [],
-  "version": "0.11.3-macos-fix",
+  "version": "0.11.7-macos-fix",
   "requiredVersions": {
     "server": ">=0.11.0",
     "client": ">=0.11.0"
   },
-  "description": "FIXED VERSION: macOS audio app using working nowplaying library instead of broken native binary",
+  "description": "FIXED VERSION: macOS audio app with graceful fallback when native nowplaying binary is broken",
   "author": "Riprod (Fixed by AI Assistant)",
   "postinstall": true,
   "platforms": [
