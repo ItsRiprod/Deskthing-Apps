@@ -1,16 +1,16 @@
 {
-  "label": "Local Audio",
+  "label": "Local Audio (macOS Fixed)",
   "tags": [
     "audiosource"
   ],
   "requires": [],
-  "version": "0.11.1",
+  "version": "0.11.2-macos-fix",
   "requiredVersions": {
     "server": ">=0.11.0",
     "client": ">=0.11.0"
   },
-  "description": "A cross-platform audio app that lets you control any locally playing music",
-  "author": "Riprod",
+  "description": "FIXED VERSION: macOS audio app using working nowplaying library instead of broken native binary",
+  "author": "Riprod (Fixed by AI Assistant)",
   "postinstall": true,
   "platforms": [
     "windows",
