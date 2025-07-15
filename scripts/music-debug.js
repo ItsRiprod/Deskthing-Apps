@@ -54,8 +54,7 @@ class MusicDetector {
           return {
             title: title,
             url: url,
-            source: 'soundcloud',
-            controls: this.getChromeControls()
+            source: 'soundcloud'
           };
         }
         
@@ -64,8 +63,7 @@ class MusicDetector {
           return {
             title: title,
             url: url,
-            source: 'web-music',
-            controls: this.getChromeControls()
+            source: 'web-music'
           };
         }
         
@@ -74,8 +72,7 @@ class MusicDetector {
           return {
             title: title,
             url: url,
-            source: 'youtube-music',
-            controls: this.getChromeControls()
+            source: 'youtube-music'
           };
         }
         
@@ -84,8 +81,7 @@ class MusicDetector {
           return {
             title: title,
             url: url,
-            source: 'spotify-web',
-            controls: this.getChromeControls()
+            source: 'spotify-web'
           };
         }
       }
@@ -100,97 +96,6 @@ class MusicDetector {
   async detectNativeMusic() {
     // Only include if actually requested
     return null;
-  }
-
-  getChromeControls() {
-    return {
-      playPause: () => this.executeJavaScript('togglePlayPause()'),
-      next: () => this.executeJavaScript('nextTrack()'),
-      previous: () => this.executeJavaScript('previousTrack()'),
-      getPosition: () => this.executeJavaScript('getCurrentPosition()'),
-      setPosition: (pos) => this.executeJavaScript(`setPosition(${pos})`)
-    };
-  }
-
-  executeJavaScript(jsCode) {
-    if (this.platform !== 'darwin') {
-      throw new Error('Chrome control only supported on macOS');
-    }
-
-    try {
-      // Define the JavaScript functions for SoundCloud control
-      const soundCloudJS = `
-        function togglePlayPause() {
-          const playBtn = document.querySelector('button[title*="Play"], button[title*="Pause"]');
-          if (playBtn) {
-            playBtn.click();
-            return {success: true, action: 'toggle'};
-          }
-          return {success: false, error: 'No play/pause button found'};
-        }
-        
-        function nextTrack() {
-          const nextBtn = document.querySelector('button[title*="Next"]');
-          if (nextBtn) {
-            nextBtn.click();
-            return {success: true, action: 'next'};
-          }
-          return {success: false, error: 'No next button found'};
-        }
-        
-        function previousTrack() {
-          const prevBtn = document.querySelector('button[title*="Previous"]');
-          if (prevBtn) {
-            prevBtn.click();
-            return {success: true, action: 'previous'};
-          }
-          return {success: false, error: 'No previous button found'};
-        }
-        
-        function getCurrentPosition() {
-          const progressBar = document.querySelector('.playbackTimeline__progressWrapper');
-          const currentTime = document.querySelector('.playbackTimeline__timePassed');
-          const totalTime = document.querySelector('.playbackTimeline__duration');
-          
-          return {
-            current: currentTime ? currentTime.textContent : '0:00',
-            total: totalTime ? totalTime.textContent : '0:00',
-            progress: progressBar ? progressBar.style.width : '0%'
-          };
-        }
-        
-        function setPosition(percentage) {
-          const progressBar = document.querySelector('.playbackTimeline__progressWrapper');
-          if (progressBar) {
-            const rect = progressBar.getBoundingClientRect();
-            const x = rect.left + (rect.width * percentage / 100);
-            const y = rect.top + rect.height / 2;
-            
-            const event = new MouseEvent('click', {
-              clientX: x,
-              clientY: y,
-              bubbles: true
-            });
-            progressBar.dispatchEvent(event);
-            return {success: true, position: percentage};
-          }
-          return {success: false, error: 'Progress bar not found'};
-        }
-        
-        ${jsCode}
-      `;
-
-      const script = `tell application "Google Chrome" to execute front window's active tab javascript "${soundCloudJS.replace(/"/g, '\\"')}"`;
-      const result = execSync(`osascript -e '${script}'`, { encoding: 'utf8' }).trim();
-      
-      try {
-        return JSON.parse(result);
-      } catch {
-        return { success: true, raw: result };
-      }
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
   }
 
   async displayResults(musicInfo) {
@@ -208,9 +113,18 @@ class MusicDetector {
     }
     console.log('═══════════════════════════');
     
-    if (musicInfo.controls) {
-      console.log('🎛️  Available controls: play/pause, next, previous, seek');
-    }
+    // Check if source supports control
+    const supportsControl = this.supportsControl(musicInfo.source);
+    console.log(`🎛️  Controls: ${supportsControl ? 'Available via Media Session API' : 'Not available'}`);
+  }
+
+  supportsControl(source) {
+    const supportedSources = [
+      'soundcloud', 'youtube-music', 'spotify-web',  // Web players via Media Session API
+      'Music', 'Spotify'  // Native apps via AppleScript
+    ];
+    
+    return supportedSources.includes(source);
   }
 }
 
@@ -220,7 +134,7 @@ async function main() {
   const musicInfo = await detector.detectMusic();
   await detector.displayResults(musicInfo);
   
-  if (musicInfo && musicInfo.controls) {
+  if (musicInfo && detector.supportsControl(musicInfo.source)) {
     console.log('\n💡 Try: npm run player:control -- play-pause');
   }
 }

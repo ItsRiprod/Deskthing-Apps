@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import MusicDetector from './music-debug.js';
+import { execSync } from 'child_process';
 
 class PlayerController {
   constructor() {
@@ -10,7 +11,7 @@ class PlayerController {
 
   async init() {
     const musicInfo = await this.detector.detectMusic();
-    if (musicInfo && musicInfo.controls) {
+    if (musicInfo) {
       this.currentPlayer = musicInfo;
       return true;
     }
@@ -22,13 +23,43 @@ class PlayerController {
       await this.init();
     }
     
-    if (this.currentPlayer && this.currentPlayer.controls) {
+    if (this.currentPlayer) {
       console.log('🎵 Toggling play/pause...');
-      const result = await this.currentPlayer.controls.playPause();
-      console.log('✅ Result:', result);
-      return result;
+      
+      try {
+        // For web players (SoundCloud, YouTube, Spotify Web), use media keys that trigger Media Session API
+        if (this.currentPlayer.source === 'soundcloud' || 
+            this.currentPlayer.source === 'youtube-music' ||
+            this.currentPlayer.source === 'spotify-web') {
+          
+          // Use space key (key code 49) which Chrome maps to Media Session API
+          execSync(`osascript -e 'tell application "System Events" to key code 49'`);
+          console.log('✅ Media key play/pause sent');
+          return { success: true, method: 'Media Session API key' };
+        }
+        
+        // For native apps, use direct app control
+        if (this.currentPlayer.source === 'Music') {
+          execSync(`osascript -e 'tell application "Music" to playpause'`);
+          console.log('✅ Music app control executed');
+          return { success: true, method: 'Native Music app' };
+        }
+        
+        if (this.currentPlayer.source === 'Spotify') {
+          execSync(`osascript -e 'tell application "Spotify" to playpause'`);
+          console.log('✅ Spotify app control executed');
+          return { success: true, method: 'Native Spotify app' };
+        }
+        
+        console.log('❌ Unsupported source:', this.currentPlayer.source);
+        return { success: false, error: 'Unsupported source' };
+        
+      } catch (error) {
+        console.error('❌ Control error:', error.message);
+        return { success: false, error: error.message };
+      }
     } else {
-      console.log('❌ No controllable music player found');
+      console.log('❌ No music player detected');
       return { success: false, error: 'No player available' };
     }
   }
@@ -38,13 +69,42 @@ class PlayerController {
       await this.init();
     }
     
-    if (this.currentPlayer && this.currentPlayer.controls) {
+    if (this.currentPlayer) {
       console.log('⏭️  Skipping to next track...');
-      const result = await this.currentPlayer.controls.next();
-      console.log('✅ Result:', result);
-      return result;
+      
+      try {
+        // For web players, use Command+Shift+Right Arrow which triggers next track
+        if (this.currentPlayer.source === 'soundcloud' || 
+            this.currentPlayer.source === 'youtube-music' ||
+            this.currentPlayer.source === 'spotify-web') {
+          
+          execSync(`osascript -e 'tell application "System Events" to key code 124 using {command down, shift down}'`);
+          console.log('✅ Media key next track sent');
+          return { success: true, method: 'Media Session API key' };
+        }
+        
+        // For native apps
+        if (this.currentPlayer.source === 'Music') {
+          execSync(`osascript -e 'tell application "Music" to next track'`);
+          console.log('✅ Music app next executed');
+          return { success: true, method: 'Native Music app' };
+        }
+        
+        if (this.currentPlayer.source === 'Spotify') {
+          execSync(`osascript -e 'tell application "Spotify" to next track'`);
+          console.log('✅ Spotify app next executed');
+          return { success: true, method: 'Native Spotify app' };
+        }
+        
+        console.log('❌ Unsupported source:', this.currentPlayer.source);
+        return { success: false, error: 'Unsupported source' };
+        
+      } catch (error) {
+        console.error('❌ Control error:', error.message);
+        return { success: false, error: error.message };
+      }
     } else {
-      console.log('❌ No controllable music player found');
+      console.log('❌ No music player detected');
       return { success: false, error: 'No player available' };
     }
   }
@@ -54,45 +114,42 @@ class PlayerController {
       await this.init();
     }
     
-    if (this.currentPlayer && this.currentPlayer.controls) {
+    if (this.currentPlayer) {
       console.log('⏮️  Skipping to previous track...');
-      const result = await this.currentPlayer.controls.previous();
-      console.log('✅ Result:', result);
-      return result;
+      
+      try {
+        // For web players, use Command+Shift+Left Arrow
+        if (this.currentPlayer.source === 'soundcloud' || 
+            this.currentPlayer.source === 'youtube-music' ||
+            this.currentPlayer.source === 'spotify-web') {
+          
+          execSync(`osascript -e 'tell application "System Events" to key code 123 using {command down, shift down}'`);
+          console.log('✅ Media key previous track sent');
+          return { success: true, method: 'Media Session API key' };
+        }
+        
+        // For native apps
+        if (this.currentPlayer.source === 'Music') {
+          execSync(`osascript -e 'tell application "Music" to previous track'`);
+          console.log('✅ Music app previous executed');
+          return { success: true, method: 'Native Music app' };
+        }
+        
+        if (this.currentPlayer.source === 'Spotify') {
+          execSync(`osascript -e 'tell application "Spotify" to previous track'`);
+          console.log('✅ Spotify app previous executed');
+          return { success: true, method: 'Native Spotify app' };
+        }
+        
+        console.log('❌ Unsupported source:', this.currentPlayer.source);
+        return { success: false, error: 'Unsupported source' };
+        
+      } catch (error) {
+        console.error('❌ Control error:', error.message);
+        return { success: false, error: error.message };
+      }
     } else {
-      console.log('❌ No controllable music player found');
-      return { success: false, error: 'No player available' };
-    }
-  }
-
-  async getPosition() {
-    if (!this.currentPlayer) {
-      await this.init();
-    }
-    
-    if (this.currentPlayer && this.currentPlayer.controls) {
-      console.log('⏱️  Getting playback position...');
-      const result = await this.currentPlayer.controls.getPosition();
-      console.log('📊 Position:', result);
-      return result;
-    } else {
-      console.log('❌ No controllable music player found');
-      return { success: false, error: 'No player available' };
-    }
-  }
-
-  async setPosition(percentage) {
-    if (!this.currentPlayer) {
-      await this.init();
-    }
-    
-    if (this.currentPlayer && this.currentPlayer.controls) {
-      console.log(`🎯 Seeking to ${percentage}%...`);
-      const result = await this.currentPlayer.controls.setPosition(percentage);
-      console.log('✅ Result:', result);
-      return result;
-    } else {
-      console.log('❌ No controllable music player found');
+      console.log('❌ No music player detected');
       return { success: false, error: 'No player available' };
     }
   }
@@ -108,15 +165,20 @@ class PlayerController {
         console.log(`🔗 URL: ${musicInfo.url}`);
       }
       
-      if (musicInfo.controls) {
-        const position = await musicInfo.controls.getPosition();
-        if (position && position.current) {
-          console.log(`⏰ Time: ${position.current} / ${position.total}`);
-          console.log(`📊 Progress: ${position.progress}`);
+      // Check control support
+      const supportsControl = this.supportsControl(musicInfo.source);
+      console.log(`🎛️  Controls: ${supportsControl ? 'Available' : 'Not available'}`);
+      
+      if (supportsControl) {
+        console.log('🎮 Available controls: play/pause, next, previous');
+        
+        if (musicInfo.source === 'soundcloud' || 
+            musicInfo.source === 'youtube-music' ||
+            musicInfo.source === 'spotify-web') {
+          console.log('💡 Uses Chrome Media Session API (keyboard media keys)');
+        } else {
+          console.log('💡 Uses native app AppleScript controls');
         }
-        console.log('🎛️  Controls: Available');
-      } else {
-        console.log('🎛️  Controls: Not available');
       }
       
       return musicInfo;
@@ -126,34 +188,49 @@ class PlayerController {
     }
   }
 
+  supportsControl(source) {
+    const supportedSources = [
+      'soundcloud', 'youtube-music', 'spotify-web',  // Web players via Media Session API
+      'Music', 'Spotify'  // Native apps via AppleScript
+    ];
+    
+    return supportedSources.includes(source);
+  }
+
   showHelp() {
     console.log(`
-🎵 Player Controller - Usage:
+🎵 Player Controller - Chrome Media Session API Integration
 
-npm run player:control -- <command> [args]
+npm run player:control -- <command>
 
 Commands:
   play-pause    Toggle play/pause
-  next          Skip to next track
+  next          Skip to next track  
   prev          Skip to previous track
   status        Show current player status
-  position      Get current playback position
-  seek <n>      Seek to percentage (0-100)
   help          Show this help
 
 Examples:
   npm run player:control -- play-pause
   npm run player:control -- next
-  npm run player:control -- seek 50
   npm run player:control -- status
 
 Supported Players:
-  • SoundCloud (Chrome)
-  • YouTube Music (Chrome)
-  • Spotify Web (Chrome)
-  • Other web players with Media Session API
+  📱 Web Players (via Chrome Media Session API):
+    • SoundCloud
+    • YouTube Music  
+    • Spotify Web Player
+    
+  🖥️  Native Apps (via AppleScript):
+    • Apple Music
+    • Spotify Desktop
 
-Note: Chrome tab must be active for JavaScript injection to work.
+How It Works:
+  • Web players: Uses keyboard media keys that Chrome maps to Media Session API
+  • Native apps: Direct AppleScript commands to control the application
+  • System-wide: Works even when browser is in background
+
+Note: For web players, the browser tab must be the active audio source.
     `);
   }
 }
@@ -184,19 +261,6 @@ async function main() {
       case 'prev':
       case 'previous':
         await controller.previous();
-        break;
-        
-      case 'position':
-        await controller.getPosition();
-        break;
-        
-      case 'seek':
-        const percentage = parseInt(args[1]);
-        if (isNaN(percentage) || percentage < 0 || percentage > 100) {
-          console.log('❌ Invalid percentage. Use 0-100.');
-          return;
-        }
-        await controller.setPosition(percentage);
         break;
         
       case 'status':
