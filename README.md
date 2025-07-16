@@ -1,136 +1,150 @@
 # Deskthing Apps 
 
-This is where all of the apps developed for the DeskThing is located! If you want to make your own or are just browsing, these act as great reference points! 
+This repository contains apps developed for the DeskThing platform. If you want to make your own or are just browsing, these act as great reference points! 
 
-Every app here is the precompiled apps you download into DeskThing. The structure of each app is defined [here](https://github.com/itsriprod/deskthing-template)
+Every app here is structured according to the [DeskThing template](https://github.com/itsriprod/deskthing-template).
 
-## 🎵 Featured: Audio App - WebNowPlaying Integration ✅
+## 🚨 **CURRENT STATUS: DEVELOPMENT/EXPERIMENTAL**
 
-### Status: ✅ FULLY FUNCTIONAL - WebNowPlaying Browser Extension Integration
-**Major Update:** July 16, 2025 - Breakthrough WebNowPlaying integration complete!
+**Reality Check**: This project is in active development with **basic functionality** working, but many features are incomplete or temporarily disabled.
 
-**Revolutionary Architecture:**
-```
-Browser Media → WebNowPlaying Extension → Python Adapter → DeskThing API
-```
+## 🎵 **Audio App - Current Working State**
 
-### ✅ What Works Perfectly Now
-- **🌐 All Browser-Based Music** - YouTube, SoundCloud, Spotify Web, Apple Music Web, Bandcamp
-- **📊 Complete Metadata** - Title, artist, album, duration, position, artwork URLs
-- **🎛️ Full Media Controls** - Play/pause, next/previous, seek, volume control
-- **⚡ Real-time Updates** - Live progress tracking and state synchronization
-- **🔗 API Compatibility** - Same endpoints, enhanced functionality
+### ✅ **What Actually Works**
+- **Basic Media Detection** - SoundCloud track detection from browser tabs
+- **Dashboard Server** - Web interface with basic API endpoints  
+- **AppleScript Integration** - macOS browser tab scanning
 
-### 🚀 Quick Start
+### ⚠️ **What's Broken/Disabled**
+- **Enhanced Metadata** - Duration, artwork, position (temporarily disabled due to quote escaping issues)
+- **WebNowPlaying Python Adapter** - Crashes with port binding conflicts
+- **Multi-platform Detection** - YouTube, Spotify Web (unreliable)
+- **Media Controls** - Play/pause may work occasionally, other controls unreliable
+
+### 📊 **Real Feature Status**
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| SoundCloud Detection | ✅ Working | Basic title/artist only |
+| Dashboard UI | ✅ Working | Web interface on port 8080 |
+| API Endpoints | ⚠️ Partial | Defined but not all functional |
+| WebNowPlaying | ❌ Broken | Port conflicts, crashes on startup |
+| Enhanced Metadata | ❌ Disabled | Quote escaping issues |
+| Media Controls | ❌ Unreliable | Basic controls sometimes work |
+
+## 🛠️ **Setup Instructions (Correct Directory)**
+
+**IMPORTANT**: All commands must be run from the `DeskThing-Apps` directory, not the parent directory.
+
 ```bash
-# Install WebNowPlaying extension (one-time setup)
-# Visit: https://chromewebstore.google.com/detail/webnowplaying/jfakgfcdgpghbbefmdfjkbdlibjgnbli
+# Navigate to the correct directory first
+cd DeskThing-Apps
 
-# Start the WebNowPlaying adapter
+# Now you can run the scripts
+npm run dashboard        # Basic dashboard server
+npm run debug-music     # Music detection test
+npm run webnowplaying   # JavaScript WebNowPlaying server
+npm run wnp-python      # Python adapter (currently broken)
+```
+
+### **What Works Right Now**
+
+```bash
+# ✅ This works - Basic media detection
+cd DeskThing-Apps
+npm run dashboard
+# Visit: http://localhost:8080
+# Shows: Basic SoundCloud track info
+
+# ✅ This works - Direct music detection test  
+npm run debug-music
+# Output: Track title and artist if music is playing
+```
+
+### **What Doesn't Work**
+
+```bash
+# ❌ This crashes - Python adapter has port conflicts
 npm run wnp-python
+# Error: "OSError: [Errno 48] address already in use"
 
-# Test with any browser music service
-curl http://localhost:8080/api/media/status
-curl http://localhost:8080/health
+# ❌ Enhanced features disabled
+# Enhanced metadata detection temporarily disabled
 ```
 
-### 🎯 Supported Platforms
-| Platform | Detection | Controls | Metadata | Artwork |
-|----------|-----------|----------|----------|---------|
-| YouTube | ✅ Perfect | ✅ Full | ✅ Complete | ✅ Yes |
-| SoundCloud | ✅ Perfect | ✅ Full | ✅ Complete | ✅ Yes |
-| Spotify Web | ✅ Perfect | ✅ Full | ✅ Complete | ✅ Yes |
-| Apple Music Web | ✅ Perfect | ✅ Full | ✅ Complete | ✅ Yes |
-| Bandcamp | ✅ Perfect | ✅ Full | ✅ Complete | ✅ Yes |
+## 📁 **Available Apps**
 
-### 📡 API Endpoints (Enhanced)
+### **Core Apps (Various States)**
+- **audio/** - Basic macOS media detection (partially working)
+- **spotify/** - Spotify integration (template state)  
+- **weather/** - Weather display (status unknown)
+- **system/** - System monitoring (status unknown)
+
+### **Utility Apps**  
+- **utility/** - General utilities (template state)
+- **logs/** - Log viewing (status unknown)
+- **image/** - Image display (status unknown)
+
+### **Experimental Apps (Beta/Template State)**
+- **discord/** - Discord integration (template)
+- **gamething/** - Gaming features (template)
+- **settingstest/** - Settings interface (template)
+
+## 🎯 **Making Your Own App**
+
+Prerequisites: [Node.js](https://nodejs.org/en/download/package-manager) installed
+
 ```bash
-GET  /api/media/detect   # Current playing media
-GET  /api/media/status   # Enhanced metadata with artwork
-POST /api/media/control  # Media controls (play-pause, next, prev, seek, volume)
-GET  /health            # Service health check
-GET  /                  # Enhanced web dashboard
-```
-
-**Example Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "title": "Circoloco Radio 390 - Enamour",
-    "artist": "Circoloco",
-    "album": "SoundCloud",
-    "state": "PLAYING",
-    "position": 1847,
-    "duration": 3600,
-    "volume": 75,
-    "cover": "https://...",
-    "source": "WebNowPlaying",
-    "player": "SoundCloud"
-  }
-}
-```
-
-### 🔧 Setup Requirements
-1. **WebNowPlaying Extension** - Install from Chrome Web Store (70k+ users, 4.6★)
-2. **Python Environment** - Auto-managed by package scripts
-3. **Browser Music** - Any supported web-based music service
-
-### 💡 Key Advantages Over Previous AppleScript Approach
-- ✅ **Cross-Platform** - Works on any OS with browsers
-- ✅ **Reliable** - No macOS MediaRemote API restrictions
-- ✅ **Real-time** - Instant updates and synchronization
-- ✅ **Comprehensive** - Supports all major music platforms
-- ✅ **Future-Proof** - Browser-based, not OS-dependent
-
-**Migration Note:** The previous AppleScript approach has been completely replaced due to macOS 15.4+ compatibility issues.
-
-## Making your own app
-
-Prereqs: Ensure you have [node](https://nodejs.org/en/download/package-manager) installed! 
-
-Run
-```
 npm create deskthing@latest
 ```
-in the terminal and it will prompt you to make a new app!
 
-From there, review https://github.com/ItsRiprod/Deskthing-Apps/wiki for the next steps
+Follow the prompts and review the [DeskThing Apps Wiki](https://github.com/ItsRiprod/Deskthing-Apps/wiki) for next steps.
 
-## Available Apps
+## 🔧 **Development Tools**
 
-### Core Apps
-- **audio/** - Enhanced macOS media detection with web player support
-- **spotify/** - Spotify integration with authentication  
-- **weather/** - Weather display and forecasting
-- **system/** - System monitoring and controls
-
-### Utility Apps  
-- **utility/** - General utility functions
-- **logs/** - Log viewing and debugging
-- **image/** - Image display and slideshow
-
-### Experimental Apps
-- **discord/** - Discord integration (beta)
-- **gamething/** - Gaming-related features (beta)
-- **settingstest/** - Settings interface testing
-
-## Development Tools
-
-### Dashboard Server
+### **Working Commands** (from DeskThing-Apps directory)
 ```bash
-# Run media detection dashboard
-node dashboard-server.js
-# Endpoints: /api/media/detect, /api/media/status, /api/media/control
-```
+# Basic media detection dashboard
+npm run dashboard
 
-### Package Scripts
-```bash
-# Debug music detection
+# Test music detection  
 npm run debug-music
 
-# Control media playback  
-npm run player:control play-pause
+# Try JavaScript WebNowPlaying server
+npm run webnowplaying
 ```
 
-Once things are more finalized, I will document things more thoroughly here. However, until then, you can go to the discord [linked here](https://deskthing.app/discord) and I can help you get started!
+### **Broken Commands** (known issues)
+```bash
+# Python adapter crashes
+npm run wnp-python  # Port binding issues
+
+# Enhanced controls unreliable  
+npm run player:control  # May or may not work
+```
+
+## 📊 **Real vs Documentation Claims**
+
+**Previous Documentation Claimed**: "✅ MAJOR BREAKTHROUGH - WebNowPlaying integration working!"
+
+**Reality**: Basic SoundCloud detection works, enhanced features disabled, Python adapter crashes.
+
+**Previous Documentation Claimed**: "✅ All browser-based music services supported"  
+
+**Reality**: Only basic SoundCloud detection confirmed working.
+
+## 🚧 **Known Issues**
+
+1. **Directory Confusion** - Commands only work from DeskThing-Apps directory
+2. **Port Conflicts** - Multiple servers competing for port 8080
+3. **Quote Escaping** - AppleScript issues causing feature disabling
+4. **Python Environment** - WebNowPlaying adapter startup failures
+5. **Documentation Overselling** - Previous claims vs actual functionality
+
+## 💡 **Getting Help**
+
+For questions or assistance, join the [Discord](https://deskthing.app/discord). Please note that many features are currently experimental or broken.
+
+## ⚠️ **Honest Assessment**
+
+This is a **development/testing version** with basic functionality. Enhanced features require significant debugging before being production-ready. The documentation has been updated to reflect the actual current state rather than aspirational goals.
