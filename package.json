@@ -20,7 +20,8 @@
     "start": "node scripts/dist/index.js",
     "debug-music": "node scripts/music-debug.js",
     "player:control": "node scripts/player-control.js",
-    "dashboard": "node dashboard-server.js"
+    "dashboard": "node dashboard-server.js",
+    "webnowplaying": "lsof -ti:8080 | xargs kill -9 2>/dev/null || true && node webnowplaying-server.js"
   },
   "devDependencies": {
     "@deskthing/cli": "^0.11.4",
