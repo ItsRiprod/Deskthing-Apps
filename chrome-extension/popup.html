@@ -4,17 +4,26 @@
   <meta charset="utf-8">
   <style>
     body {
-      width: 300px;
+      width: 350px;
       padding: 16px;
       font-family: system-ui, -apple-system, sans-serif;
       background: #1a1a1a;
       color: #fff;
       margin: 0;
+      font-size: 13px;
     }
     
     .header {
       text-align: center;
       margin-bottom: 16px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 12px;
+    }
+    
+    .version {
+      font-size: 10px;
+      color: #888;
+      margin-top: 4px;
     }
     
     .status {
@@ -22,6 +31,7 @@
       background: #2a2a2a;
       border-radius: 8px;
       margin-bottom: 12px;
+      border: 1px solid #333;
     }
     
     .status.connected {
@@ -39,12 +49,64 @@
       background: #2a2a2a;
       border-radius: 8px;
       margin-bottom: 12px;
+      border: 1px solid #333;
+    }
+    
+    .media-controls {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin: 12px 0;
+    }
+    
+    .media-controls button {
+      padding: 8px 12px;
+      background: #333;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    
+    .media-controls button:hover {
+      background: #444;
+    }
+    
+    .media-controls button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      margin: 8px 0;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: #007aff;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    .time-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #aaa;
+      margin-bottom: 8px;
     }
     
     .controls {
       display: flex;
       gap: 8px;
       justify-content: center;
+      margin-bottom: 12px;
     }
     
     button {
@@ -61,88 +123,311 @@
       background: #0056b3;
     }
     
+    .debug-section {
+      margin-top: 12px;
+      padding: 8px;
+      background: #222;
+      border-radius: 4px;
+      border: 1px solid #333;
+    }
+    
+    .debug-toggle {
+      background: #333;
+      padding: 4px 8px;
+      font-size: 10px;
+      margin-bottom: 8px;
+    }
+    
+    .debug-info {
+      display: none;
+      font-size: 10px;
+      color: #ccc;
+      font-family: monospace;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+    
+    .logs {
+      background: #111;
+      padding: 8px;
+      border-radius: 4px;
+      max-height: 80px;
+      overflow-y: auto;
+      font-size: 10px;
+      font-family: monospace;
+      color: #ccc;
+      margin-top: 8px;
+    }
+    
     .small {
       font-size: 11px;
       color: #aaa;
-      margin-top: 8px;
+      margin-top: 12px;
+      border-top: 1px solid #333;
+      padding-top: 8px;
+    }
+    
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 8px 0;
+    }
+    
+    .info-item {
+      background: #2a2a2a;
+      padding: 8px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    
+    .info-value {
+      font-weight: bold;
+      color: #4caf50;
+    }
+    
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
   <div class="header">
     <h3>🎵 DeskThing Media Bridge</h3>
+    <div class="version">Version 2.1 Enhanced</div>
   </div>
   
   <div id="status" class="status disconnected">
     <strong>Status:</strong> <span id="statusText">Checking...</span>
+    <div id="lastUpdate" style="font-size: 10px; margin-top: 4px; color: #aaa;"></div>
   </div>
   
-  <div id="mediaInfo" class="media-info" style="display: none;">
-    <strong>Current Track:</strong><br>
-    <span id="trackTitle">No media detected</span><br>
-    <small id="trackArtist"></small>
+  <div id="mediaInfo" class="media-info hidden">
+    <div style="margin-bottom: 8px;">
+      <strong id="trackTitle">No media detected</strong><br>
+      <small id="trackArtist" style="color: #aaa;"></small>
+    </div>
+    
+    <div class="time-info">
+      <span id="currentTime">0:00</span>
+      <span id="totalTime">0:00</span>
+    </div>
+    
+    <div class="progress-bar">
+      <div id="progressFill" class="progress-fill"></div>
+    </div>
+    
+    <div class="info-grid">
+      <div class="info-item">
+        <div>Playing</div>
+        <div id="playState" class="info-value">❌</div>
+      </div>
+      <div class="info-item">
+        <div>Source</div>
+        <div id="source" class="info-value">N/A</div>
+      </div>
+    </div>
+    
+    <div class="media-controls">
+      <button id="prevBtn" onclick="sendControl('previoustrack')" disabled>⏮️</button>
+      <button id="playPauseBtn" onclick="togglePlayPause()" disabled>⏯️</button>
+      <button id="nextBtn" onclick="sendControl('nexttrack')" disabled>⏭️</button>
+    </div>
   </div>
   
   <div class="controls">
-    <button onclick="testConnection()">Test Connection</button>
-    <button onclick="openDashboard()">Open Dashboard</button>
+    <button onclick="testConnection()">🔄 Test</button>
+    <button onclick="openDashboard()">📊 Dashboard</button>
+    <button onclick="refreshMedia()">🎵 Refresh</button>
+  </div>
+  
+  <div class="debug-section">
+    <button class="debug-toggle" onclick="toggleDebug()">🔧 Debug Info</button>
+    <div id="debugInfo" class="debug-info">
+      <div id="debugContent"></div>
+      <div id="logs" class="logs"></div>
+    </div>
   </div>
   
   <div class="small">
-    <strong>Instructions:</strong><br>
-    1. Ensure DeskThing dashboard is running on port 8080<br>
-    2. Play music on supported sites (SoundCloud, YouTube, Spotify)<br>
-    3. Extension will automatically send data to dashboard
+    <strong>Quick Actions:</strong><br>
+    • Click refresh to check current media<br>
+    • Use media controls when track is detected<br>
+    • Check debug info if something's not working<br><br>
     
-    <br><br>
     <strong>Supported Sites:</strong><br>
-    • SoundCloud (navigator.mediaSession + DOM)<br>
-    • YouTube (video elements + DOM)<br>
-    • Spotify Web (DOM extraction)<br>
-    • YouTube Music (DOM extraction)
+    • SoundCloud, YouTube, Spotify, YouTube Music<br>
+    • Automatically detects and sends data
   </div>
   
   <script>
+    const EXTENSION_VERSION = "2.1";
     let dashboardUrl = 'http://localhost:8080';
+    let currentMedia = null;
+    let isPlaying = false;
+    let logs = [];
+    
+    function log(message) {
+      const timestamp = new Date().toLocaleTimeString();
+      logs.unshift(`[${timestamp}] ${message}`);
+      if (logs.length > 50) logs.pop();
+      
+      const logsEl = document.getElementById('logs');
+      if (logsEl) {
+        logsEl.innerHTML = logs.slice(0, 10).join('\n');
+      }
+    }
+    
+    function formatTime(seconds) {
+      if (!seconds || isNaN(seconds)) return '0:00';
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
     
     async function checkStatus() {
       try {
-        const response = await fetch(`${dashboardUrl}/health`);
+        log('Checking dashboard connection...');
+        const response = await fetch(`${dashboardUrl}/api/ping`);
         if (response.ok) {
+          const data = await response.json();
           document.getElementById('status').className = 'status connected';
-          document.getElementById('statusText').textContent = 'Connected to Dashboard';
+          document.getElementById('statusText').textContent = `Connected (${data.serverVersion})`;
+          document.getElementById('lastUpdate').textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
+          log('✅ Dashboard connected');
           
-          // Try to get current media
-          const mediaResponse = await fetch(`${dashboardUrl}/api/media/status`);
-          if (mediaResponse.ok) {
-            const data = await mediaResponse.json();
-            if (data.success && data.data && data.data.title !== 'No track playing') {
-              document.getElementById('mediaInfo').style.display = 'block';
-              document.getElementById('trackTitle').textContent = data.data.title;
-              document.getElementById('trackArtist').textContent = `by ${data.data.artist} - ${data.data.source}`;
-            }
-          }
+          // Get current media
+          await refreshMedia();
         } else {
           throw new Error('Dashboard not responding');
         }
       } catch (error) {
         document.getElementById('status').className = 'status disconnected';
         document.getElementById('statusText').textContent = 'Dashboard Not Reachable';
-        document.getElementById('mediaInfo').style.display = 'none';
+        document.getElementById('lastUpdate').textContent = `Error: ${error.message}`;
+        document.getElementById('mediaInfo').className = 'media-info hidden';
+        log(`❌ Connection failed: ${error.message}`);
       }
+    }
+    
+    async function refreshMedia() {
+      try {
+        log('Refreshing media status...');
+        const mediaResponse = await fetch(`${dashboardUrl}/api/media/status`);
+        if (mediaResponse.ok) {
+          const data = await mediaResponse.json();
+          if (data.success && data.data) {
+            currentMedia = data.data;
+            updateMediaDisplay(data.data);
+            log(`🎵 Media found: ${data.data.title}`);
+          } else {
+            currentMedia = null;
+            document.getElementById('mediaInfo').className = 'media-info hidden';
+            log('No media detected');
+          }
+        }
+      } catch (error) {
+        log(`❌ Media refresh failed: ${error.message}`);
+      }
+    }
+    
+    function updateMediaDisplay(media) {
+      document.getElementById('mediaInfo').className = 'media-info';
+      document.getElementById('trackTitle').textContent = media.title || 'Unknown Track';
+      document.getElementById('trackArtist').textContent = `by ${media.artist || 'Unknown Artist'}`;
+      
+      // Update time info
+      document.getElementById('currentTime').textContent = formatTime(media.position);
+      document.getElementById('totalTime').textContent = formatTime(media.duration);
+      
+      // Update progress bar
+      const progress = media.duration > 0 ? (media.position / media.duration) * 100 : 0;
+      document.getElementById('progressFill').style.width = `${progress}%`;
+      
+      // Update play state
+      isPlaying = media.isPlaying;
+      document.getElementById('playState').textContent = isPlaying ? '✅' : '❌';
+      document.getElementById('playPauseBtn').textContent = isPlaying ? '⏸️' : '▶️';
+      
+      // Update source
+      document.getElementById('source').textContent = media.source || 'N/A';
+      
+      // Enable controls
+      const buttons = document.querySelectorAll('.media-controls button');
+      buttons.forEach(btn => btn.disabled = false);
+      
+      // Update debug info
+      updateDebugInfo(media);
+    }
+    
+    function updateDebugInfo(media) {
+      const debugContent = document.getElementById('debugContent');
+      if (debugContent) {
+        debugContent.innerHTML = `
+          <strong>Extension:</strong> v${EXTENSION_VERSION}<br>
+          <strong>Method:</strong> ${media.method || 'N/A'}<br>
+          <strong>Duration:</strong> ${media.duration}s<br>
+          <strong>Position:</strong> ${media.position}s<br>
+          <strong>Source:</strong> ${media.source}<br>
+          <strong>URL:</strong> ${media.url ? media.url.substring(0, 50) + '...' : 'N/A'}<br>
+          <strong>Has Artwork:</strong> ${media.hasArtwork ? 'Yes' : 'No'}<br>
+          <strong>Timestamp:</strong> ${media.timestamp ? new Date(media.timestamp).toLocaleTimeString() : 'N/A'}
+        `;
+      }
+    }
+    
+    async function sendControl(action) {
+      try {
+        log(`Sending control: ${action}`);
+        const response = await fetch(`${dashboardUrl}/api/media/control`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action })
+        });
+        
+        if (response.ok) {
+          log(`✅ Control sent: ${action}`);
+          setTimeout(refreshMedia, 500); // Refresh after control
+        } else {
+          log(`❌ Control failed: ${action}`);
+        }
+      } catch (error) {
+        log(`❌ Control error: ${error.message}`);
+      }
+    }
+    
+    function togglePlayPause() {
+      const action = isPlaying ? 'pause' : 'play';
+      sendControl(action);
     }
     
     async function testConnection() {
       document.getElementById('statusText').textContent = 'Testing...';
+      log('Manual connection test initiated');
       await checkStatus();
     }
     
     function openDashboard() {
       chrome.tabs.create({ url: dashboardUrl });
+      log('Opening dashboard in new tab');
     }
     
-    // Check status on popup open
+    function toggleDebug() {
+      const debugInfo = document.getElementById('debugInfo');
+      if (debugInfo.style.display === 'none' || !debugInfo.style.display) {
+        debugInfo.style.display = 'block';
+        log('Debug panel opened');
+      } else {
+        debugInfo.style.display = 'none';
+      }
+    }
+    
+    // Initialize
+    log(`Extension popup opened (v${EXTENSION_VERSION})`);
     checkStatus();
+    
+    // Auto-refresh media every 5 seconds when popup is open
+    setInterval(refreshMedia, 5000);
   </script>
 </body>
 </html> 

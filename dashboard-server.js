@@ -18,6 +18,12 @@ let currentMedia = null;
 
 // Middleware
 app.use(express.json());
+
+// Log all requests to see if extension is making ANY requests
+app.use((req, res, next) => {
+  console.log(`📡 [Server] ${req.method} ${req.url} from ${req.ip} - ${req.headers['user-agent']?.substring(0, 50) || 'no user agent'}`);
+  next();
+});
 app.use(express.static(__dirname));
 
 // CORS middleware for browser requests
@@ -212,6 +218,18 @@ app.get('/api/media/status', async (req, res) => {
       music = await mediaSessionDetector.detectMediaSession();
       console.log('📊 [Dashboard] MediaSession result:', music);
       
+      // Show debug info if available
+      if (music && music.debug) {
+        console.log('🔍 [Dashboard] MediaSession debug info:', {
+          audioElementsFound: music.debug.audioElementsFound,
+          audioElementsWithDuration: music.debug.audioElementsWithDuration,
+          audioElementsWithCurrentTime: music.debug.audioElementsWithCurrentTime,
+          rawDuration: music.debug.rawDuration,
+          rawCurrentTime: music.debug.rawCurrentTime,
+          firstAudioElement: music.debug.audioElementDetails[0] || 'none'
+        });
+      }
+      
       if (!music || music.error) {
         console.log('🔄 [Dashboard] MediaSession failed, trying legacy detection...');
         // Final fallback: legacy detection
@@ -259,10 +277,30 @@ app.get('/api/media/status', async (req, res) => {
   }
 });
 
+// Simple ping endpoint for extension to test connectivity
+app.get('/api/ping', (req, res) => {
+  console.log('🏓 [Ping] Extension connectivity test');
+  res.json({ 
+    success: true, 
+    message: 'Dashboard server is reachable', 
+    timestamp: new Date().toISOString(),
+    serverVersion: 'Enhanced v2.0'
+  });
+});
+
+// Alternative nowplaying endpoint (some extensions use this)
+app.post('/nowplaying', (req, res) => {
+  console.log('🌐 [Chrome Extension] nowplaying endpoint hit');
+  console.log('🌐 [Chrome Extension] Data:', req.body);
+  res.redirect(307, '/api/obs-nowplaying');
+});
+
 // Add this endpoint for Now Playing - OBS Chrome extension
 app.post('/api/obs-nowplaying', (req, res) => {
   console.log('🌐 [Chrome Extension] === NEW REQUEST ===');
   console.log('🌐 [Chrome Extension] Timestamp:', new Date().toISOString());
+  console.log('🌐 [Chrome Extension] Headers:', req.headers);
+  console.log('🌐 [Chrome Extension] User-Agent:', req.headers['user-agent']);
   console.log('🌐 [Chrome Extension] Received data:', req.body);
   
   try {

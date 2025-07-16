@@ -1,12 +1,16 @@
 /**
  * DeskThing Media Bridge - Content Script
  * Enhanced version with better SoundCloud support and MediaSession handling
+ * @version 2.0
  */
 
-console.log('🎵 DeskThing Media Bridge v2.0 loaded on:', window.location.hostname);
+const EXTENSION_VERSION = "2.1";
+
+console.log(`🎵 DeskThing Media Bridge v${EXTENSION_VERSION} loaded on:`, window.location.hostname);
 
 class MediaBridge {
   constructor() {
+    this.version = EXTENSION_VERSION;
     this.dashboardUrl = 'http://localhost:8080';
     this.lastSentData = null;
     this.sendInterval = null;
@@ -26,7 +30,7 @@ class MediaBridge {
   }
   
   start() {
-    console.log('🚀 Starting enhanced MediaSession monitoring...');
+    console.log(`🚀 Starting enhanced MediaSession monitoring v${this.version}...`);
     
     // Start periodic monitoring with shorter interval for better responsiveness
     this.sendInterval = setInterval(() => {
@@ -42,11 +46,11 @@ class MediaBridge {
   
   setupMediaEventListeners() {
     // Listen for media element events (with more comprehensive coverage)
-    const events = ['play', 'pause', 'loadedmetadata', 'timeupdate', 'durationchange'];
+    const events = ['play', 'pause', 'loadedmetadata', 'timeupdate', 'durationchange', 'loadeddata'];
     
     events.forEach(eventType => {
       document.addEventListener(eventType, () => {
-        console.log(`🎵 ${eventType} event detected`);
+        console.log(`🎵 ${eventType} event detected (v${this.version})`);
         setTimeout(() => this.checkAndSendMediaData(), 300);
       }, true);
     });
@@ -82,22 +86,38 @@ class MediaBridge {
       let position = 0;
       let isPlaying = false;
       
+      console.log(`🎵 Found ${mediaElements.length} media elements`);
+      
       // Find the best media element (one that's actually playing or has content)
       for (const media of mediaElements) {
-        if (media.readyState >= 1 && media.duration > 0) { // HAVE_METADATA or better
+        console.log(`🎵 Media element check:`, {
+          readyState: media.readyState,
+          duration: media.duration,
+          currentTime: media.currentTime,
+          paused: media.paused,
+          ended: media.ended,
+          src: media.src?.substring(0, 100)
+        });
+        
+        // Be more aggressive - accept any media with duration > 0 OR currentTime > 0
+        if ((media.duration > 0) || (media.currentTime > 0) || (media.readyState >= 1)) {
           bestMediaElement = media;
           duration = Math.floor(media.duration) || 0;
           position = Math.floor(media.currentTime) || 0;
           isPlaying = !media.paused && !media.ended;
           
-          console.log('🎵 Found active media element:', {
+          console.log('🎵 Selected media element:', {
             duration,
             position,
             isPlaying,
             readyState: media.readyState,
             src: media.src?.substring(0, 100)
           });
-          break;
+          
+          // Don't break - keep looking for a better one
+          if (media.duration > 0 && media.currentTime > 0) {
+            break; // This is definitely the active one
+          }
         }
       }
       
@@ -139,6 +159,7 @@ class MediaBridge {
           duration: duration,
           position: position,
           method: 'MediaSession+Audio',
+          version: this.version,
           timestamp: Date.now()
         };
       }
@@ -150,6 +171,10 @@ class MediaBridge {
         domData.duration = duration;
         domData.position = position;
         domData.isPlaying = isPlaying;
+      }
+      
+      if (domData) {
+        domData.version = this.version;
       }
       
       return domData;
@@ -181,6 +206,7 @@ class MediaBridge {
             source: `${hostname} (DOM)`,
             url: window.location.href,
             method: 'DOM',
+            version: this.version,
             timestamp: Date.now()
           };
         }
@@ -197,18 +223,30 @@ class MediaBridge {
     // Enhanced SoundCloud extraction with better audio element detection
     console.log('🎵 Extracting SoundCloud data...');
     
-    // First try to get audio element data
+    // First try to get audio element data with more aggressive searching
     const audioElements = document.querySelectorAll('audio');
     let duration = 0;
     let position = 0;
     let isPlaying = false;
     
+    console.log(`🎵 SoundCloud: Found ${audioElements.length} audio elements`);
+    
     for (const audio of audioElements) {
-      if (audio.duration > 0) {
-        duration = Math.floor(audio.duration);
-        position = Math.floor(audio.currentTime);
+      console.log('🎵 SoundCloud audio details:', {
+        duration: audio.duration,
+        currentTime: audio.currentTime,
+        paused: audio.paused,
+        readyState: audio.readyState,
+        networkState: audio.networkState,
+        src: audio.src?.substring(0, 50)
+      });
+      
+      // Accept any audio element with timing data
+      if (audio.duration > 0 || audio.currentTime > 0 || audio.readyState >= 2) {
+        duration = Math.floor(audio.duration) || 0;
+        position = Math.floor(audio.currentTime) || 0;
         isPlaying = !audio.paused;
-        console.log('🎵 SoundCloud audio element:', { duration, position, isPlaying });
+        console.log('🎵 SoundCloud selected audio element:', { duration, position, isPlaying });
         break;
       }
     }
@@ -323,13 +361,14 @@ class MediaBridge {
       const mediaData = this.getMediaSessionData();
       
       if (mediaData && this.hasDataChanged(mediaData)) {
-        console.log('📤 Sending enhanced media data:', {
+        console.log(`📤 Sending enhanced media data v${this.version}:`, {
           title: mediaData.title,
           artist: mediaData.artist,
           isPlaying: mediaData.isPlaying,
           duration: mediaData.duration,
           position: mediaData.position,
-          method: mediaData.method
+          method: mediaData.method,
+          version: mediaData.version
         });
         
         const success = await this.sendToDashboard(mediaData);
@@ -370,7 +409,7 @@ class MediaBridge {
       });
       
       if (response.ok) {
-        console.log('✅ Data sent to dashboard successfully');
+        console.log(`✅ Data sent to dashboard successfully (v${this.version})`);
         return true;
       } else {
         console.error('❌ Dashboard response error:', response.status);
@@ -379,9 +418,9 @@ class MediaBridge {
     } catch (error) {
       this.retryCount++;
       if (this.retryCount <= this.maxRetries) {
-        console.log(`⚠️ Dashboard not reachable, retry ${this.retryCount}/${this.maxRetries}`);
+        console.log(`⚠️ Dashboard not reachable, retry ${this.retryCount}/${this.maxRetries} (v${this.version})`);
       } else {
-        console.log('⚠️ Dashboard not reachable (max retries reached)');
+        console.log(`⚠️ Dashboard not reachable (max retries reached) (v${this.version})`);
       }
       return false;
     }

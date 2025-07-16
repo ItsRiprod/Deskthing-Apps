@@ -109,7 +109,25 @@ class MediaSessionDetector {
       position: isNaN(currentTime) ? 0 : Math.floor(currentTime),
       source: window.location.hostname,
       url: window.location.href,
-      supportsControl: true
+      supportsControl: true,
+      // Debug info
+      debug: {
+        audioElementsFound: audioElements.length,
+        audioElementsWithDuration: Array.from(audioElements).filter(a => a.duration > 0).length,
+        audioElementsWithCurrentTime: Array.from(audioElements).filter(a => a.currentTime > 0).length,
+        rawDuration: duration,
+        rawCurrentTime: currentTime,
+        mediaSessionPlaybackState: playbackState,
+        audioElementDetails: Array.from(audioElements).map(a => ({
+          duration: a.duration,
+          currentTime: a.currentTime,
+          paused: a.paused,
+          ended: a.ended,
+          readyState: a.readyState,
+          networkState: a.networkState,
+          src: a.src ? a.src.substring(0, 100) + '...' : 'no src'
+        }))
+      }
     });
   } catch (err) {
     return JSON.stringify({ error: err.message });
@@ -471,4 +489,4 @@ return "{\\"error\\": \\"No media tabs found\\"}"`;
   }
 }
 
-export default MediaSessionDetector; 
+export default MediaSessionDetector;

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "DeskThing Media Bridge",
-  "version": "1.0",
-  "description": "Bridges navigator.mediaSession to DeskThing dashboard",
+  "version": "2.1",
+  "description": "Bridges navigator.mediaSession to DeskThing dashboard with enhanced SoundCloud support",
   
   "permissions": [
     "activeTab",
@@ -41,6 +41,6 @@
   
   "action": {
     "default_popup": "popup.html",
-    "default_title": "DeskThing Media Bridge"
+    "default_title": "DeskThing Media Bridge v2.1"
   }
 } 
