@@ -2,13 +2,15 @@ import express from 'express';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { execSync } from 'child_process';
+import { createServer } from 'http';
+import { WebSocketServer } from 'ws';
 import MusicDetector from './scripts/music-debug.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 5000;
+const PORT = 8080;
 
 // Middleware
 app.use(express.json());
@@ -234,16 +236,71 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'media-dashboard.html'));
 });
 
+// Create HTTP server
+const server = createServer(app);
+
+// Create WebSocket server
+const wss = new WebSocketServer({ server });
+
+// WebSocket connection handling
+wss.on('connection', (ws) => {
+    console.log('🔌 Chrome extension connected via WebSocket');
+    
+    ws.on('message', (data) => {
+        try {
+            const mediaData = JSON.parse(data.toString());
+            console.log('🌐 [WebSocket] Received Chrome extension data:', mediaData);
+            
+            // Broadcast to all connected clients
+            wss.clients.forEach((client) => {
+                if (client.readyState === 1) { // WebSocket.OPEN
+                    client.send(JSON.stringify({
+                        type: 'mediaUpdate',
+                        data: mediaData
+                    }));
+                }
+            });
+        } catch (error) {
+            console.error('❌ [WebSocket] Error parsing message:', error);
+        }
+    });
+    
+    ws.on('close', () => {
+        console.log('🔌 Chrome extension disconnected');
+    });
+    
+    // Send initial status
+    ws.send(JSON.stringify({
+        type: 'status',
+        message: 'Connected to DeskThing Media Server'
+    }));
+});
+
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`🎵 Media Dashboard server running at http://localhost:${PORT}`);
+    console.log(`🔌 WebSocket server running at ws://localhost:${PORT}`);
     console.log('📊 Available endpoints:');
     console.log('  GET  /api/media/detect  - Detect current media');  
     console.log('  GET  /api/media/status  - Get media with position');
     console.log('  POST /api/media/control - Send control commands');
     console.log('  POST /obs-nowplaying    - Chrome extension endpoint');
     console.log('  POST /nowplaying        - Chrome extension endpoint');
+    console.log('  WS   /                  - WebSocket for real-time data');
     console.log('  GET  /                  - Dashboard UI');
+    console.log('🔥 Server ready! Waiting for Chrome extension data...');
+});
+
+// Keep the server running
+process.on('SIGTERM', () => {
+    console.log('👋 Server shutting down...');
+    server.close();
+});
+
+process.on('SIGINT', () => {
+    console.log('\n👋 Server shutting down...');
+    server.close();
+    process.exit(0);
 });
 
 // Remove export for direct execution

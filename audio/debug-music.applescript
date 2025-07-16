@@ -50,34 +50,50 @@ on run
                         
                         try
                             if tabURL contains "soundcloud.com" then
-                                -- Check if SoundCloud is actually playing
-                                set isPlaying to (execute tab t of window w javascript "document.querySelector('.playControl') && document.querySelector('.playControl').title.includes('Pause')")
+                                -- Check if SoundCloud has media (playing OR paused)
+                                set hasPlayControl to (execute tab t of window w javascript "document.querySelector('.playControl') !== null")
                                 
-                                if isPlaying then
-                                    -- Parse track info from title
-                                    if tabTitle contains " by " then
-                                        set AppleScript's text item delimiters to " by "
-                                        set titleParts to every text item of tabTitle
-                                        set trackName to item 1 of titleParts
-                                        set artistPart to item 2 of titleParts
-                                        set AppleScript's text item delimiters to ""
+                                if hasPlayControl then
+                                    -- Get track info from DOM elements (works on feed page)
+                                    try
+                                        set trackName to (execute tab t of window w javascript "document.querySelector('.playbackSoundBadge__titleLink') ? document.querySelector('.playbackSoundBadge__titleLink').title : null")
+                                        set artistName to (execute tab t of window w javascript "document.querySelector('.playbackSoundBadge__lightLink') ? document.querySelector('.playbackSoundBadge__lightLink').title : null")
                                         
-                                        -- Clean up track name
-                                        if trackName starts with "Stream " then
-                                            set trackName to text 8 thru -1 of trackName
+                                        if trackName is not missing value and trackName is not "" and trackName is not "null" then
+                                            if artistName is not missing value and artistName is not "" and artistName is not "null" then
+                                                set trackInfo to "SoundCloud: " & trackName & " by " & artistName
+                                                return trackInfo
+                                            else
+                                                set trackInfo to "SoundCloud: " & trackName & " by Unknown Artist"
+                                                return trackInfo
+                                            end if
                                         end if
-                                        
-                                        -- Clean up artist (remove " | Listen online..." part)
-                                        if artistPart contains " | " then
-                                            set AppleScript's text item delimiters to " | "
-                                            set artistParts to every text item of artistPart
-                                            set artistPart to item 1 of artistParts
+                                    on error
+                                        -- Fallback to tab title parsing if DOM method fails
+                                        if tabTitle contains " by " then
+                                            set AppleScript's text item delimiters to " by "
+                                            set titleParts to every text item of tabTitle
+                                            set trackName to item 1 of titleParts
+                                            set artistPart to item 2 of titleParts
                                             set AppleScript's text item delimiters to ""
+                                            
+                                            -- Clean up track name
+                                            if trackName starts with "Stream " then
+                                                set trackName to text 8 thru -1 of trackName
+                                            end if
+                                            
+                                            -- Clean up artist (remove " | Listen online..." part)
+                                            if artistPart contains " | " then
+                                                set AppleScript's text item delimiters to " | "
+                                                set artistParts to every text item of artistPart
+                                                set artistPart to item 1 of artistParts
+                                                set AppleScript's text item delimiters to ""
+                                            end if
+                                            
+                                            set trackInfo to "SoundCloud: " & trackName & " by " & artistPart
+                                            return trackInfo
                                         end if
-                                        
-                                        set trackInfo to "SoundCloud: " & trackName & " by " & artistPart
-                                        return trackInfo
-                                    end if
+                                    end try
                                 end if
                                 
                             else if tabURL contains "youtube.com/watch" then
