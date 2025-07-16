@@ -1,15 +1,17 @@
 /**
  * DeskThing Media Bridge - Content Script
- * Properly accesses navigator.mediaSession and sends data to dashboard
+ * Enhanced version with better SoundCloud support and MediaSession handling
  */
 
-console.log('🎵 DeskThing Media Bridge loaded on:', window.location.hostname);
+console.log('🎵 DeskThing Media Bridge v2.0 loaded on:', window.location.hostname);
 
 class MediaBridge {
   constructor() {
     this.dashboardUrl = 'http://localhost:8080';
     this.lastSentData = null;
     this.sendInterval = null;
+    this.retryCount = 0;
+    this.maxRetries = 3;
     
     this.init();
   }
@@ -24,31 +26,30 @@ class MediaBridge {
   }
   
   start() {
-    console.log('🚀 Starting MediaSession monitoring...');
+    console.log('🚀 Starting enhanced MediaSession monitoring...');
     
-    // Start periodic monitoring
+    // Start periodic monitoring with shorter interval for better responsiveness
     this.sendInterval = setInterval(() => {
       this.checkAndSendMediaData();
-    }, 2000);
+    }, 1000);
     
-    // Send initial data
-    setTimeout(() => this.checkAndSendMediaData(), 1000);
+    // Send initial data after a delay to ensure page is loaded
+    setTimeout(() => this.checkAndSendMediaData(), 2000);
     
     // Listen for media events
     this.setupMediaEventListeners();
   }
   
   setupMediaEventListeners() {
-    // Listen for media element events
-    document.addEventListener('play', () => {
-      console.log('🎵 Play event detected');
-      setTimeout(() => this.checkAndSendMediaData(), 500);
-    }, true);
+    // Listen for media element events (with more comprehensive coverage)
+    const events = ['play', 'pause', 'loadedmetadata', 'timeupdate', 'durationchange'];
     
-    document.addEventListener('pause', () => {
-      console.log('⏸️ Pause event detected');
-      setTimeout(() => this.checkAndSendMediaData(), 500);
-    }, true);
+    events.forEach(eventType => {
+      document.addEventListener(eventType, () => {
+        console.log(`🎵 ${eventType} event detected`);
+        setTimeout(() => this.checkAndSendMediaData(), 300);
+      }, true);
+    });
     
     // Listen for navigation changes (SPA sites)
     let lastUrl = location.href;
@@ -56,53 +57,102 @@ class MediaBridge {
       const url = location.href;
       if (url !== lastUrl) {
         lastUrl = url;
-        console.log('🔗 Navigation detected');
-        setTimeout(() => this.checkAndSendMediaData(), 2000);
+        console.log('🔗 Navigation detected, waiting for media to load...');
+        setTimeout(() => this.checkAndSendMediaData(), 3000);
       }
     }).observe(document, { subtree: true, childList: true });
+    
+    // Listen for MediaSession changes
+    if (navigator.mediaSession) {
+      // Periodically check for MediaSession updates
+      setInterval(() => {
+        if (navigator.mediaSession.metadata) {
+          this.checkAndSendMediaData();
+        }
+      }, 2000);
+    }
   }
   
   getMediaSessionData() {
     try {
-      // Check MediaSession API first
+      // First, try to get comprehensive data from audio/video elements
+      const mediaElements = document.querySelectorAll('audio, video');
+      let bestMediaElement = null;
+      let duration = 0;
+      let position = 0;
+      let isPlaying = false;
+      
+      // Find the best media element (one that's actually playing or has content)
+      for (const media of mediaElements) {
+        if (media.readyState >= 1 && media.duration > 0) { // HAVE_METADATA or better
+          bestMediaElement = media;
+          duration = Math.floor(media.duration) || 0;
+          position = Math.floor(media.currentTime) || 0;
+          isPlaying = !media.paused && !media.ended;
+          
+          console.log('🎵 Found active media element:', {
+            duration,
+            position,
+            isPlaying,
+            readyState: media.readyState,
+            src: media.src?.substring(0, 100)
+          });
+          break;
+        }
+      }
+      
+      // Check MediaSession API for metadata
+      let mediaSessionData = null;
       if (navigator.mediaSession && navigator.mediaSession.metadata) {
         const metadata = navigator.mediaSession.metadata;
         const playbackState = navigator.mediaSession.playbackState;
         
-        // Get media element info for position/duration
-        const mediaElements = document.querySelectorAll('audio, video');
-        let duration = 0;
-        let position = 0;
-        let isPlaying = false;
+        console.log('🎵 MediaSession data found:', {
+          title: metadata.title,
+          artist: metadata.artist,
+          playbackState,
+          hasArtwork: !!(metadata.artwork && metadata.artwork.length > 0)
+        });
         
-        for (const media of mediaElements) {
-          if (media.currentTime > 0) {
-            duration = Math.floor(media.duration) || 0;
-            position = Math.floor(media.currentTime) || 0;
-            isPlaying = !media.paused;
-            break;
-          }
-        }
-        
-        return {
+        mediaSessionData = {
           title: metadata.title || 'Unknown Title',
           artist: metadata.artist || 'Unknown Artist',
           album: metadata.album || '',
           artwork: metadata.artwork && metadata.artwork.length > 0 ? 
             metadata.artwork[0].src : null,
+          playbackState: playbackState || (isPlaying ? 'playing' : 'paused')
+        };
+        
+        // If MediaSession says playing but we couldn't detect from media elements, trust MediaSession
+        if (playbackState === 'playing' && !isPlaying) {
+          isPlaying = true;
+        }
+      }
+      
+      // If we have MediaSession metadata, use it; otherwise fall back to DOM
+      if (mediaSessionData) {
+        return {
+          ...mediaSessionData,
           source: `${window.location.hostname} (MediaSession)`,
           url: window.location.href,
           isPlaying: isPlaying,
           duration: duration,
           position: position,
-          playbackState: playbackState || (isPlaying ? 'playing' : 'paused'),
-          method: 'MediaSession',
+          method: 'MediaSession+Audio',
           timestamp: Date.now()
         };
       }
       
-      // Fallback to DOM scraping for sites without MediaSession
-      return this.getDOMMediaData();
+      // Fallback to DOM scraping if no MediaSession
+      const domData = this.getDOMMediaData();
+      if (domData && bestMediaElement) {
+        // Enhance DOM data with audio element timing info
+        domData.duration = duration;
+        domData.position = position;
+        domData.isPlaying = isPlaying;
+      }
+      
+      return domData;
       
     } catch (error) {
       console.error('❌ MediaSession error:', error);
@@ -144,28 +194,75 @@ class MediaBridge {
   }
   
   extractSoundCloudData() {
-    // Check if playing
-    const playButton = document.querySelector('.playControl');
-    if (!playButton) return null;
+    // Enhanced SoundCloud extraction with better audio element detection
+    console.log('🎵 Extracting SoundCloud data...');
     
-    const isPlaying = playButton.title?.includes('Pause');
+    // First try to get audio element data
+    const audioElements = document.querySelectorAll('audio');
+    let duration = 0;
+    let position = 0;
+    let isPlaying = false;
     
-    // Extract title and artist from page title or DOM
-    const title = document.title;
-    if (title.includes(' by ')) {
-      const [track, artist] = title.split(' by ');
-      return {
-        title: track.replace(/^Stream /, '').trim(),
-        artist: artist.split(' | ')[0].trim(),
-        album: '',
-        artwork: document.querySelector('.image__full')?.src || null,
-        isPlaying: isPlaying,
-        duration: 0,
-        position: 0
-      };
+    for (const audio of audioElements) {
+      if (audio.duration > 0) {
+        duration = Math.floor(audio.duration);
+        position = Math.floor(audio.currentTime);
+        isPlaying = !audio.paused;
+        console.log('🎵 SoundCloud audio element:', { duration, position, isPlaying });
+        break;
+      }
     }
     
-    return null;
+    // Extract title and artist from multiple sources
+    let title = 'Unknown Track';
+    let artist = 'Unknown Artist';
+    let artwork = null;
+    
+    // Method 1: Try current track info from player
+    const trackTitle = document.querySelector('.playbackSoundBadge__titleLink')?.textContent?.trim();
+    const trackArtist = document.querySelector('.playbackSoundBadge__lightLink')?.textContent?.trim();
+    
+    if (trackTitle && trackArtist) {
+      title = trackTitle;
+      artist = trackArtist;
+      console.log('🎵 SoundCloud player data:', { title, artist });
+    } else {
+      // Method 2: Extract from page title
+      const pageTitle = document.title;
+      if (pageTitle.includes(' by ')) {
+        const parts = pageTitle.split(' by ');
+        title = parts[0].replace(/^Stream /, '').trim();
+        artist = parts[1].split(' | ')[0].trim();
+        console.log('🎵 SoundCloud title parsing:', { title, artist });
+      }
+    }
+    
+    // Get artwork
+    artwork = document.querySelector('.playbackSoundBadge .image__full')?.src || 
+              document.querySelector('.image__full')?.src || null;
+    
+    // Check play state from button if we couldn't get it from audio element
+    if (!isPlaying && duration === 0) {
+      const playButton = document.querySelector('.playControl');
+      if (playButton) {
+        // If button shows "Pause", then it's playing
+        isPlaying = playButton.title?.includes('Pause') || 
+                   playButton.querySelector('[aria-label*="Pause"]') !== null;
+      }
+    }
+    
+    const result = {
+      title,
+      artist,
+      album: '',
+      artwork,
+      isPlaying,
+      duration,
+      position
+    };
+    
+    console.log('🎵 Final SoundCloud data:', result);
+    return result;
   }
   
   extractYouTubeData() {
@@ -226,9 +323,20 @@ class MediaBridge {
       const mediaData = this.getMediaSessionData();
       
       if (mediaData && this.hasDataChanged(mediaData)) {
-        console.log('📤 Sending media data:', mediaData);
-        await this.sendToDashboard(mediaData);
-        this.lastSentData = mediaData;
+        console.log('📤 Sending enhanced media data:', {
+          title: mediaData.title,
+          artist: mediaData.artist,
+          isPlaying: mediaData.isPlaying,
+          duration: mediaData.duration,
+          position: mediaData.position,
+          method: mediaData.method
+        });
+        
+        const success = await this.sendToDashboard(mediaData);
+        if (success) {
+          this.lastSentData = mediaData;
+          this.retryCount = 0; // Reset retry count on success
+        }
       }
     } catch (error) {
       console.error('❌ Error checking media data:', error);
@@ -242,8 +350,10 @@ class MediaBridge {
     const keyFields = ['title', 'artist', 'isPlaying', 'position'];
     return keyFields.some(field => {
       if (field === 'position') {
-        // Only update position if it changed significantly (>2 seconds)
-        return Math.abs((newData[field] || 0) - (this.lastSentData[field] || 0)) > 2;
+        // Only update position if it changed significantly (>3 seconds) or if duration info is new
+        const positionDiff = Math.abs((newData[field] || 0) - (this.lastSentData[field] || 0));
+        const hasNewDuration = newData.duration > 0 && (this.lastSentData.duration || 0) === 0;
+        return positionDiff > 3 || hasNewDuration;
       }
       return newData[field] !== this.lastSentData[field];
     });
@@ -261,15 +371,22 @@ class MediaBridge {
       
       if (response.ok) {
         console.log('✅ Data sent to dashboard successfully');
+        return true;
       } else {
         console.error('❌ Dashboard response error:', response.status);
+        return false;
       }
     } catch (error) {
-      // Dashboard might not be running, fail silently
-      console.log('⚠️ Dashboard not reachable (this is normal if dashboard is off)');
+      this.retryCount++;
+      if (this.retryCount <= this.maxRetries) {
+        console.log(`⚠️ Dashboard not reachable, retry ${this.retryCount}/${this.maxRetries}`);
+      } else {
+        console.log('⚠️ Dashboard not reachable (max retries reached)');
+      }
+      return false;
     }
   }
 }
 
-// Start the media bridge
+// Start the enhanced media bridge
 new MediaBridge(); 

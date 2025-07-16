@@ -37,19 +37,27 @@ const legacyDetector = new MusicDetector();
 const mediaSessionDetector = new MediaSessionDetector();
 
 /**
- * Enhanced media detection using MediaSession API first, then fallback
+ * Enhanced media detection using Chrome Extension first, then fallbacks
  */
 app.get('/api/media/detect', async (req, res) => {
   try {
     console.log('🔍 [Dashboard] Detecting current media...');
     
-    // Try MediaSession API first (modern approach)
-    let music = await mediaSessionDetector.detectMediaSession();
+    let music = null;
     
-    if (!music || music.error) {
-      console.log('🔄 [Dashboard] MediaSession failed, trying legacy detection...');
-      // Fallback to legacy AppleScript approach
-      music = await legacyDetector.detectMusic();
+    // First priority: Chrome Extension data (most accurate)
+    if (currentMedia && currentMedia.timestamp && (Date.now() - currentMedia.timestamp < 10000)) {
+      console.log('✅ [Dashboard] Using Chrome Extension data (most recent)');
+      music = currentMedia;
+    } else {
+      // Fallback: Try MediaSession API (modern approach)
+      music = await mediaSessionDetector.detectMediaSession();
+      
+      if (!music || music.error) {
+        console.log('🔄 [Dashboard] MediaSession failed, trying legacy detection...');
+        // Final fallback: legacy AppleScript approach
+        music = await legacyDetector.detectMusic();
+      }
     }
     
     if (music && !music.error) {
@@ -125,6 +133,58 @@ app.post('/api/media/control', async (req, res) => {
 });
 
 /**
+ * Seek to specific position in track
+ */
+app.post('/api/media/seek', async (req, res) => {
+  try {
+    const { position } = req.body;
+    
+    console.log('🔍 [Dashboard] Raw seek request body:', req.body);
+    console.log('🔍 [Dashboard] Position type:', typeof position);
+    console.log('🔍 [Dashboard] Position value:', position);
+    
+    if (typeof position !== 'number' || position < 0) {
+      console.log('❌ [Dashboard] Invalid position value');
+      return res.status(400).json({
+        success: false,
+        error: 'Valid position in seconds is required'
+      });
+    }
+    
+    console.log(`🔍 [Dashboard] Seek request: ${position}s`);
+    console.log(`🔍 [Dashboard] Current media state:`, {
+      hasCurrentMedia: !!currentMedia,
+      title: currentMedia?.title,
+      duration: currentMedia?.duration,
+      position: currentMedia?.position
+    });
+    
+    const success = await mediaSessionDetector.seekToPosition(position);
+    
+    if (success) {
+      console.log(`✅ [Dashboard] Seek successful: ${position}s`);
+      res.json({
+        success: true,
+        position: position
+      });
+    } else {
+      console.log(`❌ [Dashboard] Seek failed: ${position}s`);
+      res.status(500).json({
+        success: false,
+        error: `Failed to seek to ${position}s`
+      });
+    }
+  } catch (error) {
+    console.error('❌ [Dashboard] Seek error:', error.message);
+    console.error('❌ [Dashboard] Seek error stack:', error.stack);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * Get enhanced media info with position tracking
  */
 app.get('/api/media/status', async (req, res) => {
@@ -133,17 +193,30 @@ app.get('/api/media/status', async (req, res) => {
     
     let music = null;
     
+    // Debug current media state
+    console.log('🔍 [Dashboard] currentMedia state:', {
+      hasCurrentMedia: !!currentMedia,
+      timestamp: currentMedia?.timestamp,
+      timeDiff: currentMedia?.timestamp ? Date.now() - currentMedia.timestamp : 'N/A',
+      isRecent: currentMedia?.timestamp ? (Date.now() - currentMedia.timestamp < 10000) : false
+    });
+    
     // First priority: Chrome Extension data (most accurate)
     if (currentMedia && currentMedia.timestamp && (Date.now() - currentMedia.timestamp < 10000)) {
       console.log('✅ [Dashboard] Using Chrome Extension data (most recent)');
+      console.log('📊 [Dashboard] Chrome Extension data:', currentMedia);
       music = currentMedia;
     } else {
+      console.log('🔄 [Dashboard] No recent Chrome Extension data, trying MediaSession...');
       // Fallback: Try MediaSession for enhanced info
       music = await mediaSessionDetector.detectMediaSession();
+      console.log('📊 [Dashboard] MediaSession result:', music);
       
       if (!music || music.error) {
+        console.log('🔄 [Dashboard] MediaSession failed, trying legacy detection...');
         // Final fallback: legacy detection
         music = await legacyDetector.detectMusic();
+        console.log('📊 [Dashboard] Legacy detection result:', music);
       }
     }
     
@@ -188,6 +261,8 @@ app.get('/api/media/status', async (req, res) => {
 
 // Add this endpoint for Now Playing - OBS Chrome extension
 app.post('/api/obs-nowplaying', (req, res) => {
+  console.log('🌐 [Chrome Extension] === NEW REQUEST ===');
+  console.log('🌐 [Chrome Extension] Timestamp:', new Date().toISOString());
   console.log('🌐 [Chrome Extension] Received data:', req.body);
   
   try {
@@ -321,14 +396,22 @@ app.get('/', (req, res) => {
         <title>DeskThing Media Dashboard</title>
         <meta charset="utf-8">
         <style>
-          body { font-family: system-ui; margin: 2rem; background: #1a1a1a; color: #fff; }
+          body { font-family: system-ui; margin: 2rem; background: #f8f9fa; color: #212529; }
           .container { max-width: 800px; margin: 0 auto; }
-          .status { padding: 1rem; background: #2a2a2a; border-radius: 8px; margin: 1rem 0; }
-          .controls { display: flex; gap: 1rem; margin: 1rem 0; }
-          button { padding: 0.5rem 1rem; background: #007aff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-          button:hover { background: #0056b3; }
-          .metadata { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem; }
-          .artwork { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; }
+          .status { padding: 1.5rem; background: #ffffff; border: 1px solid #dee2e6; border-radius: 12px; margin: 1rem 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+          .controls { display: flex; gap: 0.5rem; margin: 1rem 0; justify-content: center; }
+          button { padding: 0.6rem 1.2rem; background: #007aff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+          button:hover { background: #0056b3; transform: translateY(-1px); }
+          .metadata { display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: center; }
+          .artwork { width: 120px; height: 120px; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+          .track-info h3 { margin: 0 0 0.5rem 0; font-size: 1.3rem; color: #212529; }
+          .track-info p { margin: 0.25rem 0; color: #6c757d; }
+          .progress-container { margin: 1rem 0; }
+          .progress-bar { width: 100%; height: 6px; background: #e9ecef; border-radius: 3px; cursor: pointer; position: relative; }
+          .progress-fill { height: 100%; background: linear-gradient(90deg, #007aff, #0056b3); border-radius: 3px; transition: width 0.3s ease; }
+          .progress-times { display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.85rem; color: #6c757d; }
+          .refresh-btn { margin-top: 1rem; background: #6c757d; }
+          .refresh-btn:hover { background: #495057; }
         </style>
       </head>
       <body>
@@ -347,10 +430,58 @@ app.get('/', (req, res) => {
             <button onclick="sendControl('nexttrack')">⏭️ Next</button>
           </div>
           
-          <button onclick="refreshStatus()">🔄 Refresh Status</button>
+          <button onclick="refreshStatus()" class="refresh-btn">🔄 Refresh Status</button>
         </div>
         
         <script>
+          // Auto-format time function
+          function formatTime(seconds) {
+            if (!seconds || seconds <= 0) return '0:00';
+            
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            if (hours > 0) {
+              return \`\${hours}:\${minutes.toString().padStart(2, '0')}:\${secs.toString().padStart(2, '0')}\`;
+            } else {
+              return \`\${minutes}:\${secs.toString().padStart(2, '0')}\`;
+            }
+          }
+          
+          // Seek to position
+          async function seekTo(event) {
+            const progressBar = event.currentTarget;
+            const rect = progressBar.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const percentage = clickX / rect.width;
+            
+            const statusDiv = document.getElementById('status');
+            const durationElement = progressBar.dataset.duration;
+            
+            if (durationElement) {
+              const duration = parseFloat(durationElement);
+              const seekPosition = duration * percentage;
+              
+              try {
+                const response = await fetch('/api/media/seek', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ position: seekPosition })
+                });
+                
+                if (response.ok) {
+                  console.log(\`Seeked to \${formatTime(seekPosition)}\`);
+                  setTimeout(refreshStatus, 500); // Refresh after seek
+                } else {
+                  console.error('Seek failed');
+                }
+              } catch (error) {
+                console.error('Seek error:', error);
+              }
+            }
+          }
+          
           async function refreshStatus() {
             try {
               const response = await fetch('/api/media/status');
@@ -360,17 +491,27 @@ app.get('/', (req, res) => {
               
               if (data.success && data.data) {
                 const media = data.data;
+                const progress = media.duration > 0 ? (media.position / media.duration) * 100 : 0;
+                
                 statusDiv.innerHTML = \`
                   <div class="metadata">
-                    \${media.artwork ? \`<img src="\${media.artwork}" class="artwork" alt="Artwork">\` : '<div class="artwork" style="background: #333;"></div>'}
-                    <div>
+                    \${media.artwork ? \`<img src="\${media.artwork}" class="artwork" alt="Artwork">\` : '<div class="artwork" style="background: #e9ecef;"></div>'}
+                    <div class="track-info">
                       <h3>\${media.title}</h3>
                       <p><strong>Artist:</strong> \${media.artist}</p>
                       <p><strong>Album:</strong> \${media.album || 'N/A'}</p>
                       <p><strong>Source:</strong> \${media.source}</p>
                       <p><strong>Status:</strong> \${media.isPlaying ? '▶️ Playing' : '⏸️ Paused'}</p>
-                      \${media.duration ? \`<p><strong>Duration:</strong> \${Math.floor(media.duration / 60)}:\${(media.duration % 60).toString().padStart(2, '0')}</p>\` : ''}
-                      \${media.position ? \`<p><strong>Position:</strong> \${Math.floor(media.position / 60)}:\${(media.position % 60).toString().padStart(2, '0')}</p>\` : ''}
+                      
+                      <div class="progress-container">
+                        <div class="progress-bar" onclick="seekTo(event)" data-duration="\${media.duration || 0}">
+                          <div class="progress-fill" style="width: \${progress}%"></div>
+                        </div>
+                        <div class="progress-times">
+                          <span>\${formatTime(media.position || 0)}</span>
+                          <span>\${formatTime(media.duration || 0)}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 \`;

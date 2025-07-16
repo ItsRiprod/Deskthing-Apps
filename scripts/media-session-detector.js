@@ -40,12 +40,60 @@ class MediaSessionDetector {
     let currentTime = 0;
     let isPlaying = false;
     
+    // First try to get info from any media elements
     for (const media of audioElements) {
-      if (!media.paused && media.currentTime > 0) {
+      if (media.duration > 0) {
         duration = media.duration || 0;
         currentTime = media.currentTime || 0;
         isPlaying = !media.paused;
         break;
+      }
+    }
+    
+    // If no media elements or playbackState indicates playing, use playbackState
+    if (!isPlaying && playbackState === 'playing') {
+      isPlaying = true;
+    }
+
+    // CRITICAL: Update MediaSession with position state (this is how browsers get duration/position!)
+    if (navigator.mediaSession && 'setPositionState' in navigator.mediaSession && duration > 0) {
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: duration,
+          playbackRate: 1.0,
+          position: currentTime
+        });
+        
+        // Set up MediaSession action handlers for seeking
+        if (!navigator.mediaSession._deskthingHandlersSet) {
+          navigator.mediaSession.setActionHandler('seekto', (details) => {
+            const media = document.querySelector('audio, video');
+            if (media && details.seekTime !== undefined) {
+              media.currentTime = details.seekTime;
+            }
+          });
+          
+          navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+            const media = document.querySelector('audio, video');
+            if (media) {
+              const skipTime = details.seekOffset || 10;
+              media.currentTime = Math.max(media.currentTime - skipTime, 0);
+            }
+          });
+          
+          navigator.mediaSession.setActionHandler('seekforward', (details) => {
+            const media = document.querySelector('audio, video');
+            if (media) {
+              const skipTime = details.seekOffset || 10;
+              media.currentTime = Math.min(media.currentTime + skipTime, media.duration);
+            }
+          });
+          
+          // Mark handlers as set to avoid duplicate registration
+          navigator.mediaSession._deskthingHandlersSet = true;
+        }
+      } catch (e) {
+        console.log('MediaSession setPositionState failed:', e);
       }
     }
 
@@ -340,6 +388,85 @@ return "{\\"error\\": \\"No media tabs found\\"}"`;
     } catch (error) {
       console.error('❌ [MediaSession] Enhanced metadata error:', error.message);
       return null;
+    }
+  }
+
+  /**
+   * Seek to specific position in seconds
+   */
+  async seekToPosition(positionSeconds) {
+    if (this.platform !== 'darwin') return false;
+
+    try {
+      console.log(`🔍 [MediaSession] Seeking to: ${positionSeconds}s`);
+      
+      const jsCode = `
+(function() {
+  try {
+    // Use direct media element seeking (most reliable)
+    const media = document.querySelector('audio, video');
+    if (media && media.duration && ${positionSeconds} <= media.duration) {
+      media.currentTime = ${positionSeconds};
+      
+      // Update MediaSession position state to reflect the change
+      if (navigator.mediaSession && 'setPositionState' in navigator.mediaSession) {
+        navigator.mediaSession.setPositionState({
+          duration: media.duration,
+          playbackRate: media.playbackRate || 1.0,
+          position: ${positionSeconds}
+        });
+      }
+      
+      return JSON.stringify({ success: true, method: 'media-element', position: ${positionSeconds} });
+    }
+    
+    // Fallback: Site-specific seeking for SoundCloud
+    const progressBar = document.querySelector('.playbackTimeline__progressWrapper');
+    if (progressBar && media) {
+      const rect = progressBar.getBoundingClientRect();
+      const percentage = ${positionSeconds} / (media.duration || 100);
+      const clickX = rect.left + (rect.width * percentage);
+      const clickY = rect.top + rect.height / 2;
+      
+      progressBar.dispatchEvent(new MouseEvent('click', {
+        clientX: clickX,
+        clientY: clickY,
+        bubbles: true
+      }));
+      
+      return JSON.stringify({ success: true, method: 'soundcloud-progressBar', position: ${positionSeconds} });
+    }
+    
+    return JSON.stringify({ success: false, error: 'No seek method available - no media element found' });
+    
+  } catch (err) {
+    return JSON.stringify({ error: err.message });
+  }
+})()`;
+
+      console.log(`🔍 [MediaSession] Executing seek JavaScript for ${positionSeconds}s...`);
+      const result = await this.executeJSInTabs(jsCode, 'seek');
+      
+      console.log(`🔍 [MediaSession] Raw seek result:`, result);
+      console.log(`🔍 [MediaSession] Result type:`, typeof result);
+      
+      if (result && result !== 'null' && typeof result === 'string' && !result.includes('error')) {
+        try {
+          const data = JSON.parse(result);
+          console.log(`✅ [MediaSession] Parsed seek result:`, data);
+          return data.success;
+        } catch (parseError) {
+          console.log(`❌ [MediaSession] Failed to parse seek result:`, parseError.message);
+          return false;
+        }
+      }
+      
+      console.log(`❌ [MediaSession] Seek failed - invalid result:`, result);
+      return false;
+      
+    } catch (error) {
+      console.error('❌ [MediaSession] Seek error:', error.message);
+      return false;
     }
   }
 }
