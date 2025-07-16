@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 8080;
+const PORT = 5000;
 
 // Middleware
 app.use(express.json());
@@ -149,6 +149,86 @@ app.get('/api/media/status', async (req, res) => {
   }
 });
 
+// Add this endpoint for Now Playing - OBS Chrome extension
+app.post('/api/obs-nowplaying', (req, res) => {
+  console.log('🌐 [Chrome Extension] Received data:', req.body);
+  
+  try {
+    const chromeData = req.body;
+    
+    // Convert OBS extension format to DeskThing format
+    const mediaData = {
+      title: chromeData.title || chromeData.songName || 'Unknown Track',
+      artist: chromeData.artist || chromeData.artistName || 'Unknown Artist',
+      album: chromeData.album || '',
+      source: 'Chrome Extension',
+      artwork: chromeData.artwork || chromeData.cover || null,
+      isPlaying: chromeData.isPlaying !== false, // default to true
+      duration: chromeData.duration || 0,
+      position: chromeData.position || chromeData.currentTime || 0,
+      url: chromeData.url || ''
+    };
+    
+    console.log('✅ [Chrome Extension] Processed:', mediaData);
+    
+    // Store as current media with high priority
+    currentMedia = {
+      ...mediaData,
+      source: 'chrome-extension',
+      timestamp: Date.now()
+    };
+    
+    // Forward to any connected clients (like Car Thing)
+    if (typeof broadcastToCarThing === 'function') {
+      broadcastToCarThing(currentMedia);
+    }
+    
+    res.json({ success: true, message: 'Media data received' });
+    
+  } catch (error) {
+    console.error('❌ [Chrome Extension] Error processing data:', error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// Add common endpoints the extension might try
+app.post('/obs-nowplaying', (req, res) => {
+  console.log('🌐 [Chrome Extension /obs-nowplaying] Received data:', req.body);
+  // Use same handler logic
+  const chromeData = req.body;
+  const mediaData = {
+    title: chromeData.title || chromeData.songName || 'Unknown Track',
+    artist: chromeData.artist || chromeData.artistName || 'Unknown Artist',
+    album: chromeData.album || '',
+    source: 'Chrome Extension (obs-nowplaying)',
+    artwork: chromeData.artwork || chromeData.cover || null,
+    isPlaying: chromeData.isPlaying !== false,
+    duration: chromeData.duration || 0,
+    position: chromeData.position || chromeData.currentTime || 0,
+    url: chromeData.url || ''
+  };
+  
+  console.log('✅ [Chrome Extension /obs-nowplaying] Processed:', mediaData);
+  res.json({ success: true, message: 'Data received' });
+});
+
+app.post('/nowplaying', (req, res) => {
+  console.log('🌐 [Chrome Extension /nowplaying] Received data:', req.body);
+  // Use same handler logic
+  const chromeData = req.body;
+  const mediaData = {
+    title: chromeData.title || chromeData.songName || 'Unknown Track',
+    artist: chromeData.artist || chromeData.artistName || 'Unknown Artist',
+    source: 'Chrome Extension (nowplaying)'
+  };
+  
+  console.log('✅ [Chrome Extension /nowplaying] Processed:', mediaData);
+  res.json({ success: true, message: 'Data received' });
+});
+
+// Removed problematic catch-all route to fix path-to-regexp error
+// Specific endpoints are defined above for Chrome extension compatibility
+
 // Serve the dashboard
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'media-dashboard.html'));
@@ -161,7 +241,10 @@ app.listen(PORT, () => {
     console.log('  GET  /api/media/detect  - Detect current media');  
     console.log('  GET  /api/media/status  - Get media with position');
     console.log('  POST /api/media/control - Send control commands');
+    console.log('  POST /obs-nowplaying    - Chrome extension endpoint');
+    console.log('  POST /nowplaying        - Chrome extension endpoint');
     console.log('  GET  /                  - Dashboard UI');
 });
 
-export default app; 
+// Remove export for direct execution
+// export default app; 
