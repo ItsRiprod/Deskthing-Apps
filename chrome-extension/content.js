@@ -4,7 +4,7 @@
  * @version 2.0
  */
 
-const EXTENSION_VERSION = "2.1";
+const EXTENSION_VERSION = "2.2";
 
 console.log(`🎵 DeskThing Media Bridge v${EXTENSION_VERSION} loaded on:`, window.location.hostname);
 
