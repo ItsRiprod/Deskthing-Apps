@@ -27,6 +27,7 @@ export const setupTasks = () => {
                     label: 'Get Client ID',
                     instructions: 'Under the OAuth tab, copy the Client ID for the Discord Application',
                     completed: false,
+                    imageId: 'client_id',
                     strict: true,
                     setting: { id: AppSettingIDs.CLIENT_ID }
                 },
@@ -36,6 +37,7 @@ export const setupTasks = () => {
                     label: 'Get Client Secret',
                     instructions: 'Under the OAuth tab, copy the Client Secret for the Discord Application. You may have to regenerate the secret.',
                     completed: false,
+                    imageId: 'client_secret',
                     strict: true,
                     setting: { id: AppSettingIDs.CLIENT_SECRET }
                 },
@@ -45,6 +47,7 @@ export const setupTasks = () => {
                     label: 'Get Redirect URL',
                     instructions: 'Under the OAuth tab, create a new Redirect URL for the Discord Application that matches this one',
                     completed: false,
+                    imageId: 'redirect_url',
                     strict: false,
                     setting: { id: AppSettingIDs.REDIRECT_URL }
                 },
