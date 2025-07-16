@@ -106,25 +106,60 @@ class MediaSessionDetector {
     
     switch ('${action}') {
       case 'play':
+        // Try direct media element first
         if (media && media.paused) {
           media.play();
           return JSON.stringify({ success: true, action: 'play' });
-        } else {
-          // Try space key for sites without media elements
-          document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space' }));
-          return JSON.stringify({ success: true, action: 'play-keyboard' });
         }
-        break;
+        
+        // Try site-specific play button selectors
+        const playSelectors = [
+          '.playControl',                       // SoundCloud
+          '[data-testid="control-button-playpause"]', // Spotify
+          '.ytp-play-button',                   // YouTube
+          '[aria-label*="play" i]',             // Generic
+          '[title*="play" i]'                   // Generic
+        ];
+        
+        for (const selector of playSelectors) {
+          const button = document.querySelector(selector);
+          if (button && button.offsetParent !== null) {
+            button.click();
+            return JSON.stringify({ success: true, action: 'play-button', selector });
+          }
+        }
+        
+        // Fallback to space key
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space' }));
+        return JSON.stringify({ success: true, action: 'play-keyboard' });
         
       case 'pause':
+        // Try direct media element first
         if (media && !media.paused) {
           media.pause();
           return JSON.stringify({ success: true, action: 'pause' });
-        } else {
-          // Try space key for sites without media elements  
-          document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space' }));
-          return JSON.stringify({ success: true, action: 'pause-keyboard' });
         }
+        
+        // Try site-specific pause button selectors
+        const pauseSelectors = [
+          '.playControl',                       // SoundCloud
+          '[data-testid="control-button-playpause"]', // Spotify
+          '.ytp-pause-button',                  // YouTube
+          '[aria-label*="pause" i]',            // Generic
+          '[title*="pause" i]'                  // Generic
+        ];
+        
+        for (const selector of pauseSelectors) {
+          const button = document.querySelector(selector);
+          if (button && button.offsetParent !== null) {
+            button.click();
+            return JSON.stringify({ success: true, action: 'pause-button', selector });
+          }
+        }
+        
+        // Fallback to space key
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space' }));
+        return JSON.stringify({ success: true, action: 'pause-keyboard' });
         break;
         
       case 'previoustrack':

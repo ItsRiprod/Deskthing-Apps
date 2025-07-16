@@ -13,6 +13,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 8080;
 
+// Global state
+let currentMedia = null;
+
 // Middleware
 app.use(express.json());
 app.use(express.static(__dirname));
@@ -128,12 +131,20 @@ app.get('/api/media/status', async (req, res) => {
   try {
     console.log('🔍 [Dashboard] Getting media status...');
     
-    // Try MediaSession first for enhanced info
-    let music = await mediaSessionDetector.detectMediaSession();
+    let music = null;
     
-    if (!music || music.error) {
-      // Fallback to legacy detection
-      music = await legacyDetector.detectMusic();
+    // First priority: Chrome Extension data (most accurate)
+    if (currentMedia && currentMedia.timestamp && (Date.now() - currentMedia.timestamp < 10000)) {
+      console.log('✅ [Dashboard] Using Chrome Extension data (most recent)');
+      music = currentMedia;
+    } else {
+      // Fallback: Try MediaSession for enhanced info
+      music = await mediaSessionDetector.detectMediaSession();
+      
+      if (!music || music.error) {
+        // Final fallback: legacy detection
+        music = await legacyDetector.detectMusic();
+      }
     }
     
     if (music && !music.error) {
@@ -189,7 +200,7 @@ app.post('/api/obs-nowplaying', (req, res) => {
       album: chromeData.album || '',
       source: 'Chrome Extension',
       artwork: chromeData.artwork || chromeData.cover || null,
-      isPlaying: chromeData.isPlaying !== false, // default to true
+      isPlaying: chromeData.playbackState === 'playing' || chromeData.isPlaying === true,
       duration: chromeData.duration || 0,
       position: chromeData.position || chromeData.currentTime || 0,
       url: chromeData.url || ''
