@@ -135,74 +135,188 @@ const wss = new WebSocketServer({ server });
 /**
  * WebSocket handler for WebNowPlaying extension
  */
-wss.on('connection', (ws) => {
-    console.log('🔌 WebNowPlaying extension connected');
+wss.on('connection', (ws, req) => {
+    console.log('🔌 WebNowPlaying extension connected from:', req.socket.remoteAddress);
+    console.log('🔗 Request headers:', req.headers);
+    console.log('🔗 Request URL:', req.url);
+    
+    // Send proper handshake as per WNP protocol
+    const handshake = 'ADAPTER_VERSION 1.0.0;WNPRLIB_REVISION 2';
+    console.log('📤 Sending handshake:', handshake);
+    ws.send(handshake);
+    
+    const recipients = new Set();
+    let mediaInfo = {
+        player_name: '',
+        is_native: false,
+        state: 'STOPPED',
+        title: '',
+        artist: '',
+        album: '',
+        cover_url: '',
+        duration_seconds: 0,
+        position_seconds: 0,
+        volume: 100,
+        controls: {
+            supports_play_pause: true,
+            supports_skip_previous: true,
+            supports_skip_next: true,
+            supports_set_position: false,
+            supports_set_volume: false,
+            supports_toggle_repeat_mode: false,
+            supports_toggle_shuffle_active: false,
+            supports_set_rating: false,
+            rating_system: 'NONE'
+        }
+    };
     
     ws.on('message', (data) => {
         try {
-            const message = JSON.parse(data.toString());
-            console.log('📦 [WebSocket] Received from extension:', JSON.stringify(message, null, 2));
+            const message = data.toString().trim();
+            console.log('📦 [WebSocket] Raw data received:', data);
+            console.log('📦 [WebSocket] Message string:', message);
+            console.log('📦 [WebSocket] Message length:', message.length);
             
-            // Handle WebNowPlaying data format
-            if (message.player) {
-                // Standard WebNowPlaying format
-                currentMedia = {
-                    title: message.player.title || 'Unknown',
-                    artist: message.player.artist || 'Unknown',
-                    album: message.player.album || null,
-                    state: message.player.state || 'UNKNOWN',
-                    position: message.player.position || 0,
-                    duration: message.player.duration || 0,
-                    cover: message.player.cover || null,
-                    timestamp: Date.now()
-                };
-                
-                console.log('🎵 [WebNowPlaying] Updated media state:', {
-                    title: currentMedia.title,
-                    artist: currentMedia.artist,
-                    state: currentMedia.state
-                });
+            // Handle recipient registration
+            if (message.toUpperCase() === 'RECIPIENT') {
+                recipients.add(ws);
+                console.log('📝 [WebSocket] Client registered as recipient');
+                updateRecipients();
+                return;
             }
             
-            // Handle alternative formats (Media Session API)
-            else if (message.title || message.metadata) {
-                const metadata = message.metadata || message;
+            // Parse message format: "TYPE DATA"
+            let type, msgData;
+            const spaceIndex = message.indexOf(' ');
+            if (spaceIndex !== -1) {
+                type = message.substring(0, spaceIndex).toUpperCase();
+                msgData = message.substring(spaceIndex + 1);
+            } else {
+                type = message.toUpperCase();
+                msgData = '';
+            }
+            
+            // Handle different message types
+            switch (type) {
+                case 'PLAYER_NAME':
+                    mediaInfo.player_name = msgData;
+                    break;
+                case 'IS_NATIVE':
+                    mediaInfo.is_native = msgData.toLowerCase() === 'true';
+                    break;
+                case 'STATE':
+                    mediaInfo.state = msgData;
+                    console.log(`🎵 [WebSocket] State: ${msgData}`);
+                    break;
+                case 'TITLE':
+                    mediaInfo.title = msgData;
+                    console.log(`🎵 [WebSocket] Title: ${msgData}`);
+                    break;
+                case 'ARTIST':
+                    mediaInfo.artist = msgData;
+                    console.log(`🎵 [WebSocket] Artist: ${msgData}`);
+                    break;
+                case 'ALBUM':
+                    mediaInfo.album = msgData;
+                    break;
+                case 'COVER_URL':
+                    mediaInfo.cover_url = msgData;
+                    break;
+                case 'DURATION_SECONDS':
+                    mediaInfo.duration_seconds = parseInt(msgData) || 0;
+                    break;
+                case 'POSITION_SECONDS':
+                    mediaInfo.position_seconds = parseInt(msgData) || 0;
+                    break;
+                case 'VOLUME':
+                    mediaInfo.volume = parseInt(msgData) || 100;
+                    break;
+                case 'PLAYER_CONTROLS':
+                    try {
+                        mediaInfo.controls = JSON.parse(msgData);
+                    } catch (e) {
+                        console.warn('⚠️  [WebSocket] Failed to parse controls:', e);
+                    }
+                    break;
+                case 'ERROR':
+                    console.error('❌ [WebSocket] Browser Error:', msgData);
+                    break;
+                case 'ERRORDEBUG':
+                    console.error('🐛 [WebSocket] Browser Error Trace:', msgData);
+                    break;
+                default:
+                    console.warn(`⚠️  [WebSocket] Unknown message type: ${type} (${message})`);
+            }
+            
+            // Update current media and notify recipients
+            if (mediaInfo.title) {
                 currentMedia = {
-                    title: metadata.title || message.title || 'Unknown',
-                    artist: metadata.artist || message.artist || 'Unknown', 
-                    album: metadata.album || message.album || null,
-                    state: message.state || message.playbackState || 'PLAYING',
-                    position: message.position || 0,
-                    duration: message.duration || 0,
-                    cover: metadata.artwork?.[0]?.src || message.artwork || null,
-                    timestamp: Date.now()
+                    title: mediaInfo.title,
+                    artist: mediaInfo.artist,
+                    album: mediaInfo.album,
+                    state: mediaInfo.state,
+                    cover: mediaInfo.cover_url,
+                    duration: mediaInfo.duration_seconds,
+                    position: mediaInfo.position_seconds,
+                    volume: mediaInfo.volume,
+                    player: mediaInfo.player_name || 'WebNowPlaying',
+                    source: 'WebNowPlaying'
                 };
                 
-                console.log('🎵 [Media Session] Updated media state:', {
+                console.log('✅ [WebSocket] Media info updated:', {
                     title: currentMedia.title,
                     artist: currentMedia.artist,
                     state: currentMedia.state
                 });
+                
+                updateRecipients();
             }
             
         } catch (error) {
             console.error('❌ [WebSocket] Error parsing message:', error);
+            console.error('❌ [WebSocket] Raw data that caused error:', data);
+            console.error('❌ [WebSocket] Error details:', error.stack);
         }
     });
     
-    ws.on('close', () => {
-        console.log('🔌 WebNowPlaying extension disconnected');
+    function updateRecipients() {
+        if (recipients.size > 0) {
+            const jsonData = JSON.stringify(mediaInfo);
+            recipients.forEach(recipient => {
+                if (recipient.readyState === WebSocket.OPEN) {
+                    try {
+                        recipient.send(jsonData);
+                    } catch (e) {
+                        console.warn('⚠️  [WebSocket] Failed to send to recipient:', e);
+                        recipients.delete(recipient);
+                    }
+                }
+            });
+        }
+    }
+    
+    ws.on('close', (code, reason) => {
+        console.log('👋 [WebSocket] WebNowPlaying extension disconnected');
+        console.log('🔌 Close code:', code, 'Reason:', reason.toString());
+        recipients.delete(ws);
     });
     
     ws.on('error', (error) => {
         console.error('❌ [WebSocket] Connection error:', error);
+        recipients.delete(ws);
     });
     
-    // Send welcome message
-    ws.send(JSON.stringify({
-        type: 'welcome',
-        message: 'Connected to DeskThing WebNowPlaying Server'
-    }));
+    ws.on('open', () => {
+        console.log('✅ [WebSocket] Connection opened successfully');
+    });
+    
+    ws.on('ping', (data) => {
+        console.log('🏓 [WebSocket] Received ping:', data);
+    });
+    
+    ws.on('pong', (data) => {
+        console.log('🏓 [WebSocket] Received pong:', data);
+    });
 });
 
 // Serve static files (placed after API routes to avoid conflicts)
