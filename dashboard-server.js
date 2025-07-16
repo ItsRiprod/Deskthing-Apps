@@ -5,6 +5,7 @@ import { execSync } from 'child_process';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import MusicDetector from './scripts/music-debug.js';
+import MediaSessionDetector from './scripts/media-session-detector.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,33 +19,49 @@ app.use(express.static(__dirname));
 
 // CORS middleware for browser requests
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
     next();
+  }
 });
 
+// Create instances
+const legacyDetector = new MusicDetector();
+const mediaSessionDetector = new MediaSessionDetector();
+
 /**
- * Get current media detection data
+ * Enhanced media detection using MediaSession API first, then fallback
  */
 app.get('/api/media/detect', async (req, res) => {
   try {
     console.log('🔍 [Dashboard] Detecting current media...');
     
-    const detector = new MusicDetector();
-    const music = await detector.detectMusic();
+    // Try MediaSession API first (modern approach)
+    let music = await mediaSessionDetector.detectMediaSession();
     
-    if (music) {
+    if (!music || music.error) {
+      console.log('🔄 [Dashboard] MediaSession failed, trying legacy detection...');
+      // Fallback to legacy AppleScript approach
+      music = await legacyDetector.detectMusic();
+    }
+    
+    if (music && !music.error) {
       console.log('✅ [Dashboard] Media detected:', {
         title: music.title,
         artist: music.artist,
         source: music.source,
+        method: music.source === 'soundcloud.com' ? 'MediaSession' : 'Legacy',
         hasArtwork: !!music.artwork
       });
       
       res.json({ 
         success: true, 
-        data: music 
+        data: music,
+        method: music.source === 'soundcloud.com' ? 'MediaSession' : 'Legacy'
       });
     } else {
       console.log('❌ [Dashboard] No media detected');
@@ -63,46 +80,46 @@ app.get('/api/media/detect', async (req, res) => {
 });
 
 /**
- * Send media control commands
+ * Enhanced media control using MediaSession API
  */
 app.post('/api/media/control', async (req, res) => {
   try {
     const { action } = req.body;
-    console.log(`🎛️  [Dashboard] Control command: ${action}`);
+    console.log(`🎮 [Dashboard] Control request: ${action}`);
     
-    if (!['play-pause', 'next', 'previous'].includes(action)) {
-      return res.json({ success: false, error: 'Invalid action' });
+    if (!action || !['play', 'pause', 'nexttrack', 'previoustrack'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid action. Use: play, pause, nexttrack, previoustrack'
+      });
     }
     
-    const result = await sendControlCommand(action);
-    res.json(result);
+    // Try MediaSession control first
+    const success = await mediaSessionDetector.sendMediaControl(action);
+    
+    if (success) {
+      console.log(`✅ [Dashboard] Control successful: ${action}`);
+      res.json({
+        success: true,
+        message: `${action} command sent`,
+        method: 'MediaSession'
+      });
+    } else {
+      console.log(`❌ [Dashboard] Control failed: ${action}`);
+      res.status(500).json({
+        success: false,
+        error: `Failed to send ${action} command`
+      });
+    }
     
   } catch (error) {
-    console.error('❌ [Dashboard] Control failed:', error.message);
-    res.json({ 
-      success: false, 
-      error: error.message 
+    console.error('❌ [Dashboard] Control error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });
-
-/**
- * Helper function to send control commands
- */
-async function sendControlCommand(action) {
-  try {
-    console.log(`🎛️  Sending ${action} command...`);
-    const result = execSync(`node scripts/player-control.js ${action}`, {
-      encoding: 'utf8',
-      timeout: 5000
-    });
-    console.log(`✅ Control result: ${result.trim()}`);
-    return { success: true, message: result.trim() };
-  } catch (error) {
-    console.error(`❌ Control command failed:`, error.message);
-    return { success: false, error: error.message };
-  }
-}
 
 /**
  * Get enhanced media info with position tracking
@@ -111,13 +128,20 @@ app.get('/api/media/status', async (req, res) => {
   try {
     console.log('🔍 [Dashboard] Getting media status...');
     
-    const detector = new MusicDetector();
-    const music = await detector.detectMusic();
+    // Try MediaSession first for enhanced info
+    let music = await mediaSessionDetector.detectMediaSession();
     
-    if (music) {
+    if (!music || music.error) {
+      // Fallback to legacy detection
+      music = await legacyDetector.detectMusic();
+    }
+    
+    if (music && !music.error) {
       console.log('✅ [Dashboard] Media status:', {
         title: music.title,
         isPlaying: music.isPlaying,
+        duration: music.duration,
+        position: music.position,
         hasArtwork: !!music.artwork
       });
       
@@ -193,47 +217,50 @@ app.post('/api/obs-nowplaying', (req, res) => {
   }
 });
 
-// Add common endpoints the extension might try
-app.post('/obs-nowplaying', (req, res) => {
-  console.log('🌐 [Chrome Extension /obs-nowplaying] Received data:', req.body);
-  // Use same handler logic
-  const chromeData = req.body;
-  const mediaData = {
-    title: chromeData.title || chromeData.songName || 'Unknown Track',
-    artist: chromeData.artist || chromeData.artistName || 'Unknown Artist',
-    album: chromeData.album || '',
-    source: 'Chrome Extension (obs-nowplaying)',
-    artwork: chromeData.artwork || chromeData.cover || null,
-    isPlaying: chromeData.isPlaying !== false,
-    duration: chromeData.duration || 0,
-    position: chromeData.position || chromeData.currentTime || 0,
-    url: chromeData.url || ''
-  };
-  
-  console.log('✅ [Chrome Extension /obs-nowplaying] Processed:', mediaData);
-  res.json({ success: true, message: 'Data received' });
-});
-
+// Add legacy endpoint for chrome extension compatibility
 app.post('/nowplaying', (req, res) => {
-  console.log('🌐 [Chrome Extension /nowplaying] Received data:', req.body);
-  // Use same handler logic
-  const chromeData = req.body;
-  const mediaData = {
-    title: chromeData.title || chromeData.songName || 'Unknown Track',
-    artist: chromeData.artist || chromeData.artistName || 'Unknown Artist',
-    source: 'Chrome Extension (nowplaying)'
-  };
-  
-  console.log('✅ [Chrome Extension /nowplaying] Processed:', mediaData);
-  res.json({ success: true, message: 'Data received' });
+  // Redirect to the new endpoint
+  return app.request.body = req.body, 
+         app.request.method = 'POST',
+         app.request.url = '/api/obs-nowplaying',
+         req.body;
 });
 
-// Removed problematic catch-all route to fix path-to-regexp error
-// Specific endpoints are defined above for Chrome extension compatibility
+// Enhanced metadata endpoint using MediaSession
+app.get('/api/media/metadata', async (req, res) => {
+  try {
+    console.log('🎨 [Dashboard] Getting enhanced metadata...');
+    
+    const metadata = await mediaSessionDetector.getEnhancedMetadata();
+    
+    if (metadata && !metadata.error) {
+      console.log('✅ [Dashboard] Enhanced metadata retrieved');
+      res.json({
+        success: true,
+        data: metadata
+      });
+    } else {
+      res.json({
+        success: false,
+        error: 'No enhanced metadata available'
+      });
+    }
+  } catch (error) {
+    console.error('❌ [Dashboard] Metadata error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
-// Serve the dashboard
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'media-dashboard.html'));
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    methods: ['MediaSession', 'Legacy AppleScript']
+  });
 });
 
 // Create HTTP server
@@ -244,64 +271,168 @@ const wss = new WebSocketServer({ server });
 
 // WebSocket connection handling
 wss.on('connection', (ws) => {
-    console.log('🔌 Chrome extension connected via WebSocket');
-    
-    ws.on('message', (data) => {
-        try {
-            const mediaData = JSON.parse(data.toString());
-            console.log('🌐 [WebSocket] Received Chrome extension data:', mediaData);
-            
-            // Broadcast to all connected clients
-            wss.clients.forEach((client) => {
-                if (client.readyState === 1) { // WebSocket.OPEN
-                    client.send(JSON.stringify({
-                        type: 'mediaUpdate',
-                        data: mediaData
-                    }));
-                }
-            });
-        } catch (error) {
-            console.error('❌ [WebSocket] Error parsing message:', error);
-        }
-    });
-    
-    ws.on('close', () => {
-        console.log('🔌 Chrome extension disconnected');
-    });
-    
-    // Send initial status
-    ws.send(JSON.stringify({
-        type: 'status',
-        message: 'Connected to DeskThing Media Server'
-    }));
+  console.log('🔌 [WebSocket] Client connected');
+  
+  ws.on('message', (message) => {
+    console.log('📨 [WebSocket] Received:', message.toString());
+  });
+  
+  ws.on('close', () => {
+    console.log('🔌 [WebSocket] Client disconnected');
+  });
+  
+  // Send initial status
+  (async () => {
+    try {
+      let music = await mediaSessionDetector.detectMediaSession();
+      if (!music || music.error) {
+        music = await legacyDetector.detectMusic();
+      }
+      
+      if (music && !music.error) {
+        ws.send(JSON.stringify({
+          type: 'media-update',
+          data: music
+        }));
+      }
+    } catch (error) {
+      console.error('❌ [WebSocket] Initial status error:', error.message);
+    }
+  })();
+});
+
+// Dashboard UI
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>DeskThing Media Dashboard</title>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: system-ui; margin: 2rem; background: #1a1a1a; color: #fff; }
+          .container { max-width: 800px; margin: 0 auto; }
+          .status { padding: 1rem; background: #2a2a2a; border-radius: 8px; margin: 1rem 0; }
+          .controls { display: flex; gap: 1rem; margin: 1rem 0; }
+          button { padding: 0.5rem 1rem; background: #007aff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+          button:hover { background: #0056b3; }
+          .metadata { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem; }
+          .artwork { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>🎵 DeskThing Media Dashboard</h1>
+          <p>Enhanced with <strong>navigator.mediaSession</strong> API</p>
+          
+          <div class="status" id="status">
+            <p>Loading media status...</p>
+          </div>
+          
+          <div class="controls">
+            <button onclick="sendControl('previoustrack')">⏮️ Previous</button>
+            <button onclick="sendControl('play')">▶️ Play</button>
+            <button onclick="sendControl('pause')">⏸️ Pause</button>
+            <button onclick="sendControl('nexttrack')">⏭️ Next</button>
+          </div>
+          
+          <button onclick="refreshStatus()">🔄 Refresh Status</button>
+        </div>
+        
+        <script>
+          async function refreshStatus() {
+            try {
+              const response = await fetch('/api/media/status');
+              const data = await response.json();
+              
+              const statusDiv = document.getElementById('status');
+              
+              if (data.success && data.data) {
+                const media = data.data;
+                statusDiv.innerHTML = \`
+                  <div class="metadata">
+                    \${media.artwork ? \`<img src="\${media.artwork}" class="artwork" alt="Artwork">\` : '<div class="artwork" style="background: #333;"></div>'}
+                    <div>
+                      <h3>\${media.title}</h3>
+                      <p><strong>Artist:</strong> \${media.artist}</p>
+                      <p><strong>Album:</strong> \${media.album || 'N/A'}</p>
+                      <p><strong>Source:</strong> \${media.source}</p>
+                      <p><strong>Status:</strong> \${media.isPlaying ? '▶️ Playing' : '⏸️ Paused'}</p>
+                      \${media.duration ? \`<p><strong>Duration:</strong> \${Math.floor(media.duration / 60)}:\${(media.duration % 60).toString().padStart(2, '0')}</p>\` : ''}
+                      \${media.position ? \`<p><strong>Position:</strong> \${Math.floor(media.position / 60)}:\${(media.position % 60).toString().padStart(2, '0')}</p>\` : ''}
+                    </div>
+                  </div>
+                \`;
+              } else {
+                statusDiv.innerHTML = '<p>❌ No media detected</p>';
+              }
+            } catch (error) {
+              document.getElementById('status').innerHTML = \`<p>❌ Error: \${error.message}</p>\`;
+            }
+          }
+          
+          async function sendControl(action) {
+            try {
+              const response = await fetch('/api/media/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action })
+              });
+              
+              const data = await response.json();
+              console.log('Control response:', data);
+              
+              // Refresh status after control
+              setTimeout(refreshStatus, 500);
+            } catch (error) {
+              console.error('Control error:', error);
+            }
+          }
+          
+          // Auto-refresh every 5 seconds
+          setInterval(refreshStatus, 5000);
+          
+          // Initial load
+          refreshStatus();
+        </script>
+      </body>
+    </html>
+  `);
 });
 
 // Start server
 server.listen(PORT, () => {
-    console.log(`🎵 Media Dashboard server running at http://localhost:${PORT}`);
-    console.log(`🔌 WebSocket server running at ws://localhost:${PORT}`);
-    console.log('📊 Available endpoints:');
-    console.log('  GET  /api/media/detect  - Detect current media');  
-    console.log('  GET  /api/media/status  - Get media with position');
-    console.log('  POST /api/media/control - Send control commands');
-    console.log('  POST /obs-nowplaying    - Chrome extension endpoint');
-    console.log('  POST /nowplaying        - Chrome extension endpoint');
-    console.log('  WS   /                  - WebSocket for real-time data');
-    console.log('  GET  /                  - Dashboard UI');
-    console.log('🔥 Server ready! Waiting for Chrome extension data...');
-});
-
-// Keep the server running
-process.on('SIGTERM', () => {
-    console.log('👋 Server shutting down...');
-    server.close();
-});
-
-process.on('SIGINT', () => {
-    console.log('\n👋 Server shutting down...');
-    server.close();
-    process.exit(0);
-});
-
-// Remove export for direct execution
-// export default app; 
+  console.log(`🎵 Enhanced Media Dashboard server running at http://localhost:${PORT}`);
+  console.log(`🔌 WebSocket server running at ws://localhost:${PORT}`);
+  console.log(`📊 Available endpoints:`);
+  console.log(`  GET  /api/media/detect    - Detect current media (MediaSession + Legacy)`);
+  console.log(`  GET  /api/media/status    - Get media with position`);
+  console.log(`  GET  /api/media/metadata  - Get enhanced metadata with artwork`);
+  console.log(`  POST /api/media/control   - Send control commands (play/pause/next/prev)`);
+  console.log(`  POST /obs-nowplaying      - Chrome extension endpoint`);
+  console.log(`  POST /nowplaying          - Chrome extension endpoint`);
+  console.log(`  GET  /health              - Server health check`);
+  console.log(`  WS   /                    - WebSocket for real-time data`);
+  console.log(`  GET  /                    - Enhanced Dashboard UI`);
+  console.log(`🔥 Server ready! Enhanced with navigator.mediaSession API`);
+  
+  // Auto-detect on startup
+  (async () => {
+    try {
+      let music = await mediaSessionDetector.detectMediaSession();
+      if (!music || music.error) {
+        music = await legacyDetector.detectMusic();
+      }
+      
+      if (music && !music.error) {
+        console.log('🎵 [Startup] Current media:', {
+          title: music.title,
+          artist: music.artist,
+          source: music.source
+        });
+      }
+    } catch (error) {
+      console.error('❌ [Startup] Detection error:', error.message);
+    }
+  })();
+}); 

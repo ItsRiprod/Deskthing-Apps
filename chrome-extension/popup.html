@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 300px;
+      padding: 16px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+      margin: 0;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    
+    .status {
+      padding: 12px;
+      background: #2a2a2a;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .status.connected {
+      background: #2d5a3d;
+      border: 1px solid #4caf50;
+    }
+    
+    .status.disconnected {
+      background: #5a2d2d;
+      border: 1px solid #f44336;
+    }
+    
+    .media-info {
+      padding: 12px;
+      background: #2a2a2a;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+    
+    button {
+      padding: 8px 12px;
+      background: #007aff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    button:hover {
+      background: #0056b3;
+    }
+    
+    .small {
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h3>🎵 DeskThing Media Bridge</h3>
+  </div>
+  
+  <div id="status" class="status disconnected">
+    <strong>Status:</strong> <span id="statusText">Checking...</span>
+  </div>
+  
+  <div id="mediaInfo" class="media-info" style="display: none;">
+    <strong>Current Track:</strong><br>
+    <span id="trackTitle">No media detected</span><br>
+    <small id="trackArtist"></small>
+  </div>
+  
+  <div class="controls">
+    <button onclick="testConnection()">Test Connection</button>
+    <button onclick="openDashboard()">Open Dashboard</button>
+  </div>
+  
+  <div class="small">
+    <strong>Instructions:</strong><br>
+    1. Ensure DeskThing dashboard is running on port 8080<br>
+    2. Play music on supported sites (SoundCloud, YouTube, Spotify)<br>
+    3. Extension will automatically send data to dashboard
+    
+    <br><br>
+    <strong>Supported Sites:</strong><br>
+    • SoundCloud (navigator.mediaSession + DOM)<br>
+    • YouTube (video elements + DOM)<br>
+    • Spotify Web (DOM extraction)<br>
+    • YouTube Music (DOM extraction)
+  </div>
+  
+  <script>
+    let dashboardUrl = 'http://localhost:8080';
+    
+    async function checkStatus() {
+      try {
+        const response = await fetch(`${dashboardUrl}/health`);
+        if (response.ok) {
+          document.getElementById('status').className = 'status connected';
+          document.getElementById('statusText').textContent = 'Connected to Dashboard';
+          
+          // Try to get current media
+          const mediaResponse = await fetch(`${dashboardUrl}/api/media/status`);
+          if (mediaResponse.ok) {
+            const data = await mediaResponse.json();
+            if (data.success && data.data && data.data.title !== 'No track playing') {
+              document.getElementById('mediaInfo').style.display = 'block';
+              document.getElementById('trackTitle').textContent = data.data.title;
+              document.getElementById('trackArtist').textContent = `by ${data.data.artist} - ${data.data.source}`;
+            }
+          }
+        } else {
+          throw new Error('Dashboard not responding');
+        }
+      } catch (error) {
+        document.getElementById('status').className = 'status disconnected';
+        document.getElementById('statusText').textContent = 'Dashboard Not Reachable';
+        document.getElementById('mediaInfo').style.display = 'none';
+      }
+    }
+    
+    async function testConnection() {
+      document.getElementById('statusText').textContent = 'Testing...';
+      await checkStatus();
+    }
+    
+    function openDashboard() {
+      chrome.tabs.create({ url: dashboardUrl });
+    }
+    
+    // Check status on popup open
+    checkStatus();
+  </script>
+</body>
+</html> 
