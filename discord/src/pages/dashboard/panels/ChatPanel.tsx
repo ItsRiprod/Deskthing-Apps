@@ -28,12 +28,12 @@ export const ChatPanel = () => {
       style={{
         boxShadow: "0 6px 16px -4px rgba(0,0,0,0.7)",
       }}
-      className="relative overflow-hidden w-full h-full bg-neutral-700 rounded-3xl flex items-end bg-cover justify-center"
+      className="relative bg-neutral-900 overflow-hidden w-full h-full rounded-3xl flex items-end bg-cover justify-center"
     >
       {/* Absolute Back Button */}
       <button
         onClick={clearSelectedChannel}
-        className="absolute top-4 left-4 flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white rounded-lg shadow transition hover:bg-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-400 z-10"
+        className="absolute top-4 left-4 flex items-center px-4 py-2 bg-neutral-800 text-white rounded-lg shadow transition hover:bg-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-400 z-10"
       >
         <svg
           className="w-5 h-5"

@@ -1,13 +1,20 @@
 import { ChannelStatusBox } from "@src/components/ChannelStatusBox";
 import { GuildStatusBox } from "@src/components/GuildStatusBox";
 import { useChatStore } from "@src/stores/chatStore";
+import { useMemo } from "react";
 
 export const GuildListPanel = () => {
   const guildList = useChatStore((state) => state.guildList);
+  const selectedGuild = useChatStore((state) => state.selectedGuildId);
   const fetchGuildList = useChatStore((state) => state.getGuildList);
   const channels = useChatStore((state) => state.channels);
   const clearSelectedGuild = useChatStore((state) => state.clearSelectedGuild);
   const isLoading = useChatStore((state) => state.isLoading);
+
+  const selectedGuildName = useMemo(() => {
+    const guild = guildList?.guilds.find((g) => g.id === selectedGuild);
+    return guild ? guild.name : "Select a Guild";
+  }, [guildList, selectedGuild]);
 
   const handleFetchGuildList = async () => {
     try {
@@ -26,31 +33,32 @@ export const GuildListPanel = () => {
       style={{
         boxShadow: "0 6px 16px -4px rgba(0,0,0,0.7)",
       }}
-      className="w-full items-center justify-center h-full bg-neutral-700 rounded-3xl p-6"
+      className="w-full relative items-center justify-center h-full bg-neutral-900 rounded-3xl p-6"
     >
       {channels && channels.length > 0 ? (
         <div className="flex w-full h-full">
-          <div>
+            <div className="absolute top-0 left-0 w-full flex items-center px-6 py-3 bg-neutral-800 rounded-t-3xl shadow z-10">
             <button
               onClick={clearGuildSelection}
-              className="flex items-center gap-2 mt-2 px-4 py-2 bg-neutral-800 text-white rounded-lg shadow transition hover:bg-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="flex items-center px-4 py-2 bg-neutral-700 text-white rounded-lg shadow transition hover:bg-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-400 mr-4"
             >
               <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 19l-7-7 7-7"
-                />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+              />
               </svg>
               <span>Back to Guilds</span>
             </button>
-          </div>
+            <p className="text-neutral-200 text-lg font-semibold">{selectedGuildName}</p>
+            </div>
           <div className="flex flex-col items-start justify-start h-full w-full overflow-y-auto">
             {channels.map((channel) => (
               <ChannelStatusBox key={channel.id} channel={channel} />

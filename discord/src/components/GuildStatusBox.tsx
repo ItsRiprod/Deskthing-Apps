@@ -38,7 +38,7 @@ export const GuildStatusBox = ({ guild }: GuildStatusProps) => {
           <p className="text-white font-semibold text-sm">{guild.name}</p>
         </div>
       ) : (
-        <div className="flex items-center justify-center">
+        <div className="flex h-3/5 items-center justify-center">
           <p className="text-white font-semibold text-sm">{guild.name}</p>
         </div>
       )}

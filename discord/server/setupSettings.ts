@@ -28,6 +28,13 @@ export const setupSettings = () => {
       label: "Client Secret",
       value: "",
     },
+    [AppSettingIDs.REDIRECT_URL]: {
+      id: AppSettingIDs.REDIRECT_URL,
+      type: SETTING_TYPES.STRING,
+      description: "Set the Redirect URL for the Discord Application",
+      label: "Redirect URL",
+      value: "http://localhost:8888/callback/discord",
+    },
     [AppSettingIDs.SET_MAIN_TEXT]: {
       id: AppSettingIDs.SET_MAIN_TEXT,
       type: SETTING_TYPES.STRING,
@@ -53,7 +60,7 @@ export const setupSettings = () => {
       id: AppSettingIDs.LEFT_DASHBOARD_PANEL,
       type: SETTING_TYPES.SELECT,
       description: "What elements to show on the dashboard?",
-      label: "Dashboard Elements",
+      label: "Left Panel",
       value: PANEL_ELEMENTS.CALL_STATUS,
       options: [
         {
@@ -82,7 +89,7 @@ export const setupSettings = () => {
       id: AppSettingIDs.RIGHT_DASHBOARD_PANEL,
       type: SETTING_TYPES.SELECT,
       description: "What elements to show on the dashboard?",
-      label: "Dashboard Elements",
+      label: "Right Panel",
       value: PANEL_ELEMENTS.SONG,
       options: [
         {

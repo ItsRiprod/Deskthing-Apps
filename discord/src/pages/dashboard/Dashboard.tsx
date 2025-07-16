@@ -35,8 +35,8 @@ export function Dashboard(): JSX.Element {
       {widgets.includes(DASHBOARD_ELEMENTS.BG_ALBUM) && <BgAlbumArtWidget />}
       <div className="absolute top-0 flex p-5 flex-col w-full h-full">
         <div className="flex h-full items-center space-x-5 justify-center">
-          {showLeft && <LeftPanelComponent />}
-          {showRight && <RightPanelComponent />}
+          {showLeft && LeftPanelComponent && <LeftPanelComponent />}
+          {showRight && RightPanelComponent &&  <RightPanelComponent />}
         </div>
         {widgets.includes(DASHBOARD_ELEMENTS.CALL_CONTROLS) && (
           <CallControlsWidget />

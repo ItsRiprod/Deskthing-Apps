@@ -50,6 +50,55 @@ export const setupSettings = async () => {
       type: SETTING_TYPES.BOOLEAN,
       value: false,
     },
+    dependant1: {
+      id: 'dependant1',
+      label: "Dependant Setting",
+      description: "This depends on the boolean setting to be enabled",
+      type: SETTING_TYPES.STRING,
+      value: "",
+      dependsOn: [{
+        settingId: 'boolean',
+      }]
+    },
+    dependant2: {
+      id: 'dependant2',
+      label: "Second Dependant Setting",
+      description: "Set Dependant Setting to any value but 'disabled' to enable this",
+      type: SETTING_TYPES.MULTISELECT,
+      value: [],
+      dependsOn: [{
+        settingId: 'dependant1',
+        isNot: 'disabled'
+      }],
+      options: [
+        {
+          label: "Enabled Option",
+          value: "enabled"
+        },
+        {
+          label: "Disabled Option",
+          value: "disabled"
+        },
+        {
+          label: "Another Option",
+          value: "option"
+        }
+      ]
+    },
+    dependant3: {
+      id: 'dependant3',
+      label: "Third Dependant Setting",
+      description: "Set Dependant Setting to any value but 'disabled' to enable this",
+      type: SETTING_TYPES.RANGE,
+      value: 50,
+      min: 0,
+      max: 100,
+      step: 5,
+      dependsOn: [{
+        settingId: 'dependant2',
+        isValue: 'enabled'
+      }],
+    },
     string: {
       id: 'string',
       label: "Text Input",
@@ -122,6 +171,17 @@ export const setupSettings = async () => {
       description: "Adjust the color using the color picker",
       type: SETTING_TYPES.COLOR,
       value: "white", // Will end up being a HEX code. This is just the default data
+    },
+    file: {
+      id: 'file',
+      label: "File Selection",
+      description: "Demonstrates the ability to select files",
+      type: SETTING_TYPES.FILE,
+      value: '',
+      // This is the file type that will be accepted. You can add multiple file types if needed
+      fileTypes: [
+        { name: "Image", extensions: ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp"] },
+      ]
     },
   };
 

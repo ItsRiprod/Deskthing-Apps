@@ -40,7 +40,7 @@ export function Loading() {
   }, []);
 
   return (
-    <div className="h-screen w-screen flex flex-col items-center bg-gray-900 justify-center gap-8">
+    <div className="h-screen w-screen flex flex-col items-center bg-gray-900 justify-center">
       <button
         onClick={handleChangeHint}
         className="animate-pop-in relative flex items-center justify-center w-96 h-96 flex-col"

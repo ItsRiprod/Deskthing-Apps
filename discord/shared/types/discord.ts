@@ -143,7 +143,7 @@ export enum DASHBOARD_ELEMENTS {
 }
 
 type StringSetting = {
-  id: AppSettingIDs.CLIENT_ID | AppSettingIDs.CLIENT_SECRET | AppSettingIDs.SET_MAIN_TEXT | AppSettingIDs.SET_SECONDARY_TEXT;
+  id: AppSettingIDs.CLIENT_ID | AppSettingIDs.CLIENT_SECRET | AppSettingIDs.SET_MAIN_TEXT | AppSettingIDs.SET_SECONDARY_TEXT | AppSettingIDs.REDIRECT_URL;
   type: typeof SETTING_TYPES.STRING;
   description: string;
   label: string;
@@ -179,6 +179,7 @@ type MultiSelectSetting = {
 export type DiscordSettings = {
   [AppSettingIDs.CLIENT_ID]: StringSetting & { id: AppSettingIDs.CLIENT_ID };
   [AppSettingIDs.CLIENT_SECRET]: StringSetting & { id: AppSettingIDs.CLIENT_SECRET };
+  [AppSettingIDs.REDIRECT_URL]: StringSetting & { id: AppSettingIDs.REDIRECT_URL };
   [AppSettingIDs.SET_MAIN_TEXT]: StringSetting & { id: AppSettingIDs.SET_MAIN_TEXT };
   [AppSettingIDs.SET_SECONDARY_TEXT]: StringSetting & { id: AppSettingIDs.SET_SECONDARY_TEXT };
   [AppSettingIDs.HAVE_TIMER]: BooleanSetting;

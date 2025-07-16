@@ -13,11 +13,11 @@ export const MessageStatusBox = ({ message }: MessageStatusProps) => {
   }, [message.author.profileUrl]);
 
   return (
-    <div className="flex items-center gap-3 p-2 rounded-lg mb-2 w-full max-w-md bg-neutral-800 shadow">
+    <div className="flex items-start p-2 rounded-lg mb-2 w-full max-w-md">
       {profileUrl && (
         <img
           src={profileUrl}
-          className="w-8 h-8 rounded-full object-cover bg-neutral-600"
+          className="w-8 h-8 m-2 mr-4 rounded-full object-cover bg-neutral-600"
         />
       )}
       <div className="flex flex-col">
