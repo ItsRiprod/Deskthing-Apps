@@ -31,10 +31,10 @@ export function Dashboard(): JSX.Element {
   const showRight = rightPanel !== PANEL_ELEMENTS.BLANK;
 
   return (
-    <div className="relative w-screen h-screen">
+    <div className="relative w-full h-full max-h-screen">
       {widgets.includes(DASHBOARD_ELEMENTS.BG_ALBUM) && <BgAlbumArtWidget />}
-      <div className="absolute top-0 flex p-5 flex-col w-full h-full">
-        <div className="flex h-full items-center space-x-5 justify-center">
+      <div className="flex p-5 flex-col w-full h-full">
+        <div className="flex flex-grow max-h-full overflow-hidden items-center space-x-5 justify-center">
           {showLeft && LeftPanelComponent && <LeftPanelComponent />}
           {showRight && RightPanelComponent &&  <RightPanelComponent />}
         </div>

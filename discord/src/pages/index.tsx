@@ -10,11 +10,11 @@ export const PageManager = () => {
   const isLoading = useUIStore((state) => state.isLoading);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-h-full">
       {isLoading ? (
         <Loading />
       ) : (
-        <div className="flex-1 overflow-y-auto">
+        <div className="h-full w-full max-h-full">
           {currentPage === "chat" && <Chat />}
           {currentPage === "browsing" && <Browsing />}
           {currentPage === "call" && <Call />}

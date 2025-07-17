@@ -1,10 +1,15 @@
 import { DeskThing } from "@deskthing/server";
-import { Channel, MessageObject, RPCCommands, RPCEvents } from "../types/discordApiTypes";
+import {
+  Channel,
+  MessageObject,
+  RPCCommands,
+  RPCEvents,
+} from "../types/discordApiTypes";
 import { getEncodedImage, ImageType } from "../utils/imageFetch";
 import { ChatMessage, ChatStatus } from "../../../shared/types/discord";
 import { EventEmitter } from "node:events";
 import { DiscordRPCStore } from "./rpcStore";
-import { GuildListManager } from "./guildStore"
+import { GuildListManager } from "./guildStore";
 
 type chatStatusEvents = {
   update: [ChatStatus];
@@ -21,7 +26,7 @@ export class ChatStatusManager extends EventEmitter<chatStatusEvents> {
   private typingUserTimeouts: Map<string, NodeJS.Timeout> = new Map();
   private rpc: DiscordRPCStore;
   private currentGuildId: string | null = null;
-  private guildStore: GuildListManager
+  private guildStore: GuildListManager;
 
   constructor(rpc: DiscordRPCStore, guildStore: GuildListManager) {
     super();
@@ -41,7 +46,7 @@ export class ChatStatusManager extends EventEmitter<chatStatusEvents> {
           });
         }
       }
-    )
+    );
 
     this.guildStore.on("guildSelected", (guildId) => {
       if (guildId != this.currentGuildId) {
@@ -133,13 +138,44 @@ export class ChatStatusManager extends EventEmitter<chatStatusEvents> {
       await this.addNewMessage(message);
     });
 
-    this.currentStatus.isLoading = false
+    console.log(`Added ${channel.messages?.length || 0} messages`);
 
-    await this.rpc.subscribe(RPCEvents.MESSAGE_CREATE, channel.id);
+    this.currentStatus.isLoading = false;
+    console.log(
+      `Setting up new channel: ${channel.id} (${channel.name}) Guild is ${
+        channel.guild_id || "DM"
+      }`
+    );
+
+    try {
+      await this.rpc.subscribe(RPCEvents.MESSAGE_CREATE, channel.id);
+    } catch (error) {
+      console.error(
+        `Failed to subscribe to messages for channel ${channel.id}:`,
+        error
+      );
+
+      // Try to resubscribe after a delay
+      setTimeout(async () => {
+        try {
+          console.log(
+            `Retrying subscription to MESSAGE_CREATE for channel ${channel.id}`
+          );
+          await this.rpc.subscribe(RPCEvents.MESSAGE_CREATE, channel.id);
+          console.log(
+            `Successfully subscribed to MESSAGE_CREATE for channel ${channel.id} on retry`
+          );
+        } catch (retryError) {
+          console.error(
+            `Failed to subscribe to MESSAGE_CREATE for channel ${channel.id} on retry: ${retryError}`
+          );
+        }
+      }, 2000);
+    }
     // await this.rpc.subscribe(RPCEvents.TYPING_START, channel.id);
     // await this.rpc.subscribe(RPCEvents.TYPING_STOP, channel.id);
   };
-  
+
   async selectTextChannel(channelId: string | undefined | null) {
     if (channelId) {
       const channel = (await this.rpc.request(RPCCommands.GET_CHANNEL, {

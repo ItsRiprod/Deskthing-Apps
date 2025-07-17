@@ -33,42 +33,44 @@ export const GuildListPanel = () => {
       style={{
         boxShadow: "0 6px 16px -4px rgba(0,0,0,0.7)",
       }}
-      className="w-full relative items-center justify-center h-full bg-neutral-900 rounded-3xl p-6"
+      className="w-full overflow-y-auto flex-grow-0 relative flex justify-center max-h-full bg-neutral-900 rounded-3xl p-6"
     >
       {channels && channels.length > 0 ? (
-        <div className="flex w-full h-full">
-            <div className="absolute top-0 left-0 w-full flex items-center px-6 py-3 bg-neutral-800 rounded-t-3xl shadow z-10">
+        <div className="flex w-full flex-grow pt-12">
+          <div className="absolute top-0 left-0 w-full flex items-center px-6 py-3 bg-neutral-800 rounded-t-3xl shadow z-10">
             <button
               onClick={clearGuildSelection}
               className="flex items-center px-4 py-2 bg-neutral-700 text-white rounded-lg shadow transition hover:bg-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-400 mr-4"
             >
               <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
               >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
               <span>Back to Guilds</span>
             </button>
-            <p className="text-neutral-200 text-lg font-semibold">{selectedGuildName}</p>
-            </div>
-          <div className="flex flex-col items-start justify-start h-full w-full overflow-y-auto">
+            <p className="text-neutral-200 text-lg font-semibold">
+              {selectedGuildName}
+            </p>
+          </div>
+          <div className="flex flex-col items-start justify-start flex-grow overflow-y-auto">
             {channels.map((channel) => (
               <ChannelStatusBox key={channel.id} channel={channel} />
             ))}
           </div>
         </div>
       ) : guildList?.guilds && guildList?.guilds.length > 0 ? (
-        <div className="overflow-y-auto grid grid-cols-2 w-full h-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full h-full overflow-y-auto">
           {guildList.guilds.map((guild) => (
-            <div key={guild.id} className="p-2 h-full w-full">
+            <div key={guild.id} className="p-2">
               <GuildStatusBox guild={guild} />
             </div>
           ))}

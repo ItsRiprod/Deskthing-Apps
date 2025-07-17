@@ -289,6 +289,7 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
     } catch (error) {
       this.subscriptions[event] = { unsubscribe: async () => true, channelId };
       console.error(`Error subscribing to ${event}: ${error}`);
+      throw error
     }
   }
 

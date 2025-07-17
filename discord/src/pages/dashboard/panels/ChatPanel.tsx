@@ -28,7 +28,7 @@ export const ChatPanel = () => {
       style={{
         boxShadow: "0 6px 16px -4px rgba(0,0,0,0.7)",
       }}
-      className="relative bg-neutral-900 overflow-hidden w-full h-full rounded-3xl flex items-end bg-cover justify-center"
+      className="relative bg-neutral-900 overflow-hidden w-full max-h-full h-full rounded-3xl flex items-end bg-cover justify-center"
     >
       {/* Absolute Back Button */}
       <button

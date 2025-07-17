@@ -4,7 +4,7 @@ import { PageManager } from "./pages";
 
 function App(): JSX.Element {
   return (
-    <div className="h-screen w-screen bg-black overflow-hidden">
+    <div className="h-screen max-h-screen w-screen bg-black overflow-hidden">
       <StoreInitializer />
       <PageManager />
     </div>
