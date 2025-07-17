@@ -276,8 +276,12 @@ class MediaSessionDetector {
 
       const result = await this.executeJSInTabs(jsCode, 'control');
       
+      console.log(`🔍 [MediaSession] Raw control result for ${action}:`, result);
+      console.log(`🔍 [MediaSession] Result type:`, typeof result);
+      console.log(`🔍 [MediaSession] Result success:`, result?.success);
+      
       if (result && result.success) {
-        console.log(`✅ [MediaSession] Control sent: ${action}`);
+        console.log(`✅ [MediaSession] Control sent: ${action} via ${result.action || result.method || 'unknown'}`);
         return true;
       } else {
         console.log(`❌ [MediaSession] Control failed: ${result?.error || 'Unknown error'}`);

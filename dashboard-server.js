@@ -124,9 +124,14 @@ app.post('/api/media/control', async (req, res) => {
     }
     
     // First, try direct MediaSession control (same window)
-    console.log(`🔄 [Dashboard] Trying direct MediaSession control first...`);
+    console.log(`🔄 [Dashboard] Trying direct MediaSession control first for: ${action}`);
     const directSuccess = await mediaSessionDetector.sendMediaControl(action);
-    console.log(`📊 [Dashboard] Direct MediaSession result: ${directSuccess}`);
+    console.log(`📊 [Dashboard] MediaSession result for ${action}: ${directSuccess ? 'SUCCESS' : 'FAILED'}`);
+    console.log(`🔍 [Dashboard] MediaSession details:`, {
+      action,
+      success: directSuccess,
+      timestamp: new Date().toISOString()
+    });
     
     if (directSuccess) {
       console.log(`✅ [Dashboard] Direct control successful: ${action}`);

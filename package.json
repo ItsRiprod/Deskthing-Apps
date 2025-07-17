@@ -21,6 +21,7 @@
     "debug-music": "node scripts/music-debug.js",
     "player:control": "node scripts/player-control.js",
     "dashboard": "node dashboard-server.js",
+    "dashboard:watch": "nodemon dashboard-server.js",
     "lint:check": "eslint *.js chrome-extension/*.js scripts/*.js",
     "webnowplaying": "lsof -ti:8080 | xargs kill -9 2>/dev/null || true && node webnowplaying-server.js",
     "wnp": "lsof -ti:8080 | xargs kill -9 2>/dev/null || true && node webnowplaying-wnp-adapter.js",
@@ -29,7 +30,8 @@
   "devDependencies": {
     "@deskthing/cli": "^0.11.4",
     "@deskthing/types": "^0.11.9",
-    "@types/node": "^22.13.10"
+    "@types/node": "^22.13.10",
+    "nodemon": "^3.1.10"
   },
   "dependencies": {
     "express": "^5.1.0",

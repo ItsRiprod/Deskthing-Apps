@@ -2,7 +2,10 @@
  * DeskThing Media Bridge - Background Service Worker
  */
 
-console.log('🎵 DeskThing Media Bridge background script loaded');
+const manifest = chrome.runtime.getManifest();
+console.log(`🎵 DeskThing Media Bridge background script loaded - v${manifest.version}`);
+console.log('🔍 [Background] Extension ID:', chrome.runtime.id);
+console.log('🔍 [Background] Ready to handle cross-window coordination!');
 
 // Listen for extension installation
 chrome.runtime.onInstalled.addListener((details) => {
