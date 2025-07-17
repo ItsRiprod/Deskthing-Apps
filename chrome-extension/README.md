@@ -1,6 +1,8 @@
-# 🎵 DeskThing Media Bridge - Chrome Extension v2.2
+# 🎵 DeskThing Media Bridge - Chrome Extension
 
 **✅ PRODUCTION READY** - Complete MediaSession API integration with CSP compliance!
+
+> **Version:** Dynamically reads from `manifest.json` - currently v2.4
 
 This Chrome extension provides proper `navigator.mediaSession` API integration and enhanced DOM scraping, delivering real-time music data with working duration/position tracking and seeking controls.
 

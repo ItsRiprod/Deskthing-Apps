@@ -3,7 +3,8 @@
  * Separated JavaScript to comply with Chrome extension CSP
  */
 
-const EXTENSION_VERSION = "2.2";
+// Get version dynamically from manifest
+const EXTENSION_VERSION = chrome.runtime.getManifest().version;
 let dashboardUrl = 'http://localhost:8080';
 let currentMedia = null;
 let isPlaying = false;
@@ -167,6 +168,9 @@ function toggleDebug() {
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
   log(`Extension popup opened (v${EXTENSION_VERSION})`);
+  
+  // Update version display
+  document.getElementById('version').textContent = `Version ${EXTENSION_VERSION} Enhanced`;
   
   // Set up event listeners instead of inline onclick handlers
   document.getElementById('prevBtn').addEventListener('click', () => sendControl('previoustrack'));

@@ -1,10 +1,20 @@
 /**
  * DeskThing Media Bridge - Content Script
  * Enhanced version with better SoundCloud support and MediaSession handling
- * @version 2.0
+ * @version Dynamic (reads from manifest)
  */
 
-const EXTENSION_VERSION = "2.2";
+// Get version dynamically from manifest
+const getExtensionVersion = () => {
+  try {
+    return chrome.runtime.getManifest().version;
+  } catch (error) {
+    console.warn('Could not get extension version:', error);
+    return 'unknown';
+  }
+};
+
+const EXTENSION_VERSION = getExtensionVersion();
 
 console.log(`🎵 DeskThing Media Bridge v${EXTENSION_VERSION} loaded on:`, window.location.hostname);
 

@@ -21,6 +21,7 @@
     "debug-music": "node scripts/music-debug.js",
     "player:control": "node scripts/player-control.js",
     "dashboard": "node dashboard-server.js",
+    "lint:check": "eslint *.js chrome-extension/*.js scripts/*.js",
     "webnowplaying": "lsof -ti:8080 | xargs kill -9 2>/dev/null || true && node webnowplaying-server.js",
     "wnp": "lsof -ti:8080 | xargs kill -9 2>/dev/null || true && node webnowplaying-wnp-adapter.js",
     "wnp-python": "lsof -ti:8080 | xargs kill -9 2>/dev/null || true && sleep 1 && source wnp_python_env/bin/activate && python3 webnowplaying-python-adapter.py"

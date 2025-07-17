@@ -103,6 +103,139 @@ curl -X POST http://localhost:8080/api/media/control \
 
 ---
 
+## 🚨 CRITICAL LIMITATION DISCOVERED - Chrome Extension Cross-Window Issue
+
+**Date:** January 17, 2025  
+**Status:** 🎯 **HIGH PRIORITY** - Breaks intended usage pattern  
+**Impact:** Dashboard controls only work when media tab is in same Chrome window
+
+### 🔍 Issue Analysis
+- **Root Cause:** Chrome's MediaSession API uses window-scoped audio focus
+- **Technical Details:** Each browser window has separate "active media session" determination
+- **Architecture Limitation:** MediaSession commands are isolated per-window for security/privacy
+- **User Impact:** DeskThing dashboard must be in same window as media tab for controls to work
+
+### 🚀 **PHASE 7: Chrome Extension Cross-Window Workaround** 🎯 **PLANNED**
+**Goal:** Enable dashboard media controls across different Chrome windows
+
+#### Solution Architecture
+**Enhanced Extension Background Script Coordination**
+```
+Dashboard (localhost:8080) 
+    ↓ HTTP/WebSocket API
+Chrome Extension Background Script (Service Worker)
+    ↓ chrome.tabs.query() + chrome.tabs.sendMessage()
+Content Script in Media Tab (Any Window)
+    ↓ Direct MediaSession API Control
+Media Player in Target Window
+```
+
+#### Implementation Strategy ✅ **DESIGNED**
+
+**Phase 7.1: Extension Background Enhancement** 📋 **READY**
+- [ ] **Add Media Control API Endpoint** - `/api/extension/control` on dashboard server
+- [ ] **Background Script Message Relay** - Use `chrome.tabs.query()` to find active media tabs
+- [ ] **Cross-Window Tab Discovery** - Query all windows for tabs with active MediaSession
+- [ ] **Command Forwarding** - Use `chrome.tabs.sendMessage()` to send controls to target tab
+- [ ] **Response Coordination** - Collect responses from target tabs and relay back to dashboard
+
+**Phase 7.2: Content Script Enhancement** 📋 **READY**
+- [ ] **Message Listener Integration** - Add `chrome.runtime.onMessage` listener for control commands
+- [ ] **MediaSession Control Execution** - Execute received commands in target window context
+- [ ] **Status Response System** - Send execution status back to background script
+- [ ] **Fallback DOM Control** - Direct button clicking if MediaSession control fails
+
+**Phase 7.3: Dashboard Integration** 📋 **READY**
+- [ ] **Extension Communication Layer** - Add fallback to extension API when direct control fails
+- [ ] **Automatic Fallback Logic** - Try direct MediaSession first, then extension relay
+- [ ] **Cross-Window Detection** - Detect when dashboard and media are in different windows
+- [ ] **UI Status Indicators** - Show when using cross-window control mode
+
+#### Technical Implementation Details
+
+**Background Script Enhancements:**
+```javascript
+// Enhanced background script with cross-window control
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'mediaControl') {
+    // Find active media tabs across ALL windows
+    chrome.tabs.query({url: ['*://music.youtube.com/*', '*://soundcloud.com/*']}, (tabs) => {
+      // Send control command to each potential media tab
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, {
+          type: 'executeMediaControl',
+          command: message.command
+        });
+      });
+    });
+  }
+});
+```
+
+**Content Script Enhancements:**
+```javascript
+// Enhanced content script with message control
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'executeMediaControl') {
+    // Execute control in this tab's MediaSession context
+    if (navigator.mediaSession) {
+      // Use existing MediaSession control logic
+      executeMediaCommand(message.command);
+      sendResponse({success: true, tabId: tab.id});
+    }
+  }
+});
+```
+
+**Dashboard Server API Enhancement:**
+```javascript
+// New endpoint for extension-mediated control
+app.post('/api/extension/control', (req, res) => {
+  const {command} = req.body;
+  
+  // Send command to extension background script
+  // Extension handles cross-window discovery and execution
+  
+  res.json({success: true, method: 'extension-relay'});
+});
+```
+
+#### Performance & Latency Expectations
+- **Latency:** ~50-100ms additional overhead vs direct MediaSession
+- **Reliability:** Higher than direct MediaSession (works across windows)
+- **Compatibility:** Works with existing WebNowPlaying detection
+- **Fallback Chain:** Direct MediaSession → Extension Relay → DOM Manipulation
+
+#### Testing Strategy
+**Phase 7.4: Cross-Window Validation** 📋 **READY**
+- [ ] **Multi-Window Setup Testing** - Dashboard in window A, media in window B
+- [ ] **Command Execution Verification** - All controls work across windows
+- [ ] **Latency Measurement** - Ensure acceptable response times
+- [ ] **Fallback Testing** - Verify graceful degradation when extension unavailable
+- [ ] **Multi-Platform Testing** - Chrome, Edge, other Chromium browsers
+
+#### Integration with Current Architecture
+**Preserves Existing Success:**
+- ✅ **WebNowPlaying Detection** - No changes to media detection system
+- ✅ **Python Adapter** - Continues to provide metadata and status
+- ✅ **API Compatibility** - Same endpoints with enhanced fallback options
+- ✅ **Single-Window Operation** - Still works optimally when in same window
+
+**Adds Cross-Window Capability:**
+- 🎯 **Extension Background Coordination** - New service worker relay system
+- 🎯 **Universal Tab Discovery** - Find media tabs in any Chrome window
+- 🎯 **Cross-Window Control** - Send commands across window boundaries
+- 🎯 **Intelligent Fallback** - Try best method first, fallback as needed
+
+#### Success Metrics for Phase 7
+- [ ] **Cross-Window Control Success Rate** - >95% command execution across windows
+- [ ] **Latency Performance** - <200ms end-to-end control response time
+- [ ] **Discovery Accuracy** - >99% active media tab identification
+- [ ] **Fallback Reliability** - Graceful degradation when extension unavailable
+- [ ] **User Experience** - Transparent operation regardless of window arrangement
+
+---
+
 ## 🏆 LEGACY: Previous Approach (Superseded)
 
 **AppleScript Approach (July 15, 2025)** - ❌ **ABANDONED**
