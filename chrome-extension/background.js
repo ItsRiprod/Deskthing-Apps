@@ -49,8 +49,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 async function handleCrossWindowControl(command, sendResponse) {
   console.log(`🎮 [Background] Cross-window control request: ${command}`);
+  console.log(`🔍 [Background] Starting tab discovery across all Chrome windows...`);
   
   try {
+    // First, get all windows to see what we're working with
+    const allWindows = await chrome.windows.getAll({ populate: true });
+    console.log(`🪟 [Background] Found ${allWindows.length} total Chrome windows:`);
+    allWindows.forEach(window => {
+      console.log(`   Window ${window.id}: ${window.tabs?.length || 0} tabs, focused: ${window.focused}`);
+    });
+    
     // Find all media-capable tabs across ALL Chrome windows
     const mediaTabs = await chrome.tabs.query({
       url: [
@@ -68,9 +76,13 @@ async function handleCrossWindowControl(command, sendResponse) {
       ]
     });
     
-    console.log(`🔍 [Background] Found ${mediaTabs.length} potential media tabs across all windows`);
+    console.log(`🔍 [Background] Found ${mediaTabs.length} potential media tabs across all windows:`);
+    mediaTabs.forEach(tab => {
+      console.log(`   Tab ${tab.id} (Window ${tab.windowId}): ${tab.url} - Active: ${tab.active}, Audible: ${tab.audible}`);
+    });
     
     if (mediaTabs.length === 0) {
+      console.log(`❌ [Background] No media tabs found - sending failure response`);
       sendResponse({ 
         success: false, 
         error: 'No media tabs found',
@@ -82,10 +94,13 @@ async function handleCrossWindowControl(command, sendResponse) {
     // Send control command to all potential media tabs
     let successCount = 0;
     let responses = [];
+    let errors = [];
+    
+    console.log(`📤 [Background] Attempting to send command to ${mediaTabs.length} tabs...`);
     
     for (const tab of mediaTabs) {
       try {
-        console.log(`📤 [Background] Sending ${command} to tab ${tab.id} (${tab.url.substring(0, 50)}...)`);
+        console.log(`📤 [Background] Sending ${command} to tab ${tab.id} (Window ${tab.windowId}): ${tab.url.substring(0, 50)}...`);
         
         const response = await chrome.tabs.sendMessage(tab.id, {
           type: 'executeMediaControl',
@@ -93,47 +108,70 @@ async function handleCrossWindowControl(command, sendResponse) {
           source: 'cross-window-coordination'
         });
         
+        console.log(`📥 [Background] Response from tab ${tab.id}:`, response);
+        
         if (response && response.success) {
           successCount++;
           responses.push({
             tabId: tab.id,
+            windowId: tab.windowId,
             url: tab.url,
             response: response
           });
           console.log(`✅ [Background] Command executed successfully in tab ${tab.id}`);
+        } else {
+          console.log(`⚠️ [Background] Command failed in tab ${tab.id}:`, response);
         }
         
       } catch (error) {
         // Tab might not have content script or be ready - that's OK
-        console.log(`⚠️ [Background] Could not send to tab ${tab.id}: ${error.message}`);
+        console.log(`❌ [Background] Could not send to tab ${tab.id}: ${error.message}`);
+        errors.push({
+          tabId: tab.id,
+          windowId: tab.windowId,
+          url: tab.url,
+          error: error.message
+        });
       }
     }
     
+    console.log(`📊 [Background] Results: ${successCount}/${mediaTabs.length} tabs responded successfully`);
+    console.log(`✅ [Background] Successful responses:`, responses);
+    console.log(`❌ [Background] Errors:`, errors);
+    
     if (successCount > 0) {
-      sendResponse({
+      const result = {
         success: true,
         command: command,
         tabsFound: mediaTabs.length,
         tabsResponded: successCount,
         method: 'cross-window-coordination',
-        responses: responses
-      });
+        responses: responses,
+        errors: errors
+      };
+      console.log(`📤 [Background] Sending success response:`, result);
+      sendResponse(result);
     } else {
-      sendResponse({
+      const result = {
         success: false,
         error: 'No tabs responded to control command',
         tabsFound: mediaTabs.length,
-        method: 'cross-window-coordination'
-      });
+        method: 'cross-window-coordination',
+        errors: errors
+      };
+      console.log(`📤 [Background] Sending failure response:`, result);
+      sendResponse(result);
     }
     
   } catch (error) {
-    console.error('❌ [Background] Cross-window control error:', error);
-    sendResponse({
+    console.error('💥 [Background] Cross-window control error:', error);
+    const result = {
       success: false,
       error: error.message,
       method: 'cross-window-coordination'
-    });
+    };
+    console.log(`📤 [Background] Sending error response:`, result);
+    sendResponse(result);
   }
 }
 

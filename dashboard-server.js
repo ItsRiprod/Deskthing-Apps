@@ -106,10 +106,17 @@ app.get('/api/media/detect', async (req, res) => {
  */
 app.post('/api/media/control', async (req, res) => {
   try {
+    console.log(`📨 [Dashboard] Media control request received:`, {
+      body: req.body,
+      headers: req.headers['content-type'],
+      ip: req.ip
+    });
+    
     const { action } = req.body;
     console.log(`🎮 [Dashboard] Control request: ${action}`);
     
     if (!action || !['play', 'pause', 'nexttrack', 'previoustrack'].includes(action)) {
+      console.log(`❌ [Dashboard] Invalid action: ${action}`);
       return res.status(400).json({
         success: false,
         error: 'Invalid action. Use: play, pause, nexttrack, previoustrack'
@@ -119,6 +126,7 @@ app.post('/api/media/control', async (req, res) => {
     // First, try direct MediaSession control (same window)
     console.log(`🔄 [Dashboard] Trying direct MediaSession control first...`);
     const directSuccess = await mediaSessionDetector.sendMediaControl(action);
+    console.log(`📊 [Dashboard] Direct MediaSession result: ${directSuccess}`);
     
     if (directSuccess) {
       console.log(`✅ [Dashboard] Direct control successful: ${action}`);
@@ -131,6 +139,8 @@ app.post('/api/media/control', async (req, res) => {
     
     // Fallback: Use extension cross-window coordination
     console.log(`🔄 [Dashboard] Direct control failed, trying cross-window coordination...`);
+    console.log(`📋 [Dashboard] Current command queue before adding:`, 
+      pendingExtensionCommands.map(c => ({ id: c.id, command: c.command, status: c.status })));
     
     // Create pending command for extension to pick up
     const commandId = ++extensionCommandIdCounter;
@@ -142,10 +152,16 @@ app.post('/api/media/control', async (req, res) => {
     };
     
     pendingExtensionCommands.push(pendingCommand);
+    console.log(`📋 [Dashboard] Added command to queue. New queue size: ${pendingExtensionCommands.length}`);
     
     // Clean up old commands
     const thirtySecondsAgo = Date.now() - 30000;
+    const initialLength = pendingExtensionCommands.length;
     pendingExtensionCommands = pendingExtensionCommands.filter(cmd => cmd.timestamp > thirtySecondsAgo);
+    
+    if (pendingExtensionCommands.length < initialLength) {
+      console.log(`🧹 [Dashboard] Cleaned up ${initialLength - pendingExtensionCommands.length} old commands`);
+    }
     
     console.log(`🚀 [Dashboard] Using cross-window coordination: ${action} (ID: ${commandId})`);
     
@@ -157,20 +173,24 @@ app.post('/api/media/control', async (req, res) => {
       } else if (command && command.status === 'failed') {
         console.log(`❌ [Dashboard] Cross-window control failed: ${action}`);
       } else {
-        console.log(`⏳ [Dashboard] Cross-window control pending: ${action}`);
+        console.log(`⏳ [Dashboard] Cross-window control pending: ${action} (status: ${command?.status || 'not found'})`);
       }
     }, 5000);
     
-    res.json({
+    const response = {
       success: true,
       commandId: commandId,
       command: action,
       method: 'Extension-CrossWindow',
       message: `${action} command queued for cross-window execution`
-    });
+    };
+    
+    console.log(`📤 [Dashboard] Media control response:`, response);
+    res.json(response);
     
   } catch (error) {
     console.error('❌ [Dashboard] Control error:', error.message);
+    console.error('❌ [Dashboard] Control stack:', error.stack);
     res.status(500).json({
       success: false,
       error: error.message
@@ -396,10 +416,17 @@ app.post('/nowplaying', (req, res) => {
  */
 app.post('/api/extension/control', (req, res) => {
   try {
+    console.log(`📨 [Dashboard] Extension control request received:`, {
+      body: req.body,
+      headers: req.headers['content-type'],
+      ip: req.ip
+    });
+    
     const { command } = req.body;
     console.log(`🎮 [Dashboard] Extension control request: ${command}`);
     
     if (!command || !['play', 'pause', 'nexttrack', 'previoustrack'].includes(command)) {
+      console.log(`❌ [Dashboard] Invalid command: ${command}`);
       return res.status(400).json({
         success: false,
         error: 'Invalid command. Use: play, pause, nexttrack, previoustrack'
@@ -416,23 +443,34 @@ app.post('/api/extension/control', (req, res) => {
     };
     
     pendingExtensionCommands.push(pendingCommand);
+    console.log(`📋 [Dashboard] Command queue now has ${pendingExtensionCommands.length} commands:`, 
+      pendingExtensionCommands.map(c => ({ id: c.id, command: c.command, status: c.status })));
     
     // Clean up old commands (older than 30 seconds)
     const thirtySecondsAgo = Date.now() - 30000;
+    const initialLength = pendingExtensionCommands.length;
     pendingExtensionCommands = pendingExtensionCommands.filter(cmd => cmd.timestamp > thirtySecondsAgo);
+    
+    if (pendingExtensionCommands.length < initialLength) {
+      console.log(`🧹 [Dashboard] Cleaned up ${initialLength - pendingExtensionCommands.length} old commands`);
+    }
     
     console.log(`✅ [Dashboard] Command queued for extension: ${command} (ID: ${commandId})`);
     
-    res.json({
+    const response = {
       success: true,
       commandId: commandId,
       command: command,
       method: 'extension-coordination',
       message: 'Command queued for extension execution'
-    });
+    };
+    
+    console.log(`📤 [Dashboard] Sending response:`, response);
+    res.json(response);
     
   } catch (error) {
     console.error('❌ [Dashboard] Extension control error:', error.message);
+    console.error('❌ [Dashboard] Extension control stack:', error.stack);
     res.status(500).json({
       success: false,
       error: error.message
@@ -445,28 +483,43 @@ app.post('/api/extension/control', (req, res) => {
  */
 app.get('/api/extension/poll', (req, res) => {
   try {
+    console.log(`🔄 [Dashboard] Poll request from: ${req.ip} at ${new Date().toISOString()}`);
+    console.log(`📋 [Dashboard] Total commands in queue: ${pendingExtensionCommands.length}`);
+    
     // Get pending commands
     const pending = pendingExtensionCommands.filter(cmd => cmd.status === 'pending');
+    console.log(`🔍 [Dashboard] Found ${pending.length} pending commands`);
     
     if (pending.length > 0) {
-      console.log(`📤 [Dashboard] Sending ${pending.length} pending command(s) to content script`);
+      console.log(`📤 [Dashboard] Sending ${pending.length} pending command(s) to content script:`, 
+        pending.map(c => ({ id: c.id, command: c.command, age: Date.now() - c.timestamp })));
       
       // Mark as sent
-      pending.forEach(cmd => cmd.status = 'sent');
+      pending.forEach(cmd => {
+        cmd.status = 'sent';
+        cmd.sentAt = Date.now();
+        console.log(`✅ [Dashboard] Marked command ${cmd.id} (${cmd.command}) as sent`);
+      });
       
-      res.json({
+      const response = {
         success: true,
         commands: pending
-      });
+      };
+      
+      console.log(`📤 [Dashboard] Poll response:`, response);
+      res.json(response);
     } else {
-      res.json({
+      console.log(`📤 [Dashboard] No pending commands, sending empty response`);
+      const response = {
         success: true,
         commands: []
-      });
+      };
+      res.json(response);
     }
     
   } catch (error) {
     console.error('❌ [Dashboard] Extension poll error:', error.message);
+    console.error('❌ [Dashboard] Extension poll stack:', error.stack);
     res.status(500).json({
       success: false,
       error: error.message

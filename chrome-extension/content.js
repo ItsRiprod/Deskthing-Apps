@@ -17,6 +17,8 @@ const getExtensionVersion = () => {
 const EXTENSION_VERSION = getExtensionVersion();
 
 console.log(`🎵 DeskThing Media Bridge v${EXTENSION_VERSION} loaded on:`, window.location.hostname);
+console.log(`🔍 [Content] Page URL:`, window.location.href);
+console.log(`🔍 [Content] Page readyState:`, document.readyState);
 
 class MediaBridge {
   constructor() {
@@ -464,7 +466,12 @@ class MediaBridge {
    * 📥 Poll dashboard for pending extension commands
    */
   async pollForCommands() {
-    if (!this.isPollingEnabled) return;
+    if (!this.isPollingEnabled) {
+      console.log(`⏸️ [Content] Polling disabled, skipping poll`);
+      return;
+    }
+    
+    console.log(`🔄 [Content] Polling dashboard for commands...`);
     
     try {
       const response = await fetch(`${this.dashboardUrl}/api/extension/poll`, {
@@ -474,24 +481,31 @@ class MediaBridge {
         }
       });
       
+      console.log(`📥 [Content] Poll response status: ${response.status}`);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log(`📥 [Content] Poll response data:`, data);
         
         if (data.success && data.commands && data.commands.length > 0) {
-          console.log(`📥 [MediaBridge] Received ${data.commands.length} pending command(s):`, data.commands);
+          console.log(`📥 [Content] Received ${data.commands.length} pending command(s):`, data.commands);
           
           // Process each command via background script coordination
           for (const command of data.commands) {
+            console.log(`🎮 [Content] Processing command:`, command);
             await this.executeCommandViaBackground(command);
           }
+        } else {
+          console.log(`📥 [Content] No pending commands`);
         }
+      } else {
+        console.log(`❌ [Content] Poll failed with status: ${response.status}`);
       }
       
     } catch (error) {
-      // Silently fail - dashboard might not be available, which is OK
       // Only log if we have repeated failures
       if (this.retryCount % 10 === 0) {
-        console.log(`⚠️ [MediaBridge] Command polling: Dashboard not reachable (attempt ${this.retryCount})`);
+        console.log(`⚠️ [Content] Command polling: Dashboard not reachable (attempt ${this.retryCount}):`, error.message);
       }
       this.retryCount++;
     }
