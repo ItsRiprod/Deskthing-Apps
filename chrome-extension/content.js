@@ -27,6 +27,10 @@ class MediaBridge {
     this.retryCount = 0;
     this.maxRetries = 3;
     
+    // 🚀 NEW: Cross-window command polling
+    this.commandPollInterval = null;
+    this.isPollingEnabled = true;
+    
     this.init();
   }
   
@@ -46,6 +50,9 @@ class MediaBridge {
     this.sendInterval = setInterval(() => {
       this.checkAndSendMediaData();
     }, 1000);
+    
+    // 🚀 NEW: Start command polling for cross-window control
+    this.startCommandPolling();
     
     // Send initial data after a delay to ensure page is loaded
     setTimeout(() => this.checkAndSendMediaData(), 2000);
@@ -435,7 +442,341 @@ class MediaBridge {
       return false;
     }
   }
+  
+  /**
+   * 🚀 BREAKTHROUGH FEATURE: Command polling for cross-window control
+   */
+  startCommandPolling() {
+    if (!this.isPollingEnabled) return;
+    
+    console.log(`🔄 [MediaBridge] Starting command polling for cross-window control v${this.version}`);
+    
+    // Poll every 2 seconds for pending commands
+    this.commandPollInterval = setInterval(() => {
+      this.pollForCommands();
+    }, 2000);
+    
+    // Initial poll after a short delay
+    setTimeout(() => this.pollForCommands(), 3000);
+  }
+  
+  /**
+   * 📥 Poll dashboard for pending extension commands
+   */
+  async pollForCommands() {
+    if (!this.isPollingEnabled) return;
+    
+    try {
+      const response = await fetch(`${this.dashboardUrl}/api/extension/poll`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success && data.commands && data.commands.length > 0) {
+          console.log(`📥 [MediaBridge] Received ${data.commands.length} pending command(s):`, data.commands);
+          
+          // Process each command via background script coordination
+          for (const command of data.commands) {
+            await this.executeCommandViaBackground(command);
+          }
+        }
+      }
+      
+    } catch (error) {
+      // Silently fail - dashboard might not be available, which is OK
+      // Only log if we have repeated failures
+      if (this.retryCount % 10 === 0) {
+        console.log(`⚠️ [MediaBridge] Command polling: Dashboard not reachable (attempt ${this.retryCount})`);
+      }
+      this.retryCount++;
+    }
+  }
+  
+  /**
+   * 🎮 Execute command via background script (cross-window coordination)
+   */
+  async executeCommandViaBackground(commandData) {
+    try {
+      console.log(`🎮 [MediaBridge] Executing command via background script:`, commandData);
+      
+      // Send to background script for cross-window coordination
+      const response = await chrome.runtime.sendMessage({
+        type: 'mediaControl',
+        command: commandData.command,
+        commandId: commandData.id,
+        source: 'dashboard-poll'
+      });
+      
+      console.log(`📬 [MediaBridge] Background script response:`, response);
+      
+      // Report result back to dashboard
+      await this.reportCommandResult(commandData.id, response);
+      
+    } catch (error) {
+      console.error(`❌ [MediaBridge] Command execution error:`, error);
+      
+      // Report failure back to dashboard
+      await this.reportCommandResult(commandData.id, {
+        success: false,
+        error: error.message
+      });
+    }
+  }
+  
+  /**
+   * 📬 Report command execution result back to dashboard
+   */
+  async reportCommandResult(commandId, result) {
+    try {
+      const response = await fetch(`${this.dashboardUrl}/api/extension/result`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          commandId: commandId,
+          success: result.success,
+          result: result,
+          tabUrl: window.location.href,
+          timestamp: Date.now()
+        })
+      });
+      
+      if (response.ok) {
+        console.log(`✅ [MediaBridge] Command result reported: ${commandId}`);
+      }
+      
+    } catch (error) {
+      console.error(`❌ [MediaBridge] Failed to report command result:`, error);
+    }
+  }
+  
+  /**
+   * 🛑 Stop command polling (cleanup)
+   */
+  stopCommandPolling() {
+    if (this.commandPollInterval) {
+      clearInterval(this.commandPollInterval);
+      this.commandPollInterval = null;
+      console.log(`🛑 [MediaBridge] Command polling stopped`);
+    }
+  }
 }
 
 // Start the enhanced media bridge
-new MediaBridge(); 
+const mediaBridge = new MediaBridge();
+
+/**
+ * 🚀 BREAKTHROUGH FEATURE: Cross-window control message listener
+ * This receives control commands from background script for cross-window coordination
+ */
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log(`📨 [Content] Received message from background:`, message);
+  
+  if (message.type === 'executeMediaControl') {
+    console.log(`🎮 [Content] Executing cross-window control: ${message.command}`);
+    
+    // Execute the media control command in this tab
+    executeMediaControlInTab(message.command)
+      .then(result => {
+        console.log(`✅ [Content] Control executed successfully:`, result);
+        sendResponse({
+          success: true,
+          command: message.command,
+          result: result,
+          tabUrl: window.location.href,
+          timestamp: Date.now()
+        });
+      })
+      .catch(error => {
+        console.error(`❌ [Content] Control execution failed:`, error);
+        sendResponse({
+          success: false,
+          command: message.command,
+          error: error.message,
+          tabUrl: window.location.href,
+          timestamp: Date.now()
+        });
+      });
+    
+    return true; // Keep response channel open for async response
+  }
+  
+  // Handle other message types if needed
+  return false;
+});
+
+/**
+ * 🎮 Execute media control commands in this tab
+ */
+async function executeMediaControlInTab(command) {
+  try {
+    console.log(`🎵 [Content] Attempting ${command} in tab: ${window.location.hostname}`);
+    
+    // First, try direct media element control (most reliable)
+    const mediaElements = document.querySelectorAll('audio, video');
+    let mediaControlled = false;
+    
+    for (const media of mediaElements) {
+      if (media.duration > 0 || media.currentTime > 0) {
+        switch (command) {
+          case 'play':
+            if (media.paused) {
+              await media.play();
+              mediaControlled = true;
+              return { method: 'media-element', element: media.tagName.toLowerCase() };
+            }
+            break;
+            
+          case 'pause':
+            if (!media.paused) {
+              media.pause();
+              mediaControlled = true;
+              return { method: 'media-element', element: media.tagName.toLowerCase() };
+            }
+            break;
+            
+          case 'nexttrack':
+          case 'previoustrack':
+            // Media elements don't handle track changes - fall through to button clicking
+            break;
+        }
+        
+        if (mediaControlled) break;
+      }
+    }
+    
+    // If media element control didn't work, try site-specific button clicking
+    const buttonResult = await executeSiteSpecificControl(command);
+    if (buttonResult.success) {
+      return buttonResult;
+    }
+    
+    // Final fallback: keyboard shortcuts
+    const keyboardResult = executeKeyboardControl(command);
+    if (keyboardResult.success) {
+      return keyboardResult;
+    }
+    
+    throw new Error(`No control method worked for ${command}`);
+    
+  } catch (error) {
+    console.error(`❌ [Content] Media control error:`, error);
+    throw error;
+  }
+}
+
+/**
+ * 🔘 Site-specific button control
+ */
+async function executeSiteSpecificControl(command) {
+  const hostname = window.location.hostname.replace('www.', '');
+  
+  let selectors = [];
+  
+  switch (command) {
+    case 'play':
+    case 'pause':
+      selectors = [
+        '.playControl',                           // SoundCloud
+        '[data-testid="control-button-playpause"]', // Spotify
+        '.ytp-play-button, .ytp-pause-button',    // YouTube
+        '[aria-label*="play" i], [aria-label*="pause" i]', // Generic
+        '[title*="play" i], [title*="pause" i]'   // Generic
+      ];
+      break;
+      
+    case 'nexttrack':
+      selectors = [
+        '[data-testid="next-button"]',            // Spotify
+        '.skipControl__next',                     // SoundCloud
+        '.ytp-next-button',                       // YouTube
+        '[aria-label*="next" i]',                 // Generic
+        '[title*="next" i]'                       // Generic
+      ];
+      break;
+      
+    case 'previoustrack':
+      selectors = [
+        '[data-testid="previous-button"]',        // Spotify
+        '.skipControl__previous',                 // SoundCloud
+        '.ytp-prev-button',                       // YouTube
+        '[aria-label*="previous" i]',             // Generic
+        '[title*="previous" i]'                   // Generic
+      ];
+      break;
+  }
+  
+  for (const selector of selectors) {
+    try {
+      const button = document.querySelector(selector);
+      if (button && button.offsetParent !== null) {
+        console.log(`🔘 [Content] Clicking button: ${selector}`);
+        button.click();
+        
+        // Wait a bit to see if it worked
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        return {
+          success: true,
+          method: 'button-click',
+          selector: selector,
+          site: hostname
+        };
+      }
+    } catch (error) {
+      console.warn(`⚠️ [Content] Button click failed for ${selector}:`, error);
+    }
+  }
+  
+  return { success: false, method: 'button-click' };
+}
+
+/**
+ * ⌨️ Keyboard shortcut fallback
+ */
+function executeKeyboardControl(command) {
+  try {
+    let keyToPress = null;
+    
+    switch (command) {
+      case 'play':
+      case 'pause':
+        keyToPress = ' '; // Space bar
+        break;
+      case 'nexttrack':
+        // Some sites support arrow keys
+        keyToPress = 'ArrowRight';
+        break;
+      case 'previoustrack':
+        keyToPress = 'ArrowLeft';
+        break;
+    }
+    
+    if (keyToPress) {
+      console.log(`⌨️ [Content] Sending keyboard event: ${keyToPress}`);
+      
+      document.dispatchEvent(new KeyboardEvent('keydown', {
+        key: keyToPress,
+        code: keyToPress === ' ' ? 'Space' : keyToPress,
+        bubbles: true
+      }));
+      
+      return {
+        success: true,
+        method: 'keyboard',
+        key: keyToPress
+      };
+    }
+    
+  } catch (error) {
+    console.warn(`⚠️ [Content] Keyboard control failed:`, error);
+  }
+  
+  return { success: false, method: 'keyboard' };
+} 

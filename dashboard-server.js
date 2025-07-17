@@ -16,6 +16,10 @@ const PORT = 8080;
 // Global state
 let currentMedia = null;
 
+// 🚀 NEW: Extension communication state for cross-window control
+let pendingExtensionCommands = [];
+let extensionCommandIdCounter = 0;
+
 // Middleware
 app.use(express.json());
 
@@ -97,7 +101,8 @@ app.get('/api/media/detect', async (req, res) => {
 });
 
 /**
- * Enhanced media control using MediaSession API
+ * 🚀 Enhanced media control with cross-window fallback
+ * Tries MediaSession first, then falls back to extension coordination
  */
 app.post('/api/media/control', async (req, res) => {
   try {
@@ -111,23 +116,58 @@ app.post('/api/media/control', async (req, res) => {
       });
     }
     
-    // Try MediaSession control first
-    const success = await mediaSessionDetector.sendMediaControl(action);
+    // First, try direct MediaSession control (same window)
+    console.log(`🔄 [Dashboard] Trying direct MediaSession control first...`);
+    const directSuccess = await mediaSessionDetector.sendMediaControl(action);
     
-    if (success) {
-      console.log(`✅ [Dashboard] Control successful: ${action}`);
-      res.json({
+    if (directSuccess) {
+      console.log(`✅ [Dashboard] Direct control successful: ${action}`);
+      return res.json({
         success: true,
         message: `${action} command sent`,
-        method: 'MediaSession'
-      });
-    } else {
-      console.log(`❌ [Dashboard] Control failed: ${action}`);
-      res.status(500).json({
-        success: false,
-        error: `Failed to send ${action} command`
+        method: 'MediaSession-Direct'
       });
     }
+    
+    // Fallback: Use extension cross-window coordination
+    console.log(`🔄 [Dashboard] Direct control failed, trying cross-window coordination...`);
+    
+    // Create pending command for extension to pick up
+    const commandId = ++extensionCommandIdCounter;
+    const pendingCommand = {
+      id: commandId,
+      command: action,
+      timestamp: Date.now(),
+      status: 'pending'
+    };
+    
+    pendingExtensionCommands.push(pendingCommand);
+    
+    // Clean up old commands
+    const thirtySecondsAgo = Date.now() - 30000;
+    pendingExtensionCommands = pendingExtensionCommands.filter(cmd => cmd.timestamp > thirtySecondsAgo);
+    
+    console.log(`🚀 [Dashboard] Using cross-window coordination: ${action} (ID: ${commandId})`);
+    
+    // Wait a bit to see if extension picks up the command (optional timeout)
+    setTimeout(() => {
+      const command = pendingExtensionCommands.find(cmd => cmd.id === commandId);
+      if (command && command.status === 'completed') {
+        console.log(`✅ [Dashboard] Cross-window control completed: ${action}`);
+      } else if (command && command.status === 'failed') {
+        console.log(`❌ [Dashboard] Cross-window control failed: ${action}`);
+      } else {
+        console.log(`⏳ [Dashboard] Cross-window control pending: ${action}`);
+      }
+    }, 5000);
+    
+    res.json({
+      success: true,
+      commandId: commandId,
+      command: action,
+      method: 'Extension-CrossWindow',
+      message: `${action} command queued for cross-window execution`
+    });
     
   } catch (error) {
     console.error('❌ [Dashboard] Control error:', error.message);
@@ -348,6 +388,121 @@ app.post('/nowplaying', (req, res) => {
          app.request.method = 'POST',
          app.request.url = '/api/obs-nowplaying',
          req.body;
+});
+
+/**
+ * 🚀 BREAKTHROUGH FEATURE: Extension cross-window control endpoint
+ * Stores commands for content scripts to poll and execute via background script
+ */
+app.post('/api/extension/control', (req, res) => {
+  try {
+    const { command } = req.body;
+    console.log(`🎮 [Dashboard] Extension control request: ${command}`);
+    
+    if (!command || !['play', 'pause', 'nexttrack', 'previoustrack'].includes(command)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid command. Use: play, pause, nexttrack, previoustrack'
+      });
+    }
+    
+    // Create pending command for content scripts to pick up
+    const commandId = ++extensionCommandIdCounter;
+    const pendingCommand = {
+      id: commandId,
+      command: command,
+      timestamp: Date.now(),
+      status: 'pending'
+    };
+    
+    pendingExtensionCommands.push(pendingCommand);
+    
+    // Clean up old commands (older than 30 seconds)
+    const thirtySecondsAgo = Date.now() - 30000;
+    pendingExtensionCommands = pendingExtensionCommands.filter(cmd => cmd.timestamp > thirtySecondsAgo);
+    
+    console.log(`✅ [Dashboard] Command queued for extension: ${command} (ID: ${commandId})`);
+    
+    res.json({
+      success: true,
+      commandId: commandId,
+      command: command,
+      method: 'extension-coordination',
+      message: 'Command queued for extension execution'
+    });
+    
+  } catch (error) {
+    console.error('❌ [Dashboard] Extension control error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * 📥 Content script polling endpoint - checks for pending commands
+ */
+app.get('/api/extension/poll', (req, res) => {
+  try {
+    // Get pending commands
+    const pending = pendingExtensionCommands.filter(cmd => cmd.status === 'pending');
+    
+    if (pending.length > 0) {
+      console.log(`📤 [Dashboard] Sending ${pending.length} pending command(s) to content script`);
+      
+      // Mark as sent
+      pending.forEach(cmd => cmd.status = 'sent');
+      
+      res.json({
+        success: true,
+        commands: pending
+      });
+    } else {
+      res.json({
+        success: true,
+        commands: []
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ [Dashboard] Extension poll error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * 📬 Content script result reporting endpoint
+ */
+app.post('/api/extension/result', (req, res) => {
+  try {
+    const { commandId, success, result, error } = req.body;
+    console.log(`📬 [Dashboard] Extension result: Command ${commandId} - ${success ? 'SUCCESS' : 'FAILED'}`);
+    
+    // Find and update the command
+    const command = pendingExtensionCommands.find(cmd => cmd.id === commandId);
+    if (command) {
+      command.status = success ? 'completed' : 'failed';
+      command.result = result;
+      command.error = error;
+      command.completedAt = Date.now();
+    }
+    
+    res.json({
+      success: true,
+      message: 'Result recorded'
+    });
+    
+  } catch (error) {
+    console.error('❌ [Dashboard] Extension result error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 // Enhanced metadata endpoint using MediaSession
@@ -598,13 +753,17 @@ server.listen(PORT, () => {
   console.log(`  GET  /api/media/detect    - Detect current media (MediaSession + Legacy)`);
   console.log(`  GET  /api/media/status    - Get media with position`);
   console.log(`  GET  /api/media/metadata  - Get enhanced metadata with artwork`);
-  console.log(`  POST /api/media/control   - Send control commands (play/pause/next/prev)`);
-  console.log(`  POST /obs-nowplaying      - Chrome extension endpoint`);
-  console.log(`  POST /nowplaying          - Chrome extension endpoint`);
+  console.log(`  POST /api/media/control   - Send control commands (Direct + Cross-Window)`);
+  console.log(`  POST /obs-nowplaying      - Chrome extension data endpoint`);
+  console.log(`  POST /nowplaying          - Chrome extension data endpoint`);
+  console.log(`🚀 NEW CROSS-WINDOW ENDPOINTS:`);
+  console.log(`  POST /api/extension/control - Extension cross-window control`);
+  console.log(`  GET  /api/extension/poll    - Content script command polling`);
+  console.log(`  POST /api/extension/result  - Command result reporting`);
   console.log(`  GET  /health              - Server health check`);
   console.log(`  WS   /                    - WebSocket for real-time data`);
   console.log(`  GET  /                    - Enhanced Dashboard UI`);
-  console.log(`🔥 Server ready! Enhanced with navigator.mediaSession API`);
+  console.log(`🚀 Server ready! Now with CROSS-WINDOW MEDIA CONTROL capability!`);
   
   // Auto-detect on startup
   (async () => {
