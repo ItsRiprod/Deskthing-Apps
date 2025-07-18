@@ -192,19 +192,294 @@ graph TD
 - **Multiple Fallbacks**: Button clicks → Direct element control → Keyboard events
 - **Future-Proof**: Architecture supports any web-based media player
 
+## 🚀 **Phase 8: Performance Optimization - Zero-Latency Control**
+
+### **Current Performance Analysis**
+- **Current Latency**: ~2-4 seconds (polling interval + processing)
+- **Bottleneck**: Content script polls every 2 seconds for commands
+- **Target**: Sub-50ms response times for instant media control
+- **Status**: Chrome Extension cross-window working, polling elimination needed
+
+### **3 Performance Optimization Approaches**
+
+#### **Option 1: WebSocket Push System** ⚡ **(RECOMMENDED)**
+*Real-time bidirectional communication for instant command delivery*
+
+**Architecture:**
+```mermaid
+graph TD
+    A["🖥️ Dashboard Window"] -->|"1. WebSocket Command"| B["📡 WebSocket Server<br/>ws://localhost:8081"]
+    B -->|"2. Instant Push"| C["🌐 Content Script<br/>WebSocket Client"]
+    C -->|"3. chrome.runtime.sendMessage"| D["🔧 Background Script"]
+    D -->|"4. chrome.tabs.sendMessage"| E["🎯 Media Tab"]
+    E -->|"5. Direct Control"| F["🎵 Media Player"]
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style F fill:#e8f5e8
+```
+
+**Implementation Details:**
+```javascript
+// Dashboard: WebSocket server for extensions
+const extensionWS = new WebSocketServer({ port: 8081 });
+
+// Content Script: Connect and listen
+const ws = new WebSocket('ws://localhost:8081');
+ws.onmessage = (event) => {
+  const command = JSON.parse(event.data);
+  executeCommandViaBackground(command); // Instant execution
+};
+
+// Dashboard: Push command instantly
+app.post('/api/media/control', (req, res) => {
+  const command = { action: req.body.action, id: ++commandId };
+  
+  // Push to all connected content scripts instantly
+  extensionWS.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(command));
+    }
+  });
+  
+  res.json({ success: true, method: 'websocket-push' });
+});
+```
+
+**Performance Characteristics:**
+- ⚡ **Latency**: ~5-20ms (near-instant)
+- 🔄 **Communication**: Real-time bidirectional
+- 📡 **Connections**: Persistent (no reconnect overhead)
+- 🎯 **Scalability**: Handles multiple extensions/tabs
+
+**Pros & Cons:**
+- ✅ **Lowest possible latency** (network speed limited)
+- ✅ **Real-time status streaming** back to dashboard
+- ✅ **Scales to multiple extensions/tabs** seamlessly
+- ✅ **Immediate command acknowledgment**
+- ❌ **WebSocket management complexity** (connection handling)
+- ❌ **Connection drop recovery** logic needed
+
+---
+
+#### **Option 2: Chrome Extension Message Bridge** 🚀
+*Direct extension-to-dashboard communication via injected content script*
+
+**Architecture:**
+```mermaid
+graph TD
+    A["🖥️ Dashboard Page<br/>window.deskthingExtension"] -->|"1. Direct Call"| B["📝 Extension Content Script<br/>in Dashboard"]
+    B -->|"2. chrome.runtime.sendMessage"| C["🔧 Background Script"]
+    C -->|"3. chrome.tabs.sendMessage"| D["🎯 Media Tab"]
+    D -->|"4. Direct Control"| E["🎵 Media Player"]
+    
+    style A fill:#e1f5fe
+    style B fill:#fff3e0
+    style C fill:#f3e5f5
+    style E fill:#e8f5e8
+```
+
+**Implementation Details:**
+```javascript
+// Dashboard page: Direct extension communication
+window.sendMediaCommand = (command) => {
+  if (window.deskthingExtension) {
+    return window.deskthingExtension.sendCommand(command);
+  }
+  throw new Error('Extension not available');
+};
+
+// Extension content script injected into dashboard:
+window.deskthingExtension = {
+  sendCommand: async (command) => {
+    const response = await chrome.runtime.sendMessage({
+      type: 'dashboardCommand',
+      command: command,
+      timestamp: Date.now()
+    });
+    return response;
+  }
+};
+
+// Background script: Instant relay to media tabs
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'dashboardCommand') {
+    // Send directly to media tabs (no delay)
+    handleCrossWindowControl(message.command, sendResponse);
+    return true; // Keep response channel open
+  }
+});
+
+// Dashboard server: Use extension bridge
+app.post('/api/media/control', async (req, res) => {
+  try {
+    // Try extension bridge first (fastest)
+    const result = await window.sendMediaCommand(req.body.action);
+    res.json({ success: true, method: 'extension-bridge', result });
+  } catch (error) {
+    // Fallback to current polling method
+    res.json({ success: false, error: error.message });
+  }
+});
+```
+
+**Performance Characteristics:**
+- ⚡ **Latency**: ~1-10ms (native Chrome messaging)
+- 🚀 **Overhead**: No network latency (all in-browser)
+- 📱 **Optimization**: Leverages Chrome's native performance
+- 🔧 **Integration**: Seamless with current architecture
+
+**Pros & Cons:**
+- ✅ **Fastest possible approach** (native Chrome IPC)
+- ✅ **No additional servers/ports** needed
+- ✅ **Uses Chrome's optimized messaging** system
+- ✅ **Zero network overhead**
+- ❌ **Dashboard must be extension-aware**
+- ❌ **Requires extension installation** (current requirement anyway)
+
+---
+
+#### **Option 3: Server-Sent Events (SSE) Push** 📡
+*HTTP-based push with fallback compatibility*
+
+**Architecture:**
+```mermaid
+graph TD
+    A["🖥️ Dashboard Control"] -->|"1. HTTP POST"| B["📡 Dashboard Server<br/>/api/media/control"]
+    B -->|"2. SSE Push"| C["🌐 Content Script<br/>EventSource"]
+    C -->|"3. chrome.runtime.sendMessage"| D["🔧 Background Script"]
+    D -->|"4. chrome.tabs.sendMessage"| E["🎯 Media Tab"]
+    E -->|"5. Direct Control"| F["🎵 Media Player"]
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#fff3e0
+    style F fill:#e8f5e8
+```
+
+**Implementation Details:**
+```javascript
+// Dashboard: SSE endpoint for real-time commands
+app.get('/api/extension/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  // Store connection for pushing commands
+  extensionConnections.add(res);
+  
+  // Send heartbeat
+  res.write('data: {"type":"connected"}\n\n');
+  
+  // Clean up on disconnect
+  req.on('close', () => {
+    extensionConnections.delete(res);
+  });
+});
+
+// Content Script: Listen for real-time events
+const eventSource = new EventSource('/api/extension/events');
+eventSource.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  if (data.type === 'mediaCommand') {
+    executeCommandViaBackground(data.command); // Instant execution
+  }
+};
+
+// Dashboard: Push command to all connections
+app.post('/api/media/control', (req, res) => {
+  const command = { 
+    type: 'mediaCommand',
+    action: req.body.action, 
+    id: ++commandId,
+    timestamp: Date.now()
+  };
+  
+  // Push to all connected content scripts
+  extensionConnections.forEach(connection => {
+    try {
+      connection.write(`data: ${JSON.stringify(command)}\n\n`);
+    } catch (error) {
+      extensionConnections.delete(connection);
+    }
+  });
+  
+  res.json({ success: true, method: 'sse-push' });
+});
+```
+
+**Performance Characteristics:**
+- ⚡ **Latency**: ~10-50ms (HTTP-based push)
+- 🔄 **Direction**: Unidirectional push (perfect for commands)
+- 🌐 **Compatibility**: Standard HTTP (easier debugging)
+- 🔄 **Recovery**: Automatic reconnection built-in
+
+**Pros & Cons:**
+- ✅ **Simpler than WebSockets** (standard HTTP)
+- ✅ **Built-in browser support** (EventSource API)
+- ✅ **Easy to debug** (standard HTTP tools)
+- ✅ **Automatic reconnection** handling
+- ✅ **Firewall-friendly** (standard HTTP port)
+- ❌ **Unidirectional** (need separate channel for responses)
+- ❌ **Slightly higher latency** than WebSockets
+
+---
+
+### **Performance Comparison Matrix**
+
+| Method | Latency | Complexity | Reliability | Scalability | Browser Support |
+|--------|---------|------------|-------------|-------------|-----------------|
+| **Current Polling** | ~2000ms | Low | High | Medium | Universal |
+| **WebSocket Push** | ~5-20ms | Medium | High | High | Modern browsers |
+| **Extension Bridge** | ~1-10ms | Low | High | Medium | Chrome/Edge |
+| **SSE Push** | ~10-50ms | Low | High | High | Modern browsers |
+
+### **Recommended Implementation Strategy**
+
+#### **Phase 8.1: WebSocket Implementation** (RECOMMENDED)
+1. **Add WebSocket server** on port 8081 alongside existing HTTP API
+2. **Enhance content scripts** with WebSocket connection logic
+3. **Maintain polling fallback** for compatibility
+4. **Implement connection recovery** with exponential backoff
+
+#### **Phase 8.2: Performance Validation**
+1. **Measure latency** across different network conditions
+2. **Test connection reliability** with network interruptions  
+3. **Validate scaling** with multiple tabs/windows
+4. **Optimize WebSocket message format** for minimal overhead
+
+#### **Phase 8.3: Intelligent Fallback**
+```javascript
+// Smart method selection based on capabilities
+const controlMethods = [
+  { name: 'extension-bridge', latency: '~5ms', fallback: false },
+  { name: 'websocket-push', latency: '~20ms', fallback: true },
+  { name: 'sse-push', latency: '~50ms', fallback: true },
+  { name: 'polling', latency: '~2000ms', fallback: true }
+];
+```
+
+### **Expected Performance Gains**
+- **Latency Reduction**: 2000ms → 20ms (100x improvement)
+- **User Experience**: Near-instant media controls
+- **Responsiveness**: Sub-50ms button feedback
+- **Reliability**: Multiple fallback methods ensure 99.9% uptime
+
 ## 📈 **Future Enhancements**
 
-### **Phase 8: WebSocket Real-time Push**
-- Replace polling with WebSocket connections for instant command delivery
-- Background script as persistent messaging hub
-- Sub-second response times
+### **Phase 9: Advanced Performance Optimization**
+- Predictive command caching for zero-latency controls
+- Command batching for multiple simultaneous operations
+- Adaptive quality settings based on network conditions
 
-### **Phase 9: Advanced Media Discovery**
+### **Phase 10: Advanced Media Discovery**
 - Automatic detection of new media sites
 - Machine learning for button selector discovery
 - Enhanced artwork and metadata extraction
 
-### **Phase 10: Multi-Device Coordination**
+### **Phase 11: Multi-Device Coordination**
 - Cross-device media control (different computers)
 - Shared session state via cloud sync
 - Mobile app integration

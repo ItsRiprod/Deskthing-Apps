@@ -210,6 +210,9 @@ The **breakthrough was fixing MediaSession API usage**:
 ## 📚 **Documentation**
 
 - ✅ **README.md** - Updated with working Chrome extension solution
+- ✅ **ARCHITECTURE.md** - Complete system architecture with cross-window coordination
+- ✅ **PERFORMANCE-OPTIMIZATION.md** - Detailed guide for eliminating polling latency (WebSocket, Extension Bridge, SSE)
+- ✅ **audio/roadmap.md** - Development history and implementation phases
 - ✅ **FIXES-APPLIED.md** - Complete technical breakthrough documentation
 - ✅ **Chrome Extension README** - Detailed v2.2 features and setup
 - ✅ **Version History** - Clear progression from v1.0 to v2.2
