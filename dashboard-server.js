@@ -165,30 +165,30 @@ app.post('/api/media/control', async (req, res) => {
     
     console.log(`⚠️ [Dashboard] Chrome Extension failed or timed out. Command status: ${processedCommand?.status || 'not found'}`);
     
-    // Fallback: Use direct MediaSession control (AppleScript)
-    console.log(`🔄 [Dashboard] Falling back to MediaSession AppleScript for: ${action}`);
-    const directSuccess = await mediaSessionDetector.sendMediaControl(action);
-    console.log(`📊 [Dashboard] MediaSession fallback result for ${action}: ${directSuccess ? 'SUCCESS' : 'FAILED'}`);
+    // 🚫 TEMPORARILY DISABLED: MediaSession AppleScript fallback (for debugging)
+    console.log(`🔄 [Dashboard] SKIPPING MediaSession fallback to debug Chrome Extension`);
+    // const directSuccess = await mediaSessionDetector.sendMediaControl(action);
+    // console.log(`📊 [Dashboard] MediaSession fallback result for ${action}: ${directSuccess ? 'SUCCESS' : 'FAILED'}`);
     
-    if (directSuccess) {
-      console.log(`✅ [Dashboard] MediaSession fallback successful: ${action}`);
-      return res.json({
-        success: true,
-        message: `${action} command sent`,
-        method: 'MediaSession-Fallback'
-      });
-    }
+    // if (directSuccess) {
+    //   console.log(`✅ [Dashboard] MediaSession fallback successful: ${action}`);
+    //   return res.json({
+    //     success: true,
+    //     message: `${action} command sent`,
+    //     method: 'MediaSession-Fallback'
+    //   });
+    // }
     
-    const response = {
-      success: true,
-      commandId: commandId,
-      command: action,
-      method: 'Extension-CrossWindow',
-      message: `${action} command queued for cross-window execution`
-    };
-    
-    console.log(`📤 [Dashboard] Media control response:`, response);
-    res.json(response);
+    // Return Chrome Extension result (success or failure) without fallback
+    return res.json({
+      success: processedCommand?.status === 'completed',
+      message: processedCommand?.status === 'completed' 
+        ? `${action} command completed via Chrome Extension`
+        : `${action} command failed or timed out`,
+      method: 'Chrome-Extension-Only',
+      commandStatus: processedCommand?.status || 'not found',
+      commandId: commandId
+    });
     
   } catch (error) {
     console.error('❌ [Dashboard] Control error:', error.message);

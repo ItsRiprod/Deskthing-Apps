@@ -37,11 +37,42 @@ class MediaBridge {
   }
   
   init() {
+    console.log(`🚀 Enhanced MediaSession monitoring initialized v${this.version}`);
+    
+    // Check extension context health
+    this.checkExtensionContext();
+    
     // Wait for page to be ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => this.start());
     } else {
       this.start();
+    }
+  }
+  
+  /**
+   * 🔍 Check if Chrome Extension context is healthy
+   */
+  checkExtensionContext() {
+    try {
+      if (!chrome.runtime?.id) {
+        console.warn(`⚠️ [MediaBridge] Extension context is invalid on init`);
+        return false;
+      }
+      
+      // Test a simple message to background script
+      chrome.runtime.sendMessage({ type: 'ping' }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.warn(`⚠️ [MediaBridge] Extension context test failed:`, chrome.runtime.lastError.message);
+        } else {
+          console.log(`✅ [MediaBridge] Extension context is healthy`);
+        }
+      });
+      
+      return true;
+    } catch (error) {
+      console.warn(`⚠️ [MediaBridge] Extension context check failed:`, error.message);
+      return false;
     }
   }
   
@@ -519,6 +550,11 @@ class MediaBridge {
       console.log(`🎮 [MediaBridge] Executing command via background script:`, commandData);
       console.log(`📤 [MediaBridge] Sending message to background script...`);
       
+      // Check if extension context is valid
+      if (!chrome.runtime?.id) {
+        throw new Error('Extension context invalidated - reload required');
+      }
+      
       // Send to background script for cross-window coordination
       const response = await chrome.runtime.sendMessage({
         type: 'mediaControl',
@@ -544,11 +580,31 @@ class MediaBridge {
     } catch (error) {
       console.error(`❌ [MediaBridge] Command execution error:`, error);
       
-      // Report failure back to dashboard
-      await this.reportCommandResult(commandData.id, {
-        success: false,
-        error: error.message
-      });
+      // Handle extension context invalidation specifically
+      if (error.message.includes('Extension context invalidated') || 
+          error.message.includes('context invalidated')) {
+        console.log(`🔄 [MediaBridge] Extension context invalidated - need to reload page or extension`);
+        
+        // Report specific error back to dashboard
+        await this.reportCommandResult(commandData.id, {
+          success: false,
+          error: 'Extension context invalidated - please reload the page or extension',
+          needsReload: true
+        });
+        
+        // Try to reload content script
+        console.log(`🔄 [MediaBridge] Attempting to reload content script...`);
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+        
+      } else {
+        // Report other failures back to dashboard
+        await this.reportCommandResult(commandData.id, {
+          success: false,
+          error: error.message
+        });
+      }
     }
   }
   

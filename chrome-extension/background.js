@@ -60,6 +60,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     findActiveMediaTabs(sendResponse);
     return true; // Keep response channel open for async response
     
+  } else if (message.type === 'ping') {
+    // Health check from content script
+    sendResponse({ success: true, status: 'healthy', timestamp: Date.now() });
+    
   } else {
     sendResponse({ success: true });
   }
