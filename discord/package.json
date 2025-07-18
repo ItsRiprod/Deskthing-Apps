@@ -1,7 +1,7 @@
 {
   "name": "discord",
   "private": true,
-  "version": "0.11.1",
+  "version": "0.11.2",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -14,8 +14,8 @@
     "setup": "node setup.js"
   },
   "dependencies": {
-    "@deskthing/client": "^0.11.1",
-    "@deskthing/server": "^0.11.5",
+    "@deskthing/client": "^0.11.2",
+    "@deskthing/server": "^0.11.6",
     "discord-interactions": "^4.0.0",
     "discord-rpc": "^4.0.1",
     "dotenv": "^16.4.7",
@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@deskthing/cli": "^0.11.10",
-    "@deskthing/types": "^0.11.14",
+    "@deskthing/types": "^0.11.16",
     "@eslint/js": "^9.17.0",
     "@types/discord-rpc": "^4.0.9",
     "@types/node": "^22.13.5",

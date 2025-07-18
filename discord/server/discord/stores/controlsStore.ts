@@ -16,7 +16,6 @@ export class CallControls extends EventEmitter<callEvents> {
     super();
     this.rpc = rpc;
   }
-
   async mute(): Promise<void> {
     try {
       await this.rpc.setVoiceSettings({

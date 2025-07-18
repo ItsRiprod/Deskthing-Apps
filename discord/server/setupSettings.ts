@@ -68,10 +68,6 @@ export const setupSettings = () => {
           label: "Call Status",
         },
         {
-          value: PANEL_ELEMENTS.GUILD_LIST,
-          label: "Guild List",
-        },
-        {
           value: PANEL_ELEMENTS.CHAT,
           label: "Current Chat",
         },
@@ -95,10 +91,6 @@ export const setupSettings = () => {
         {
           value: PANEL_ELEMENTS.CALL_STATUS,
           label: "Call Status",
-        },
-        {
-          value: PANEL_ELEMENTS.GUILD_LIST,
-          label: "Guild List",
         },
         {
           value: PANEL_ELEMENTS.CHAT,

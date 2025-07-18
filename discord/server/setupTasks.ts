@@ -21,6 +21,16 @@ export const setupTasks = () => {
                     completed: false,
                     url: 'https://discord.com/developers/applications',
                 },
+                redirect_url: {
+                    type: STEP_TYPES.SETTING,
+                    id: 'redirect_url',
+                    label: 'Get Redirect URL',
+                    instructions: 'Under the OAuth tab, create a new Redirect URL for the Discord Application that matches this one',
+                    completed: false,
+                    imageId: 'redirect_url',
+                    strict: false,
+                    setting: { id: AppSettingIDs.REDIRECT_URL }
+                },
                 client_id: {
                     type: STEP_TYPES.SETTING,
                     id: 'client_id',
@@ -40,16 +50,6 @@ export const setupTasks = () => {
                     imageId: 'client_secret',
                     strict: true,
                     setting: { id: AppSettingIDs.CLIENT_SECRET }
-                },
-                redirect_url: {
-                    type: STEP_TYPES.SETTING,
-                    id: 'redirect_url',
-                    label: 'Get Redirect URL',
-                    instructions: 'Under the OAuth tab, create a new Redirect URL for the Discord Application that matches this one',
-                    completed: false,
-                    imageId: 'redirect_url',
-                    strict: false,
-                    setting: { id: AppSettingIDs.REDIRECT_URL }
                 },
                 ensure_discord_open: {
                     type: STEP_TYPES.STEP,
@@ -117,8 +117,8 @@ export const setupTasks = () => {
     })
 }
 
-const handleStepUpdate = (step: Step) => {}
-const handleTaskUpdate = (task: Task) => {}
+const handleStepUpdate = (step: Step) => { }
+const handleTaskUpdate = (task: Task) => { }
 
 DeskThing.on(DESKTHING_EVENTS.TASKS, (taskData) => {
     switch (taskData.request) {

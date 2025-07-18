@@ -47,12 +47,26 @@ private debounce<T>(eventType: string, fn: (data: T) => void, delay: number = 50
 
   private setupEventListeners(): void {
     // Call store events
+
+    let prevMuted = false
+    let prevDeafened = false
     this.callStore.on("update", this.debounce("callUpdate", (status) => {
       DeskThing.send({
         type: DiscordEvents.CALL,
         payload: status,
         request: "set",
       });
+
+      if (status.user && status.user.isMuted !== prevMuted) {
+        prevMuted = status.user.isMuted;
+        DeskThing.updateIcon('mute', status.user.isMuted ? 'mic_off' : 'mic');
+      }
+
+      if (status.user && status.user.isDeafened !== prevDeafened) {
+        prevDeafened = status.user.isDeafened;
+        DeskThing.updateIcon('deafen', status.user.isDeafened ? 'deafen_off' : 'deafen');
+      }
+
     }))
 
     this.callStore.on("speakingStateChanged", this.debounce("speakingStateChanged", (status) => {

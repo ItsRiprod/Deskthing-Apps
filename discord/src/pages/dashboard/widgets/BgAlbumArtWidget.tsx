@@ -13,7 +13,7 @@ export const BgAlbumArtWidget = () => {
   console.log(thumbnail)
 
   return (
-    <div className="w-screen h-screen blur-sm">
+    <div className="w-screen absolute h-screen blur-sm">
       {thumbnail && <img src={thumbnail} alt="Album Art" className="opacity-75 object-cover w-full h-full" />}
     </div>
   )

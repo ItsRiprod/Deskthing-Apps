@@ -23,7 +23,7 @@ export default defineConfig({
           "set_main_text": 'DiscordThing',
           "set_secondary_text": 'The ultimate deskthing app',
           "have_timer": true,
-          "left_dashboard_panel": "guild_list",
+          "left_dashboard_panel": "call_status",
           "right_dashboard_panel": "chat",
           "dashboard_elements": [
             "clock",
