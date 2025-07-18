@@ -7,6 +7,25 @@ console.log(`🎵 DeskThing Media Bridge background script loaded - v${manifest.
 console.log('🔍 [Background] Extension ID:', chrome.runtime.id);
 console.log('🔍 [Background] Ready to handle cross-window coordination!');
 
+// Add periodic heartbeat to show background script is alive
+setInterval(() => {
+  console.log('💓 [Background] Heartbeat - Extension background script active');
+  console.log('📊 [Background] Active tabs query test...');
+  
+  // Test if we can query tabs
+  chrome.tabs.query({}, (tabs) => {
+    console.log(`📊 [Background] Found ${tabs.length} total tabs across all windows`);
+    const mediaTabs = tabs.filter(tab => 
+      tab.url && (
+        tab.url.includes('soundcloud.com') ||
+        tab.url.includes('youtube.com') ||
+        tab.url.includes('spotify.com')
+      )
+    );
+    console.log(`🎵 [Background] Found ${mediaTabs.length} potential media tabs`);
+  });
+}, 30000); // Every 30 seconds
+
 // Listen for extension installation
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {

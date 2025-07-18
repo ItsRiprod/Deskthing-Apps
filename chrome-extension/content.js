@@ -517,6 +517,7 @@ class MediaBridge {
   async executeCommandViaBackground(commandData) {
     try {
       console.log(`🎮 [MediaBridge] Executing command via background script:`, commandData);
+      console.log(`📤 [MediaBridge] Sending message to background script...`);
       
       // Send to background script for cross-window coordination
       const response = await chrome.runtime.sendMessage({
@@ -528,8 +529,17 @@ class MediaBridge {
       
       console.log(`📬 [MediaBridge] Background script response:`, response);
       
-      // Report result back to dashboard
-      await this.reportCommandResult(commandData.id, response);
+      if (response) {
+        console.log(`✅ [MediaBridge] Got valid response, reporting to dashboard...`);
+        // Report result back to dashboard
+        await this.reportCommandResult(commandData.id, response);
+      } else {
+        console.log(`⚠️ [MediaBridge] No response from background script, reporting failure...`);
+        await this.reportCommandResult(commandData.id, {
+          success: false,
+          error: 'No response from background script'
+        });
+      }
       
     } catch (error) {
       console.error(`❌ [MediaBridge] Command execution error:`, error);
@@ -547,22 +557,30 @@ class MediaBridge {
    */
   async reportCommandResult(commandId, result) {
     try {
+      console.log(`📬 [MediaBridge] Reporting result for command ${commandId}:`, result);
+      
+      const payload = {
+        commandId: commandId,
+        success: result.success,
+        result: result,
+        tabUrl: window.location.href,
+        timestamp: Date.now()
+      };
+      
+      console.log(`📤 [MediaBridge] Sending result payload:`, payload);
+      
       const response = await fetch(`${this.dashboardUrl}/api/extension/result`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          commandId: commandId,
-          success: result.success,
-          result: result,
-          tabUrl: window.location.href,
-          timestamp: Date.now()
-        })
+        body: JSON.stringify(payload)
       });
       
       if (response.ok) {
-        console.log(`✅ [MediaBridge] Command result reported: ${commandId}`);
+        console.log(`✅ [MediaBridge] Command result reported successfully: ${commandId}`);
+      } else {
+        console.log(`❌ [MediaBridge] Failed to report result - Status: ${response.status}`);
       }
       
     } catch (error) {

@@ -123,27 +123,8 @@ app.post('/api/media/control', async (req, res) => {
       });
     }
     
-    // First, try direct MediaSession control (same window)
-    console.log(`🔄 [Dashboard] Trying direct MediaSession control first for: ${action}`);
-    const directSuccess = await mediaSessionDetector.sendMediaControl(action);
-    console.log(`📊 [Dashboard] MediaSession result for ${action}: ${directSuccess ? 'SUCCESS' : 'FAILED'}`);
-    console.log(`🔍 [Dashboard] MediaSession details:`, {
-      action,
-      success: directSuccess,
-      timestamp: new Date().toISOString()
-    });
-    
-    if (directSuccess) {
-      console.log(`✅ [Dashboard] Direct control successful: ${action}`);
-      return res.json({
-        success: true,
-        message: `${action} command sent`,
-        method: 'MediaSession-Direct'
-      });
-    }
-    
-    // Fallback: Use extension cross-window coordination
-    console.log(`🔄 [Dashboard] Direct control failed, trying cross-window coordination...`);
+    // 🚀 NEW STRATEGY: Try Chrome Extension cross-window coordination FIRST
+    console.log(`🚀 [Dashboard] Trying Chrome Extension cross-window coordination first for: ${action}`);
     console.log(`📋 [Dashboard] Current command queue before adding:`, 
       pendingExtensionCommands.map(c => ({ id: c.id, command: c.command, status: c.status })));
     
@@ -159,28 +140,44 @@ app.post('/api/media/control', async (req, res) => {
     pendingExtensionCommands.push(pendingCommand);
     console.log(`📋 [Dashboard] Added command to queue. New queue size: ${pendingExtensionCommands.length}`);
     
-    // Clean up old commands
-    const thirtySecondsAgo = Date.now() - 30000;
-    const initialLength = pendingExtensionCommands.length;
-    pendingExtensionCommands = pendingExtensionCommands.filter(cmd => cmd.timestamp > thirtySecondsAgo);
+    // Wait a reasonable time for extension to process the command
+    const extensionTimeout = 1500; // 1.5 seconds (faster)
+    console.log(`⏳ [Dashboard] Waiting ${extensionTimeout}ms for extension to process: ${action} (ID: ${commandId})`);
     
-    if (pendingExtensionCommands.length < initialLength) {
-      console.log(`🧹 [Dashboard] Cleaned up ${initialLength - pendingExtensionCommands.length} old commands`);
+    await new Promise(resolve => setTimeout(resolve, extensionTimeout));
+    
+    // Check if extension processed the command
+    const processedCommand = pendingExtensionCommands.find(cmd => cmd.id === commandId);
+    
+    if (processedCommand && processedCommand.status === 'completed') {
+      console.log(`✅ [Dashboard] Chrome Extension cross-window control successful: ${action}`);
+      
+      // Clean up old commands
+      const thirtySecondsAgo = Date.now() - 30000;
+      pendingExtensionCommands = pendingExtensionCommands.filter(cmd => cmd.timestamp > thirtySecondsAgo);
+      
+      return res.json({
+        success: true,
+        message: `${action} command sent`,
+        method: 'Chrome-Extension-CrossWindow'
+      });
     }
     
-    console.log(`🚀 [Dashboard] Using cross-window coordination: ${action} (ID: ${commandId})`);
+    console.log(`⚠️ [Dashboard] Chrome Extension failed or timed out. Command status: ${processedCommand?.status || 'not found'}`);
     
-    // Wait a bit to see if extension picks up the command (optional timeout)
-    setTimeout(() => {
-      const command = pendingExtensionCommands.find(cmd => cmd.id === commandId);
-      if (command && command.status === 'completed') {
-        console.log(`✅ [Dashboard] Cross-window control completed: ${action}`);
-      } else if (command && command.status === 'failed') {
-        console.log(`❌ [Dashboard] Cross-window control failed: ${action}`);
-      } else {
-        console.log(`⏳ [Dashboard] Cross-window control pending: ${action} (status: ${command?.status || 'not found'})`);
-      }
-    }, 5000);
+    // Fallback: Use direct MediaSession control (AppleScript)
+    console.log(`🔄 [Dashboard] Falling back to MediaSession AppleScript for: ${action}`);
+    const directSuccess = await mediaSessionDetector.sendMediaControl(action);
+    console.log(`📊 [Dashboard] MediaSession fallback result for ${action}: ${directSuccess ? 'SUCCESS' : 'FAILED'}`);
+    
+    if (directSuccess) {
+      console.log(`✅ [Dashboard] MediaSession fallback successful: ${action}`);
+      return res.json({
+        success: true,
+        message: `${action} command sent`,
+        method: 'MediaSession-Fallback'
+      });
+    }
     
     const response = {
       success: true,
