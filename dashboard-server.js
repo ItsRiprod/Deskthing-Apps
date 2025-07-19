@@ -58,19 +58,14 @@ app.get('/api/media/detect', async (req, res) => {
     
     let music = null;
     
-    // First priority: Chrome Extension data (most accurate)
+    // Only use Chrome Extension data - no broken fallbacks
     if (currentMedia && currentMedia.timestamp && (Date.now() - currentMedia.timestamp < 60000)) {
       console.log('✅ [Dashboard] Using Chrome Extension data (most recent)');
       music = currentMedia;
     } else {
-      // Fallback: Try MediaSession API (modern approach)
-      music = await mediaSessionDetector.detectMediaSession();
-      
-      if (!music || music.error) {
-        console.log('🔄 [Dashboard] MediaSession failed, trying legacy detection...');
-        // Final fallback: legacy AppleScript approach
-        music = await legacyDetector.detectMusic();
-      }
+      console.log('❌ [Dashboard] No recent Chrome Extension data - extension may need to reconnect');
+      // No fallbacks - Chrome Extension is the only reliable source
+      music = null;
     }
     
     if (music && !music.error) {
@@ -266,29 +261,9 @@ app.get('/api/media/status', async (req, res) => {
       console.log('📊 [Dashboard] Chrome Extension data:', currentMedia);
       music = currentMedia;
     } else {
-      console.log('🔄 [Dashboard] No recent Chrome Extension data, trying MediaSession...');
-      // Fallback: Try MediaSession for enhanced info
-      music = await mediaSessionDetector.detectMediaSession();
-      console.log('📊 [Dashboard] MediaSession result:', music);
-      
-      // Show debug info if available
-      if (music && music.debug) {
-        console.log('🔍 [Dashboard] MediaSession debug info:', {
-          audioElementsFound: music.debug.audioElementsFound,
-          audioElementsWithDuration: music.debug.audioElementsWithDuration,
-          audioElementsWithCurrentTime: music.debug.audioElementsWithCurrentTime,
-          rawDuration: music.debug.rawDuration,
-          rawCurrentTime: music.debug.rawCurrentTime,
-          firstAudioElement: music.debug.audioElementDetails[0] || 'none'
-        });
-      }
-      
-      if (!music || music.error) {
-        console.log('🔄 [Dashboard] MediaSession failed, trying legacy detection...');
-        // Final fallback: legacy detection
-        music = await legacyDetector.detectMusic();
-        console.log('📊 [Dashboard] Legacy detection result:', music);
-      }
+      console.log('🔄 [Dashboard] No recent Chrome Extension data - extension may need to reconnect');
+      // No fallbacks - Chrome Extension is the only reliable source on macOS
+      music = null;
     }
     
     if (music && !music.error) {
@@ -843,23 +818,7 @@ server.listen(PORT, () => {
   console.log(`  GET  /                    - Enhanced Dashboard UI`);
   console.log(`🚀 Server ready! Now with CROSS-WINDOW MEDIA CONTROL capability!`);
   
-  // Auto-detect on startup
-  (async () => {
-    try {
-      let music = await mediaSessionDetector.detectMediaSession();
-      if (!music || music.error) {
-        music = await legacyDetector.detectMusic();
-      }
-      
-      if (music && !music.error) {
-        console.log('🎵 [Startup] Current media:', {
-          title: music.title,
-          artist: music.artist,
-          source: music.source
-        });
-      }
-    } catch (error) {
-      console.error('❌ [Startup] Detection error:', error.message);
-    }
-  })();
+  // Server is now ready to receive Chrome Extension WebSocket data
+  console.log('📡 [Server] Waiting for Chrome Extension connections...');
+  console.log('🎵 [Server] Real-time media detection via WebSocket only');
 }); 

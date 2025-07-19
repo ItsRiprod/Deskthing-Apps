@@ -1,6 +1,6 @@
 /**
  * DeskThing Media Bridge - Popup Script
- * Separated JavaScript to comply with Chrome extension CSP
+ * Enhanced with real-time WebSocket updates
  */
 
 // Get version dynamically from manifest
@@ -9,7 +9,9 @@ let dashboardUrl = 'http://localhost:8080';
 let currentMedia = null;
 let isPlaying = false;
 let logs = [];
-let refreshTimer = null; // For controlled refresh timing
+let refreshTimer = null;
+let ws = null;
+let reconnectTimer = null;
 
 function log(message) {
   const timestamp = new Date().toLocaleTimeString();
@@ -29,28 +31,94 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
+function connectWebSocket() {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    return; // Already connected
+  }
+  
+  try {
+    log('🔌 Connecting to WebSocket...');
+    ws = new WebSocket('ws://localhost:8080');
+    
+    ws.onopen = function() {
+      log('✅ WebSocket connected - real-time updates enabled');
+      document.getElementById('status').className = 'status connected';
+      document.getElementById('statusText').textContent = 'Connected (Real-time)';
+      
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+    };
+    
+    ws.onmessage = function(event) {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === 'media-update' && message.data) {
+          currentMedia = message.data;
+          updateMediaDisplay(message.data);
+          log(`🎵 Real-time update: ${message.data.title}`);
+        }
+      } catch (error) {
+        log(`❌ WebSocket message error: ${error.message}`);
+      }
+    };
+    
+    ws.onclose = function() {
+      log('❌ WebSocket disconnected');
+      document.getElementById('status').className = 'status disconnected';
+      document.getElementById('statusText').textContent = 'WebSocket Disconnected';
+      
+      // Auto-reconnect after 3 seconds
+      if (!reconnectTimer) {
+        reconnectTimer = setTimeout(() => {
+          log('🔄 Attempting WebSocket reconnect...');
+          connectWebSocket();
+        }, 3000);
+      }
+    };
+    
+    ws.onerror = function(error) {
+      log(`❌ WebSocket error: ${error.message || 'Connection failed'}`);
+    };
+    
+  } catch (error) {
+    log(`❌ WebSocket connection failed: ${error.message}`);
+    // Fallback to REST API mode
+    fallbackToRestMode();
+  }
+}
+
+function fallbackToRestMode() {
+  log('📡 Falling back to REST API mode');
+  document.getElementById('statusText').textContent = 'REST API Mode';
+  checkStatus();
+}
+
 async function checkStatus() {
   try {
-    log('Checking dashboard connection...');
-    const response = await fetch(`${dashboardUrl}/api/ping`);
+    log('Checking dashboard health...');
+    const response = await fetch(`${dashboardUrl}/health`);
     if (response.ok) {
       const data = await response.json();
       document.getElementById('status').className = 'status connected';
-      document.getElementById('statusText').textContent = `Connected (${data.serverVersion})`;
+      document.getElementById('statusText').textContent = `Connected (${data.status})`;
       document.getElementById('lastUpdate').textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
-      log('✅ Dashboard connected');
+      log('✅ Dashboard health check passed');
       
-      // Get current media
-      await refreshMedia();
+      // Get current media if not using WebSocket
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        await refreshMedia();
+      }
     } else {
-      throw new Error('Dashboard not responding');
+      throw new Error('Dashboard health check failed');
     }
   } catch (error) {
     document.getElementById('status').className = 'status disconnected';
     document.getElementById('statusText').textContent = 'Dashboard Not Reachable';
     document.getElementById('lastUpdate').textContent = `Error: ${error.message}`;
     document.getElementById('mediaInfo').className = 'media-info hidden';
-    log(`❌ Connection failed: ${error.message}`);
+    log(`❌ Health check failed: ${error.message}`);
   }
 }
 
@@ -107,9 +175,11 @@ function updateMediaDisplay(media) {
 function updateDebugInfo(media) {
   const debugContent = document.getElementById('debugContent');
   if (debugContent) {
+    const connectionType = ws && ws.readyState === WebSocket.OPEN ? 'WebSocket (Real-time)' : 'REST API';
     debugContent.innerHTML = `
       <strong>Extension:</strong> v${EXTENSION_VERSION}<br>
-      <strong>Method:</strong> ${media.method || 'Real-time WebSocket'}<br>
+      <strong>Connection:</strong> ${connectionType}<br>
+      <strong>Method:</strong> ${media.method || 'Event-driven'}<br>
       <strong>Duration:</strong> ${media.duration}s<br>
       <strong>Position:</strong> ${media.position}s<br>
       <strong>Source:</strong> ${media.source}<br>
@@ -131,9 +201,11 @@ async function sendControl(action) {
     
     if (response.ok) {
       log(`✅ Control sent: ${action}`);
-      // Refresh after control command with a small delay
-      if (refreshTimer) clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(refreshMedia, 800);
+      // If using REST mode, refresh after control command
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        if (refreshTimer) clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(refreshMedia, 500);
+      }
     } else {
       log(`❌ Control failed: ${action}`);
     }
@@ -150,7 +222,10 @@ function togglePlayPause() {
 async function testConnection() {
   document.getElementById('statusText').textContent = 'Testing...';
   log('Manual connection test initiated');
-  await checkStatus();
+  
+  // Try WebSocket first, then fallback to REST
+  connectWebSocket();
+  setTimeout(checkStatus, 1000);
 }
 
 function openDashboard() {
@@ -171,17 +246,37 @@ function toggleDebug() {
 // Manual refresh function for user-triggered updates
 async function manualRefresh() {
   log('🔄 Manual refresh requested');
-  await refreshMedia();
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    log('Using WebSocket connection - data should update automatically');
+  } else {
+    await refreshMedia();
+  }
+}
+
+// Cleanup function
+function cleanup() {
+  if (ws) {
+    ws.close();
+    ws = null;
+  }
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+  if (refreshTimer) {
+    clearTimeout(refreshTimer);
+    refreshTimer = null;
+  }
 }
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-  log(`Extension popup opened (v${EXTENSION_VERSION}) - No Polling Mode`);
+  log(`Extension popup opened (v${EXTENSION_VERSION}) - Real-time WebSocket Mode`);
   
   // Update version display
-  document.getElementById('version').textContent = `Version ${EXTENSION_VERSION} Enhanced (Stable)`;
+  document.getElementById('version').textContent = `Version ${EXTENSION_VERSION} Enhanced (Real-time)`;
   
-  // Set up event listeners instead of inline onclick handlers
+  // Set up event listeners
   document.getElementById('prevBtn').addEventListener('click', () => sendControl('previoustrack'));
   document.getElementById('playPauseBtn').addEventListener('click', togglePlayPause);
   document.getElementById('nextBtn').addEventListener('click', () => sendControl('nexttrack'));
@@ -191,16 +286,21 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelector('[data-action="refresh"]').addEventListener('click', manualRefresh);
   document.querySelector('[data-action="debug"]').addEventListener('click', toggleDebug);
   
-  // Initial check when popup opens
-  checkStatus();
+  // Start with WebSocket connection
+  connectWebSocket();
   
-  // Listen for page visibility changes to refresh when popup is focused
+  // Listen for page visibility changes to reconnect if needed
   document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
-      log('Popup became visible - refreshing data');
-      manualRefresh();
+      log('Popup became visible - ensuring connection');
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        connectWebSocket();
+      }
     }
   });
   
-  log('✅ Popup initialized - using real-time dashboard data (no polling)');
+  // Cleanup when popup closes
+  window.addEventListener('beforeunload', cleanup);
+  
+  log('✅ Popup initialized with real-time WebSocket connection');
 }); 
