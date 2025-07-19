@@ -370,6 +370,34 @@ class WebSocketManager {
     console.log('📨 [WebSocket] Received message:', message);
     
     switch (message.type) {
+      case 'media-command':
+        // Handle dashboard control commands
+        console.log(`🎮 [WebSocket] Media command: ${message.action}`);
+        switch (message.action) {
+          case 'play':
+            this.handlePlay();
+            break;
+          case 'pause':
+            this.handlePause();
+            break;
+          case 'nexttrack':
+            this.handleNext();
+            break;
+          case 'previoustrack':
+            this.handlePrevious();
+            break;
+          default:
+            console.warn('⚠️ [WebSocket] Unknown action:', message.action);
+        }
+        // Send result back to dashboard
+        this.send({
+          type: 'command-result',
+          commandId: message.id,
+          success: true,
+          result: `Executed ${message.action}`,
+          timestamp: Date.now()
+        });
+        break;
       case 'seek':
         this.handleSeek(message.time);
         break;
@@ -452,6 +480,42 @@ class WebSocketManager {
     if (pauseButton) {
       pauseButton.click();
     }
+  }
+
+  handleNext() {
+    console.log('⏭️ [Control] Next track command');
+    
+    // Try MediaSession first
+    if (navigator.mediaSession && navigator.mediaSession.setActionHandler) {
+      navigator.mediaSession.setActionHandler('nexttrack', null);
+    }
+
+    // Try clicking next button
+    const nextButton = document.querySelector('.skipControl__next, .nextButton, [aria-label*="next" i], [title*="next" i]');
+    if (nextButton) {
+      nextButton.click();
+      return;
+    }
+
+    console.warn('⚠️ [Control] No next button found');
+  }
+
+  handlePrevious() {
+    console.log('⏮️ [Control] Previous track command');
+    
+    // Try MediaSession first
+    if (navigator.mediaSession && navigator.mediaSession.setActionHandler) {
+      navigator.mediaSession.setActionHandler('previoustrack', null);
+    }
+
+    // Try clicking previous button
+    const prevButton = document.querySelector('.skipControl__previous, .prevButton, [aria-label*="previous" i], [title*="previous" i]');
+    if (prevButton) {
+      prevButton.click();
+      return;
+    }
+
+    console.warn('⚠️ [Control] No previous button found');
   }
 
   send(data) {
