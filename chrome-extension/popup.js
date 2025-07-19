@@ -9,6 +9,7 @@ let dashboardUrl = 'http://localhost:8080';
 let currentMedia = null;
 let isPlaying = false;
 let logs = [];
+let refreshTimer = null; // For controlled refresh timing
 
 function log(message) {
   const timestamp = new Date().toLocaleTimeString();
@@ -108,7 +109,7 @@ function updateDebugInfo(media) {
   if (debugContent) {
     debugContent.innerHTML = `
       <strong>Extension:</strong> v${EXTENSION_VERSION}<br>
-      <strong>Method:</strong> ${media.method || 'N/A'}<br>
+      <strong>Method:</strong> ${media.method || 'Real-time WebSocket'}<br>
       <strong>Duration:</strong> ${media.duration}s<br>
       <strong>Position:</strong> ${media.position}s<br>
       <strong>Source:</strong> ${media.source}<br>
@@ -130,7 +131,9 @@ async function sendControl(action) {
     
     if (response.ok) {
       log(`✅ Control sent: ${action}`);
-      setTimeout(refreshMedia, 500); // Refresh after control
+      // Refresh after control command with a small delay
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(refreshMedia, 800);
     } else {
       log(`❌ Control failed: ${action}`);
     }
@@ -165,12 +168,18 @@ function toggleDebug() {
   }
 }
 
+// Manual refresh function for user-triggered updates
+async function manualRefresh() {
+  log('🔄 Manual refresh requested');
+  await refreshMedia();
+}
+
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-  log(`Extension popup opened (v${EXTENSION_VERSION})`);
+  log(`Extension popup opened (v${EXTENSION_VERSION}) - No Polling Mode`);
   
   // Update version display
-  document.getElementById('version').textContent = `Version ${EXTENSION_VERSION} Enhanced`;
+  document.getElementById('version').textContent = `Version ${EXTENSION_VERSION} Enhanced (Stable)`;
   
   // Set up event listeners instead of inline onclick handlers
   document.getElementById('prevBtn').addEventListener('click', () => sendControl('previoustrack'));
@@ -179,12 +188,19 @@ document.addEventListener('DOMContentLoaded', function() {
   
   document.querySelector('[data-action="test"]').addEventListener('click', testConnection);
   document.querySelector('[data-action="dashboard"]').addEventListener('click', openDashboard);
-  document.querySelector('[data-action="refresh"]').addEventListener('click', refreshMedia);
+  document.querySelector('[data-action="refresh"]').addEventListener('click', manualRefresh);
   document.querySelector('[data-action="debug"]').addEventListener('click', toggleDebug);
   
-  // Start checking status
+  // Initial check when popup opens
   checkStatus();
   
-  // Auto-refresh media every 5 seconds when popup is open
-  setInterval(refreshMedia, 5000);
+  // Listen for page visibility changes to refresh when popup is focused
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      log('Popup became visible - refreshing data');
+      manualRefresh();
+    }
+  });
+  
+  log('✅ Popup initialized - using real-time dashboard data (no polling)');
 }); 

@@ -6,14 +6,14 @@ import { saveImage } from "./imageUtils";
 
 export class MediaStore {
   private static instance: MediaStore;
-  private player: NowPlayingType;
+  private player: NowPlayingType & { refresh?: () => Promise<void> };
   private nowPlayingInfo: NowPlayingMessage | undefined = undefined;
   private availableSources: string[] = [];
 
   private isSubscribed = false
 
   private constructor() {
-    this.player = new NowPlaying(this.handleMessage.bind(this));
+    this.player = NowPlaying(this.handleMessage.bind(this));
   }
 
   public initializeListeners = async () => {
@@ -101,12 +101,25 @@ export class MediaStore {
     return MediaStore.instance;
   }
 
-  // Song GET events
-  public handleGetSong() {
-    this.parseAndSendData()
+  // Song GET events - now properly fetches fresh data
+  public async handleGetSong() {
+    console.log('📡 [MediaStore] GET song request - fetching fresh data from dashboard server')
+    if (this.player.refresh) {
+      await this.player.refresh()
+    } else {
+      // Fallback to cached data if refresh not available
+      this.parseAndSendData()
+    }
   }
-  public handleRefresh() {
-    this.parseAndSendData()
+  
+  public async handleRefresh() {
+    console.log('🔄 [MediaStore] REFRESH request - fetching fresh data from dashboard server')
+    if (this.player.refresh) {
+      await this.player.refresh()
+    } else {
+      // Fallback to cached data if refresh not available
+      this.parseAndSendData()
+    }
   }
 
   // Song SET events

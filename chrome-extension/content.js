@@ -25,13 +25,13 @@ class MediaBridge {
     this.version = EXTENSION_VERSION;
     this.dashboardUrl = 'http://localhost:8080';
     this.lastSentData = null;
-    this.sendInterval = null;
-    this.retryCount = 0;
-    this.maxRetries = 3;
+    // No polling intervals needed - fully event-driven!
     
-    // 🚀 NEW: Cross-window command polling
-    this.commandPollInterval = null;
-    this.isPollingEnabled = true;
+    // ⚡ WebSocket connection for instant cross-window commands
+    this.ws = null;
+    this.wsUrl = 'ws://localhost:8080';
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 10;
     
     this.init();
   }
@@ -77,24 +77,26 @@ class MediaBridge {
   }
   
   start() {
-    console.log(`🚀 Starting enhanced MediaSession monitoring v${this.version}...`);
+    console.log(`⚡ Starting WebSocket-powered MediaSession monitoring v${this.version}...`);
     
-    // Start periodic monitoring with shorter interval for better responsiveness
-    this.sendInterval = setInterval(() => {
-      this.checkAndSendMediaData();
-    }, 1000);
+    // 🚀 PRIMARY: WebSocket connection for instant cross-window control (NO POLLING!)
+    this.connectWebSocket();
     
-    // 🚀 NEW: Start command polling for cross-window control
-    this.startCommandPolling();
+    // 🎧 EVENT-DRIVEN: Listen for audio/video element changes
+    this.setupMediaElementListeners();
+    
+    // 📱 EVENT-DRIVEN: Listen for MediaSession metadata changes  
+    this.setupMediaSessionListeners();
+    
+    // 🔄 EVENT-DRIVEN: Listen for page navigation changes
+    this.setupNavigationListeners();
     
     // Send initial data after a delay to ensure page is loaded
     setTimeout(() => this.checkAndSendMediaData(), 2000);
     
-    // Listen for media events
-    this.setupMediaEventListeners();
   }
   
-  setupMediaEventListeners() {
+  setupMediaElementListeners() {
     // Listen for media element events (with more comprehensive coverage)
     const events = ['play', 'pause', 'loadedmetadata', 'timeupdate', 'durationchange', 'loadeddata'];
     
@@ -116,15 +118,35 @@ class MediaBridge {
       }
     }).observe(document, { subtree: true, childList: true });
     
-    // Listen for MediaSession changes
+  }
+  
+        setupMediaSessionListeners() {
+    // MediaSession monitoring via event-driven approach (no polling!)
     if (navigator.mediaSession) {
-      // Periodically check for MediaSession updates
-      setInterval(() => {
-        if (navigator.mediaSession.metadata) {
-          this.checkAndSendMediaData();
-        }
-      }, 2000);
+      console.log('📱 Setting up MediaSession listeners (event-driven, no polling)');
+      
+      // MediaSession changes are now captured by media element events
+      // and WebSocket real-time updates - no additional polling needed!
+      
+      // Initial check for existing metadata
+      if (navigator.mediaSession.metadata) {
+        console.log('📱 Initial MediaSession metadata detected');
+        this.checkAndSendMediaData();
+      }
     }
+  }
+  
+  setupNavigationListeners() {
+    // Listen for page navigation changes
+    let lastUrl = location.href;
+    new MutationObserver(() => {
+      const url = location.href;
+      if (url !== lastUrl) {
+        lastUrl = url;
+        console.log('🔗 Navigation detected, waiting for media to load...');
+        setTimeout(() => this.checkAndSendMediaData(), 3000);
+      }
+    }).observe(document, { subtree: true, childList: true });
   }
   
   getMediaSessionData() {
@@ -155,6 +177,20 @@ class MediaBridge {
           duration = Math.floor(media.duration) || 0;
           position = Math.floor(media.currentTime) || 0;
           isPlaying = !media.paused && !media.ended;
+          
+          // 🚀 CRITICAL FIX: Write position data TO MediaSession
+          if (navigator.mediaSession && 'setPositionState' in navigator.mediaSession && duration > 0) {
+            try {
+              navigator.mediaSession.setPositionState({
+                duration: duration,
+                playbackRate: media.playbackRate || 1.0,
+                position: position
+              });
+              console.log('✅ Updated MediaSession position state:', { duration, position });
+            } catch (e) {
+              console.log('❌ MediaSession setPositionState failed:', e);
+            }
+          }
           
           console.log('🎵 Selected media element:', {
             duration,
@@ -291,13 +327,27 @@ class MediaBridge {
         src: audio.src?.substring(0, 50)
       });
       
-      // Accept any audio element with timing data
-      if (audio.duration > 0 || audio.currentTime > 0 || audio.readyState >= 2) {
+      // Be more aggressive - accept any audio element with timing data OR that's playing
+      if (audio.duration > 0 || audio.currentTime > 0 || !audio.paused || audio.readyState >= 1) {
         duration = Math.floor(audio.duration) || 0;
         position = Math.floor(audio.currentTime) || 0;
-        isPlaying = !audio.paused;
-        console.log('🎵 SoundCloud selected audio element:', { duration, position, isPlaying });
+        isPlaying = !audio.paused && !audio.ended;
+        console.log('✅ SoundCloud selected audio element:', { duration, position, isPlaying });
         break;
+      }
+    }
+    
+    // If no duration from audio elements, try to get from progress bar or time displays
+    if (duration === 0) {
+      // Try to find duration from SoundCloud's progress bar or time display
+      const timeElement = document.querySelector('.playbackTimeline__timePassed, .playbackTimeline__duration');
+      if (timeElement) {
+        const timeText = timeElement.textContent;
+        const timeMatch = timeText.match(/(\d+):(\d+)/);
+        if (timeMatch) {
+          duration = parseInt(timeMatch[1]) * 60 + parseInt(timeMatch[2]);
+          console.log('📊 SoundCloud extracted duration from DOM:', duration);
+        }
       }
     }
     
@@ -477,70 +527,161 @@ class MediaBridge {
   }
   
   /**
-   * 🚀 BREAKTHROUGH FEATURE: Command polling for cross-window control
+   * 🚀 BREAKTHROUGH FEATURE: WebSocket connection for instant cross-window control
    */
-  startCommandPolling() {
-    if (!this.isPollingEnabled) return;
+  async connectWebSocket() {
+    console.log(`⚡ [MediaBridge] Connecting to WebSocket for instant commands v${this.version}`);
     
-    console.log(`🔄 [MediaBridge] Starting command polling for cross-window control v${this.version}`);
-    
-    // Poll every 2 seconds for pending commands
-    this.commandPollInterval = setInterval(() => {
-      this.pollForCommands();
-    }, 2000);
-    
-    // Initial poll after a short delay
-    setTimeout(() => this.pollForCommands(), 3000);
-  }
-  
-  /**
-   * 📥 Poll dashboard for pending extension commands
-   */
-  async pollForCommands() {
-    if (!this.isPollingEnabled) {
-      console.log(`⏸️ [Content] Polling disabled, skipping poll`);
+    // First check if dashboard server is reachable
+    try {
+      console.log(`🔍 [MediaBridge] Checking if dashboard server is running...`);
+      const pingResponse = await fetch('http://localhost:8080/api/ping');
+      if (!pingResponse.ok) {
+        throw new Error(`Dashboard server responded with ${pingResponse.status}`);
+      }
+      console.log(`✅ [MediaBridge] Dashboard server is running, connecting WebSocket...`);
+    } catch (error) {
+      console.error(`❌ [MediaBridge] Dashboard server not reachable:`, error.message);
+      console.log(`🔄 [MediaBridge] Will retry WebSocket connection later...`);
+      this.reconnectWebSocket();
       return;
     }
     
-    console.log(`🔄 [Content] Polling dashboard for commands...`);
+    try {
+      this.ws = new WebSocket(this.wsUrl);
+      
+      this.ws.onopen = () => {
+        console.log(`✅ [MediaBridge] WebSocket connected to ${this.wsUrl}`);
+        this.reconnectAttempts = 0;
+        
+        // Register as extension connection
+        this.ws.send(JSON.stringify({
+          type: 'extension-register',
+          url: window.location.href,
+          timestamp: Date.now(),
+          version: this.version
+        }));
+      };
+      
+      this.ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          console.log(`📥 [MediaBridge] Received WebSocket message:`, message);
+          
+          if (message.type === 'media-command') {
+            console.log(`🎮 [MediaBridge] Processing instant command: ${message.action}`);
+            this.executeCommand(message);
+          } else if (message.type === 'registration-success') {
+            console.log(`🎯 [MediaBridge] Successfully registered with dashboard`);
+          }
+          
+        } catch (error) {
+          console.error(`❌ [MediaBridge] WebSocket message parsing error:`, error);
+        }
+      };
+      
+      this.ws.onclose = (event) => {
+        console.log(`🔌 [MediaBridge] WebSocket disconnected:`, {
+          code: event.code,
+          reason: event.reason || 'No reason provided',
+          wasClean: event.wasClean
+        });
+        this.reconnectWebSocket();
+      };
+      
+      this.ws.onerror = (event) => {
+        console.error(`❌ [MediaBridge] WebSocket error details:`, {
+          type: event.type,
+          target: event.target?.readyState,
+          url: this.wsUrl,
+          timestamp: new Date().toISOString()
+        });
+        
+        // More specific error based on readyState
+        if (event.target?.readyState === WebSocket.CONNECTING) {
+          console.error(`❌ [MediaBridge] Failed to connect to dashboard server at ${this.wsUrl}`);
+          console.log(`💡 [MediaBridge] Make sure dashboard server is running on port 8080`);
+        } else if (event.target?.readyState === WebSocket.CLOSING) {
+          console.error(`❌ [MediaBridge] WebSocket connection closing unexpectedly`);
+        } else {
+          console.error(`❌ [MediaBridge] WebSocket error in state: ${event.target?.readyState}`);
+        }
+      };
+      
+    } catch (error) {
+      console.error(`❌ [MediaBridge] WebSocket connection failed:`, error.message);
+      console.log(`🔄 [MediaBridge] Will retry connection...`);
+      this.reconnectWebSocket();
+    }
+  }
+  
+  /**
+   * 🔄 Reconnect WebSocket with exponential backoff
+   */
+  reconnectWebSocket() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error(`❌ [MediaBridge] Max WebSocket reconnection attempts reached`);
+      return;
+    }
+    
+    this.reconnectAttempts++;
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 30000);
+    
+    console.log(`🔄 [MediaBridge] Reconnecting WebSocket in ${delay}ms (attempt ${this.reconnectAttempts})`);
+    
+    setTimeout(() => {
+      this.connectWebSocket();
+    }, delay);
+  }
+  
+  /**
+   * 🎮 Execute WebSocket command via background script
+   */
+  async executeCommand(command) {
+    const startTime = Date.now();
+    console.log(`🎮 [MediaBridge] Executing WebSocket command: ${command.action} (ID: ${command.id})`);
     
     try {
-      const response = await fetch(`${this.dashboardUrl}/api/extension/poll`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+      // Execute via background script (existing cross-window logic)
+      const result = await this.executeCommandViaBackground(command);
+      const executionTime = Date.now() - startTime;
       
-      console.log(`📥 [Content] Poll response status: ${response.status}`);
+      console.log(`✅ [MediaBridge] Command executed in ${executionTime}ms`);
       
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`📥 [Content] Poll response data:`, data);
-        
-        if (data.success && data.commands && data.commands.length > 0) {
-          console.log(`📥 [Content] Received ${data.commands.length} pending command(s):`, data.commands);
-          
-          // Process each command via background script coordination
-          for (const command of data.commands) {
-            console.log(`🎮 [Content] Processing command:`, command);
-            await this.executeCommandViaBackground(command);
-          }
-        } else {
-          console.log(`📥 [Content] No pending commands`);
-        }
-      } else {
-        console.log(`❌ [Content] Poll failed with status: ${response.status}`);
+      // Send result back via WebSocket
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({
+          type: 'command-result',
+          commandId: command.id,
+          success: true,
+          result: result,
+          executionTime: executionTime,
+          timestamp: Date.now()
+        }));
       }
       
     } catch (error) {
-      // Only log if we have repeated failures
-      if (this.retryCount % 10 === 0) {
-        console.log(`⚠️ [Content] Command polling: Dashboard not reachable (attempt ${this.retryCount}):`, error.message);
+      const executionTime = Date.now() - startTime;
+      console.error(`❌ [MediaBridge] Command failed in ${executionTime}ms:`, error);
+      
+      // Send error result back via WebSocket
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({
+          type: 'command-result',
+          commandId: command.id,
+          success: false,
+          error: error.message,
+          executionTime: executionTime,
+          timestamp: Date.now()
+        }));
       }
-      this.retryCount++;
     }
   }
+  
+  /**
+   * 📥 DEPRECATED: Polling replaced by WebSocket real-time communication
+   * This function is no longer used - WebSocket provides instant command delivery
+   */
   
   /**
    * 🎮 Execute command via background script (cross-window coordination)
@@ -558,23 +699,19 @@ class MediaBridge {
       // Send to background script for cross-window coordination
       const response = await chrome.runtime.sendMessage({
         type: 'mediaControl',
-        command: commandData.command,
+        command: commandData.action || commandData.command, // Support both WebSocket and polling formats
         commandId: commandData.id,
-        source: 'dashboard-poll'
+        source: 'websocket-command'
       });
       
       console.log(`📬 [MediaBridge] Background script response:`, response);
       
       if (response) {
-        console.log(`✅ [MediaBridge] Got valid response, reporting to dashboard...`);
-        // Report result back to dashboard
-        await this.reportCommandResult(commandData.id, response);
+        console.log(`✅ [MediaBridge] Got valid response from background script`);
+        return response; // Return response for WebSocket result handling
       } else {
-        console.log(`⚠️ [MediaBridge] No response from background script, reporting failure...`);
-        await this.reportCommandResult(commandData.id, {
-          success: false,
-          error: 'No response from background script'
-        });
+        console.log(`⚠️ [MediaBridge] No response from background script`);
+        throw new Error('No response from background script');
       }
       
     } catch (error) {
@@ -585,26 +722,15 @@ class MediaBridge {
           error.message.includes('context invalidated')) {
         console.log(`🔄 [MediaBridge] Extension context invalidated - need to reload page or extension`);
         
-        // Report specific error back to dashboard
-        await this.reportCommandResult(commandData.id, {
-          success: false,
-          error: 'Extension context invalidated - please reload the page or extension',
-          needsReload: true
-        });
-        
         // Try to reload content script
         console.log(`🔄 [MediaBridge] Attempting to reload content script...`);
         setTimeout(() => {
           window.location.reload();
         }, 2000);
-        
-      } else {
-        // Report other failures back to dashboard
-        await this.reportCommandResult(commandData.id, {
-          success: false,
-          error: error.message
-        });
       }
+      
+      // Re-throw error for WebSocket error handling
+      throw error;
     }
   }
   
@@ -645,19 +771,22 @@ class MediaBridge {
   }
   
   /**
-   * 🛑 Stop command polling (cleanup)
+   * 🛑 Cleanup method (no polling to stop - fully event-driven!)
    */
   stopCommandPolling() {
-    if (this.commandPollInterval) {
-      clearInterval(this.commandPollInterval);
-      this.commandPollInterval = null;
-      console.log(`🛑 [MediaBridge] Command polling stopped`);
-    }
+    // No polling intervals to clean up - extension is fully event-driven!
+    console.log(`✅ [MediaBridge] No polling to stop - using real-time WebSocket`);
   }
 }
 
-// Start the enhanced media bridge
+// Start the media bridge when DOM is ready
+console.log('🎵 DeskThing Media Bridge content script loaded!');
 const mediaBridge = new MediaBridge();
+
+// Add additional debug logging for troubleshooting
+console.log('🔧 [Debug] Extension loaded on:', window.location.href);
+console.log('🔧 [Debug] MediaSession available:', !!navigator.mediaSession);
+console.log('🔧 [Debug] Audio elements found:', document.querySelectorAll('audio, video').length);
 
 /**
  * 🚀 BREAKTHROUGH FEATURE: Cross-window control message listener

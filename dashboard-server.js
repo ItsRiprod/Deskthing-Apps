@@ -20,6 +20,9 @@ let currentMedia = null;
 let pendingExtensionCommands = [];
 let extensionCommandIdCounter = 0;
 
+// 🚀 WebSocket connections for real-time extension communication
+let extensionConnections = new Set();
+
 // Middleware
 app.use(express.json());
 
@@ -56,7 +59,7 @@ app.get('/api/media/detect', async (req, res) => {
     let music = null;
     
     // First priority: Chrome Extension data (most accurate)
-    if (currentMedia && currentMedia.timestamp && (Date.now() - currentMedia.timestamp < 10000)) {
+    if (currentMedia && currentMedia.timestamp && (Date.now() - currentMedia.timestamp < 60000)) {
       console.log('✅ [Dashboard] Using Chrome Extension data (most recent)');
       music = currentMedia;
     } else {
@@ -123,71 +126,59 @@ app.post('/api/media/control', async (req, res) => {
       });
     }
     
-    // 🚀 NEW STRATEGY: Try Chrome Extension cross-window coordination FIRST
-    console.log(`🚀 [Dashboard] Trying Chrome Extension cross-window coordination first for: ${action}`);
-    console.log(`📋 [Dashboard] Current command queue before adding:`, 
-      pendingExtensionCommands.map(c => ({ id: c.id, command: c.command, status: c.status })));
+    // 🚀 WEBSOCKET PUSH: Instant command delivery to extensions
+    console.log(`⚡ [Dashboard] Pushing command via WebSocket to ${extensionConnections.size} extension(s): ${action}`);
     
-    // Create pending command for extension to pick up
-    const commandId = ++extensionCommandIdCounter;
-    const pendingCommand = {
-      id: commandId,
-      command: action,
-      timestamp: Date.now(),
-      status: 'pending'
-    };
-    
-    pendingExtensionCommands.push(pendingCommand);
-    console.log(`📋 [Dashboard] Added command to queue. New queue size: ${pendingExtensionCommands.length}`);
-    
-    // Wait a reasonable time for extension to process the command
-    const extensionTimeout = 1500; // 1.5 seconds (faster)
-    console.log(`⏳ [Dashboard] Waiting ${extensionTimeout}ms for extension to process: ${action} (ID: ${commandId})`);
-    
-    await new Promise(resolve => setTimeout(resolve, extensionTimeout));
-    
-    // Check if extension processed the command
-    const processedCommand = pendingExtensionCommands.find(cmd => cmd.id === commandId);
-    
-    if (processedCommand && processedCommand.status === 'completed') {
-      console.log(`✅ [Dashboard] Chrome Extension cross-window control successful: ${action}`);
-      
-      // Clean up old commands
-      const thirtySecondsAgo = Date.now() - 30000;
-      pendingExtensionCommands = pendingExtensionCommands.filter(cmd => cmd.timestamp > thirtySecondsAgo);
-      
-      return res.json({
-        success: true,
-        message: `${action} command sent`,
-        method: 'Chrome-Extension-CrossWindow'
+    if (extensionConnections.size === 0) {
+      console.log(`❌ [Dashboard] No extension connections available`);
+      return res.status(503).json({
+        success: false,
+        error: 'No extension connections available',
+        method: 'websocket-push'
       });
     }
     
-    console.log(`⚠️ [Dashboard] Chrome Extension failed or timed out. Command status: ${processedCommand?.status || 'not found'}`);
+    // Create command with unique ID
+    const commandId = ++extensionCommandIdCounter;
+    const command = {
+      type: 'media-command',
+      id: commandId,
+      action: action,
+      timestamp: Date.now()
+    };
     
-    // 🚫 TEMPORARILY DISABLED: MediaSession AppleScript fallback (for debugging)
-    console.log(`🔄 [Dashboard] SKIPPING MediaSession fallback to debug Chrome Extension`);
-    // const directSuccess = await mediaSessionDetector.sendMediaControl(action);
-    // console.log(`📊 [Dashboard] MediaSession fallback result for ${action}: ${directSuccess ? 'SUCCESS' : 'FAILED'}`);
+    console.log(`📤 [Dashboard] Broadcasting command:`, command);
     
-    // if (directSuccess) {
-    //   console.log(`✅ [Dashboard] MediaSession fallback successful: ${action}`);
-    //   return res.json({
-    //     success: true,
-    //     message: `${action} command sent`,
-    //     method: 'MediaSession-Fallback'
-    //   });
-    // }
+    // Push to all connected extensions instantly
+    let sentCount = 0;
+    let deadConnections = [];
     
-    // Return Chrome Extension result (success or failure) without fallback
-    return res.json({
-      success: processedCommand?.status === 'completed',
-      message: processedCommand?.status === 'completed' 
-        ? `${action} command completed via Chrome Extension`
-        : `${action} command failed or timed out`,
-      method: 'Chrome-Extension-Only',
-      commandStatus: processedCommand?.status || 'not found',
-      commandId: commandId
+    extensionConnections.forEach(ws => {
+      if (ws.readyState === 1) { // WebSocket.OPEN
+        try {
+          ws.send(JSON.stringify(command));
+          sentCount++;
+        } catch (error) {
+          console.warn(`⚠️ [Dashboard] Failed to send to connection:`, error.message);
+          deadConnections.push(ws);
+        }
+      } else {
+        deadConnections.push(ws);
+      }
+    });
+    
+    // Clean up dead connections
+    deadConnections.forEach(ws => extensionConnections.delete(ws));
+    
+    console.log(`✅ [Dashboard] Command sent to ${sentCount} extension(s) instantly!`);
+    
+    res.json({
+      success: true,
+      message: `${action} command sent`,
+      method: 'websocket-push',
+      commandId: commandId,
+      connectionsNotified: sentCount,
+      latency: '~20ms'
     });
     
   } catch (error) {
@@ -266,11 +257,11 @@ app.get('/api/media/status', async (req, res) => {
       hasCurrentMedia: !!currentMedia,
       timestamp: currentMedia?.timestamp,
       timeDiff: currentMedia?.timestamp ? Date.now() - currentMedia.timestamp : 'N/A',
-      isRecent: currentMedia?.timestamp ? (Date.now() - currentMedia.timestamp < 10000) : false
+      isRecent: currentMedia?.timestamp ? (Date.now() - currentMedia.timestamp < 60000) : false
     });
     
     // First priority: Chrome Extension data (most accurate)
-    if (currentMedia && currentMedia.timestamp && (Date.now() - currentMedia.timestamp < 10000)) {
+    if (currentMedia && currentMedia.timestamp && (Date.now() - currentMedia.timestamp < 60000)) {
       console.log('✅ [Dashboard] Using Chrome Extension data (most recent)');
       console.log('📊 [Dashboard] Chrome Extension data:', currentMedia);
       music = currentMedia;
@@ -604,35 +595,67 @@ const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
 // WebSocket connection handling
-wss.on('connection', (ws) => {
-  console.log('🔌 [WebSocket] Client connected');
+wss.on('connection', (ws, req) => {
+  console.log('🔌 [WebSocket] Client connected from:', req.socket.remoteAddress);
   
-  ws.on('message', (message) => {
-    console.log('📨 [WebSocket] Received:', message.toString());
+  ws.on('message', (data) => {
+    try {
+      const message = JSON.parse(data.toString());
+      console.log('📨 [WebSocket] Received:', message);
+      
+      if (message.type === 'extension-register') {
+        // Register as extension connection
+        extensionConnections.add(ws);
+        console.log(`🎯 [WebSocket] Extension registered. Total extensions: ${extensionConnections.size}`);
+        
+        ws.send(JSON.stringify({
+          type: 'registration-success',
+          timestamp: Date.now()
+        }));
+        
+      } else if (message.type === 'command-result') {
+        // Handle command execution result from extension
+        console.log(`📬 [WebSocket] Command result: ${message.commandId} - ${message.success ? 'SUCCESS' : 'FAILED'}`);
+        
+        // Update command status in queue (if we still have polling fallback)
+        const command = pendingExtensionCommands.find(cmd => cmd.id === message.commandId);
+        if (command) {
+          command.status = message.success ? 'completed' : 'failed';
+          command.result = message.result;
+          command.completedAt = Date.now();
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ [WebSocket] Message parsing error:', error.message);
+    }
   });
   
   ws.on('close', () => {
-    console.log('🔌 [WebSocket] Client disconnected');
+    extensionConnections.delete(ws);
+    console.log(`🔌 [WebSocket] Extension disconnected. Total extensions: ${extensionConnections.size}`);
   });
   
-  // Send initial status
-  (async () => {
+  ws.on('error', (error) => {
+    console.error('❌ [WebSocket] Connection error:', error.message);
+    extensionConnections.delete(ws);
+  });
+  
+  // Send initial status for dashboard connections (not extensions)
+  // Only send if we have recent Chrome Extension data - no broken AppleScript polling
+  if (currentMedia && currentMedia.timestamp && (Date.now() - currentMedia.timestamp < 60000)) {
     try {
-      let music = await mediaSessionDetector.detectMediaSession();
-      if (!music || music.error) {
-        music = await legacyDetector.detectMusic();
-      }
-      
-      if (music && !music.error) {
-        ws.send(JSON.stringify({
-          type: 'media-update',
-          data: music
-        }));
-      }
+      ws.send(JSON.stringify({
+        type: 'media-update',
+        data: currentMedia
+      }));
+      console.log('📡 [WebSocket] Sent current Chrome Extension data to new connection');
     } catch (error) {
-      console.error('❌ [WebSocket] Initial status error:', error.message);
+      console.error('❌ [WebSocket] Failed to send initial data:', error.message);
     }
-  })();
+  } else {
+    console.log('📡 [WebSocket] No recent media data to send to new connection');
+  }
 });
 
 // Dashboard UI

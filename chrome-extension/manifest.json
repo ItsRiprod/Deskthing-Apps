@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "DeskThing Media Bridge",
-  "version": "2.8",
-  "description": "Bridges navigator.mediaSession to DeskThing dashboard with Chrome Extension-first cross-window coordination and enhanced SoundCloud support",
+  "version": "3.3.3",
+  "description": "Enhanced WebSocket bridge with improved error handling and polling elimination - stable incremental release",
   "permissions": [
     "activeTab",
     "tabs",
