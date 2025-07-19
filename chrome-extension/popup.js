@@ -55,6 +55,9 @@ function connectWebSocket() {
       try {
         const message = JSON.parse(event.data);
         if (message.type === 'media-update' && message.data) {
+          console.log('🔍 [Popup] Raw WebSocket data:', message.data);
+          console.log('🔍 [Popup] isPlaying value:', message.data.isPlaying, typeof message.data.isPlaying);
+          
           currentMedia = message.data;
           updateMediaDisplay(message.data);
           log(`🎵 Real-time update: ${message.data.title}`);
@@ -144,6 +147,8 @@ async function refreshMedia() {
 }
 
 function updateMediaDisplay(media) {
+  console.log('🎵 [Popup] updateMediaDisplay called with:', { isPlaying: media.isPlaying, title: media.title });
+  
   document.getElementById('mediaInfo').className = 'media-info';
   document.getElementById('trackTitle').textContent = media.title || 'Unknown Track';
   document.getElementById('trackArtist').textContent = `by ${media.artist || 'Unknown Artist'}`;
@@ -158,7 +163,14 @@ function updateMediaDisplay(media) {
   
   // Update play state
   isPlaying = media.isPlaying;
-  document.getElementById('playState').textContent = isPlaying ? '✅' : '❌';
+  const playStateElement = document.getElementById('playState');
+  const newPlayState = isPlaying ? '✅' : '❌';
+  
+  console.log('🎵 [Popup] Setting play state:', { isPlaying, newPlayState, element: !!playStateElement });
+  
+  if (playStateElement) {
+    playStateElement.textContent = newPlayState;
+  }
   document.getElementById('playPauseBtn').textContent = isPlaying ? '⏸️' : '▶️';
   
   // Update source

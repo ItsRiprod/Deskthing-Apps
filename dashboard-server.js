@@ -356,6 +356,21 @@ app.post('/api/obs-nowplaying', (req, res) => {
       timestamp: Date.now()
     };
     
+    // Broadcast to all connected WebSocket clients (popups, dashboards)
+    wss.clients.forEach(client => {
+      if (client.readyState === client.OPEN) {
+        try {
+          client.send(JSON.stringify({
+            type: 'media-update',
+            data: currentMedia
+          }));
+        } catch (error) {
+          console.error('❌ [WebSocket] Broadcast error:', error.message);
+        }
+      }
+    });
+    console.log(`📡 [WebSocket] Broadcasted to ${wss.clients.size} connected clients`);
+    
     // Forward to any connected clients (like Car Thing)
     if (typeof broadcastToCarThing === 'function') {
       broadcastToCarThing(currentMedia);
