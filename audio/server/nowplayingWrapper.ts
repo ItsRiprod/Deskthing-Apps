@@ -42,8 +42,8 @@ export class DashboardNowPlaying {
   /**
    * Start monitoring - now event-driven instead of polling
    */
-  start() {
-    this.isRunning = true
+    start() {
+        this.isRunning = true
     console.log('▶️ [DashboardNowPlaying] Started (event-driven, no polling)')
     this.fetchCurrentMedia()
   }
@@ -51,8 +51,8 @@ export class DashboardNowPlaying {
   /**
    * Stop monitoring
    */
-  stop() {
-    this.isRunning = false
+    stop() {
+      this.isRunning = false
     console.log('⏹️ [DashboardNowPlaying] Stopped')
   }
   
@@ -111,7 +111,7 @@ export class DashboardNowPlaying {
       // Send to callback
       this.callback(nowPlayingMessage)
       
-    } catch (error) {
+      } catch (error) {
       console.error('❌ [DashboardNowPlaying] Error fetching media data:', error.message)
     }
   }
