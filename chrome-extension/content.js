@@ -20,6 +20,124 @@ console.log(`🎵 DeskThing Media Bridge v${EXTENSION_VERSION} loaded on:`, wind
 console.log(`🔍 [Content] Page URL:`, window.location.href);
 console.log(`🔍 [Content] Page readyState:`, document.readyState);
 
+/**
+ * 🚀 Web Audio API Interception - Makes hidden audio elements visible
+ * This hooks into SoundCloud's Web Audio API usage and exposes the underlying audio elements
+ * so our existing Chrome API approach can find them with querySelectorAll('audio, video')
+ */
+(function interceptWebAudioAPI() {
+  console.log('🔧 [WebAudio] Setting up Web Audio API interception...');
+  
+  // Store discovered audio elements
+  window.discoveredAudioElements = new Set();
+  
+  // 1. Hook AudioContext creation
+  const OriginalAudioContext = window.AudioContext || window.webkitAudioContext;
+  if (OriginalAudioContext) {
+    function InterceptedAudioContext(...args) {
+      console.log('🎵 [WebAudio] AudioContext created');
+      const ctx = new OriginalAudioContext(...args);
+      
+      // Hook createMediaElementSource to catch hidden audio elements
+      const originalCreateMediaElementSource = ctx.createMediaElementSource;
+      ctx.createMediaElementSource = function(element) {
+        console.log('🎵 [WebAudio] Found audio element via Web Audio API:', element);
+        console.log('🎵 [WebAudio] Element details:', {
+          tagName: element.tagName,
+          src: element.src,
+          currentTime: element.currentTime,
+          duration: element.duration,
+          paused: element.paused
+        });
+        
+        // Store this element so our existing code can find it
+        window.discoveredAudioElements.add(element);
+        
+        // Dispatch a custom event to notify our MediaBridge
+        const event = new CustomEvent('webaudio-element-discovered', {
+          detail: { audioElement: element, audioContext: ctx }
+        });
+        document.dispatchEvent(event);
+        
+        return originalCreateMediaElementSource.call(this, element);
+      };
+      
+      // Hook createBufferSource for additional audio detection
+      const originalCreateBufferSource = ctx.createBufferSource;
+      ctx.createBufferSource = function() {
+        console.log('🎵 [WebAudio] Buffer source created');
+        const source = originalCreateBufferSource.call(this);
+        
+        // Hook start method to detect playback
+        const originalStart = source.start;
+        source.start = function(...args) {
+          console.log('🎵 [WebAudio] Buffer playback started');
+          const event = new CustomEvent('webaudio-playback-started', {
+            detail: { source, audioContext: ctx, args }
+          });
+          document.dispatchEvent(event);
+          return originalStart.apply(this, args);
+        };
+        
+        return source;
+      };
+      
+      return ctx;
+    }
+    
+    // Copy static methods
+    Object.setPrototypeOf(InterceptedAudioContext.prototype, OriginalAudioContext.prototype);
+    Object.setPrototypeOf(InterceptedAudioContext, OriginalAudioContext);
+    
+    // Replace the global AudioContext
+    window.AudioContext = InterceptedAudioContext;
+    window.webkitAudioContext = InterceptedAudioContext;
+    
+    console.log('✅ [WebAudio] AudioContext interception installed');
+  }
+  
+  // 2. Hook HTMLAudioElement creation
+  const originalAudio = window.Audio;
+  window.Audio = function(...args) {
+    console.log('🎵 [WebAudio] New Audio() created');
+    const audio = new originalAudio(...args);
+    window.discoveredAudioElements.add(audio);
+    
+    // Dispatch event for new Audio() elements
+    setTimeout(() => {
+      const event = new CustomEvent('webaudio-element-discovered', {
+        detail: { audioElement: audio }
+      });
+      document.dispatchEvent(event);
+    }, 100);
+    
+    return audio;
+  };
+  
+  // 3. Enhanced querySelectorAll wrapper
+  const originalQuerySelectorAll = Document.prototype.querySelectorAll;
+  Document.prototype.querySelectorAll = function(selector) {
+    const results = originalQuerySelectorAll.call(this, selector);
+    
+    // If looking for audio/video elements, also include our discovered elements
+    if (selector.includes('audio') || selector.includes('video')) {
+      const discoveredElements = Array.from(window.discoveredAudioElements);
+      if (discoveredElements.length > 0) {
+        console.log(`🎵 [WebAudio] querySelectorAll('${selector}') enhanced with ${discoveredElements.length} discovered elements`);
+        
+        // Create a combined NodeList-like object
+        const combined = Array.from(results).concat(discoveredElements);
+        combined.length = combined.length; // Make it look like NodeList
+        return combined;
+      }
+    }
+    
+    return results;
+  };
+  
+  console.log('✅ [WebAudio] Web Audio API interception complete');
+})();
+
 class MediaBridge {
   constructor() {
     this.version = EXTENSION_VERSION;
@@ -41,6 +159,9 @@ class MediaBridge {
     
     // Check extension context health
     this.checkExtensionContext();
+    
+    // 🚀 Set up Web Audio API event listeners
+    this.setupWebAudioListeners();
     
     // Wait for page to be ready
     if (document.readyState === 'loading') {
@@ -74,6 +195,66 @@ class MediaBridge {
       console.warn(`⚠️ [MediaBridge] Extension context check failed:`, error.message);
       return false;
     }
+  }
+  
+  /**
+   * 🚀 Set up Web Audio API event listeners
+   * Responds to audio elements discovered by the Web Audio API interception
+   */
+  setupWebAudioListeners() {
+    console.log('🎵 [WebAudio] Setting up Web Audio API event listeners...');
+    
+    // Listen for discovered audio elements
+    document.addEventListener('webaudio-element-discovered', (event) => {
+      const { audioElement, audioContext } = event.detail;
+      console.log('🎵 [WebAudio] Audio element discovered via Web Audio API:', audioElement);
+      
+      // Immediately check for media data since we found a new audio element
+      setTimeout(() => {
+        console.log('🔄 [WebAudio] Checking media data after element discovery...');
+        this.checkAndSendMediaData();
+      }, 500);
+      
+      // Set up direct listeners on the discovered element for real-time updates
+      this.setupDirectAudioListeners(audioElement);
+    });
+    
+    // Listen for Web Audio playback events
+    document.addEventListener('webaudio-playback-started', (event) => {
+      console.log('🎵 [WebAudio] Playback started via Web Audio API');
+      setTimeout(() => this.checkAndSendMediaData(), 200);
+    });
+    
+    console.log('✅ [WebAudio] Web Audio API event listeners setup complete');
+  }
+  
+  /**
+   * 🎵 Set up direct event listeners on discovered audio elements
+   */
+  setupDirectAudioListeners(audioElement) {
+    if (!audioElement || audioElement.deskthing_listeners_added) return;
+    
+    console.log('🎵 [WebAudio] Setting up direct listeners on audio element');
+    
+    // Mark this element as having listeners to avoid duplicates
+    audioElement.deskthing_listeners_added = true;
+    
+    // Essential audio events for real-time updates
+    const events = [
+      'loadedmetadata', 'durationchange', 'timeupdate', 
+      'play', 'pause', 'seeking', 'seeked',
+      'loadeddata', 'canplay', 'progress'
+    ];
+    
+    events.forEach(eventType => {
+      audioElement.addEventListener(eventType, () => {
+        console.log(`🎵 [WebAudio] ${eventType} event from discovered element`);
+        // Slight delay to ensure DOM is updated
+        setTimeout(() => this.checkAndSendMediaData(), 100);
+      });
+    });
+    
+    console.log(`✅ [WebAudio] Direct listeners added to audio element (${events.length} events)`);
   }
   
   start() {
