@@ -3,9 +3,15 @@ import { DESKTHING_EVENTS } from "@deskthing/types";
 import { initializeListeners } from "./initializer"
 import { MediaStore } from "./mediaStore";
 import { deleteImages } from "./imageUtils";
+import { existsSync, mkdirSync, writeFile, readdirSync, unlinkSync } from 'node:fs';
+import { fileExtension, imagesDir } from "./settings";
 
 const start = async () => {
   await initializeListeners()
+  if (!existsSync(imagesDir)) {
+      DeskThing.sendLog('Creating images directory'); // Move this to start, that way we save unnecessary checks down the line
+      mkdirSync(imagesDir, { recursive: true });
+  }
   DeskThing.sendLog('Server Started!');
 };
 
