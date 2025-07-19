@@ -192,6 +192,118 @@ graph TD
 - **Multiple Fallbacks**: Button clicks → Direct element control → Keyboard events
 - **Future-Proof**: Architecture supports any web-based media player
 
+## 🎯 **Hybrid Media Control Architecture - Next Generation**
+
+### **🧠 The Two-System Approach**
+Modern streaming platforms like SoundCloud use complex architectures that require different strategies for different types of media control:
+
+#### **Control Commands: API-First Strategy** ✅
+*For play/pause/next/previous - Use proven browser APIs*
+- **Primary**: MediaSession API handlers (`navigator.mediaSession.setActionHandler`)
+- **Fallback 1**: Direct media element control (`audio.play()`, `video.pause()`)
+- **Fallback 2**: DOM button clicking (`.playControl.click()`)
+- **Fallback 3**: Keyboard shortcuts (spacebar, arrow keys)
+
+#### **Position/Duration Data: Deep Browser Integration** 🔍
+*For scrubber position and duration - Intercept streaming architecture*
+- **Primary**: MediaSource Extensions (MSE) detection via `srcObject` hooking
+- **Secondary**: Fetch API interception for streaming segment detection (`.m4s` files)
+- **Fallback**: MediaSession metadata when available
+- **Last Resort**: DOM scraping of time displays
+
+### **🏗️ Hybrid Architecture Diagram**
+
+```mermaid
+graph TD
+    A["🖥️ Dashboard Control Request"] --> B{"Control Type?"}
+    
+    B -->|"Play/Pause/Next/Prev"| C["🎮 API Control Path"]
+    C --> C1["MediaSession API"]
+    C1 --> C2["Media Element Direct"]
+    C2 --> C3["DOM Button Click"]
+    C3 --> C4["Keyboard Shortcuts"]
+    
+    B -->|"Position/Duration/Seek"| D["🔍 Deep Browser Path"]
+    D --> D1["MSE srcObject Hook"]
+    D1 --> D2["Fetch API Interception"]
+    D2 --> D3["MediaSession Metadata"]
+    D3 --> D4["DOM Time Scraping"]
+    
+    C4 --> E["✅ Control Executed"]
+    D4 --> F["📊 Position Data Retrieved"]
+    
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#e8f5e8
+    style F fill:#e8f5e8
+```
+
+### **🎵 SoundCloud Example Implementation**
+
+#### **For Controls (Simple & Reliable)**
+```javascript
+// MediaSession API approach
+navigator.mediaSession.setActionHandler('play', () => {
+  document.querySelector('.playControl').click();
+});
+
+// Direct fallback
+const playButton = document.querySelector('.playControl');
+if (playButton) playButton.click();
+```
+
+#### **For Position Data (Complex & Precise)**
+```javascript
+// Hook into MediaSource usage
+Object.defineProperty(HTMLAudioElement.prototype, 'srcObject', {
+  set: function(value) {
+    if (value instanceof MediaSource) {
+      console.log('Found SoundCloud MSE element:', this);
+      window.soundCloudAudioElement = this;
+      // Now we have access to real currentTime and duration
+    }
+    return originalSrcObjectSetter.call(this, value);
+  }
+});
+
+// Intercept streaming segments
+const originalFetch = window.fetch;
+window.fetch = (...args) => {
+  const url = args[0];
+  if (url.includes('media-streaming.soundcloud.cloud') && url.includes('.m4s')) {
+    console.log('Audio streaming detected:', url);
+    // Audio playback is active
+  }
+  return originalFetch.apply(this, args);
+};
+```
+
+### **🎯 Ideal State Architecture**
+
+#### **What We Want to Achieve**
+1. **Instant Control Response** (`< 50ms`) - Commands execute immediately like native apps
+2. **Accurate Position Tracking** (`± 0.1s`) - Scrubber shows real playback position
+3. **Universal Compatibility** - Works across all major streaming platforms
+4. **Graceful Degradation** - Falls back intelligently when advanced features fail
+
+#### **The Perfect User Experience**
+- **Dashboard shows real-time position**: "2:34 / 4:18" updating every second
+- **Seeking works perfectly**: Click anywhere on progress bar to jump to that position
+- **Controls are instant**: Play/pause/next respond immediately with visual feedback
+- **Cross-window operation**: Control music in any window from dashboard in another window
+
+#### **Technical Implementation Status**
+- ✅ **API Control Path**: Proven working with DOM button clicking
+- 🔄 **MSE Detection Path**: Under development - Fetch interception implemented
+- ✅ **WebSocket Communication**: Real-time dashboard updates working
+- 🔄 **Hybrid Integration**: Combining both approaches for optimal experience
+
+### **📈 Benefits of Hybrid Approach**
+1. **Reliability**: Uses simple methods for simple tasks, complex methods only when needed
+2. **Performance**: Controls are instant, position data is accurate
+3. **Maintainability**: Each system handles what it's best at
+4. **Future-Proof**: Can adapt to streaming platform changes independently
+
 ## 🚀 **Phase 8: Performance Optimization - Zero-Latency Control**
 
 ### **Current Performance Analysis**
