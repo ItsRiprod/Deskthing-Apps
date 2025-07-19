@@ -1,34 +1,38 @@
 // @ts-nocheck
 
 import type { NowPlaying as NowPlayingType } from 'node-nowplaying'
+import { WebSocket } from 'ws'
 
 /**
- * Modern Now Playing implementation that uses the dashboard server's real-time API
- * instead of polling. This connects to the WebSocket-powered Chrome Extension data.
+ * Real-time Now Playing implementation using WebSocket from Chrome Extension
+ * NO POLLING - 100% event-driven via Chrome Extension audio monitoring
  */
 export class DashboardNowPlaying {
   private callback: (message: any) => void
   private isRunning = false
-  private dashboardUrl = 'http://localhost:8080'
+  private dashboardUrl = 'ws://localhost:8080'
+  private ws: WebSocket | null = null
+  private reconnectAttempts = 0
+  private maxReconnectAttempts = 10
   
   constructor(callback: (message: any) => void, options?: any) {
     this.callback = callback
-    console.log('🚀 [DashboardNowPlaying] Initialized with dashboard server integration')
-    console.log('📡 [DashboardNowPlaying] Using real-time Chrome Extension data (no polling)')
+    console.log('🚀 [DashboardNowPlaying] Initialized with real-time WebSocket audio events')
+    console.log('🎵 [DashboardNowPlaying] Zero polling - 100% event-driven!')
   }
   
   /**
-   * Subscribe to Now Playing updates - no longer polls, just sets up for on-demand requests
+   * Subscribe to Now Playing updates - connects to WebSocket for real-time events
    */
   async subscribe(callback?: (message: any) => void) {
     if (callback) {
       this.callback = callback
     }
     this.isRunning = true
-    console.log('✅ [DashboardNowPlaying] Subscribed to dashboard server updates')
+    console.log('✅ [DashboardNowPlaying] Subscribing to real-time WebSocket events')
     
-    // Get initial state
-    await this.fetchCurrentMedia()
+    // Connect to WebSocket for real-time updates
+    this.connectWebSocket()
   }
   
   /**
@@ -36,93 +40,129 @@ export class DashboardNowPlaying {
    */
   unsubscribe() {
     this.isRunning = false
-    console.log('🔌 [DashboardNowPlaying] Unsubscribed from dashboard server')
+    console.log('🔌 [DashboardNowPlaying] Unsubscribing from WebSocket events')
+    
+    if (this.ws) {
+      this.ws.close()
+      this.ws = null
+    }
   }
   
   /**
-   * Start monitoring - now event-driven instead of polling
+   * Start monitoring - connects to WebSocket for real-time events
    */
-    start() {
-        this.isRunning = true
-    console.log('▶️ [DashboardNowPlaying] Started (event-driven, no polling)')
-    this.fetchCurrentMedia()
+  start() {
+    this.isRunning = true
+    console.log('▶️ [DashboardNowPlaying] Starting real-time WebSocket monitoring')
+    this.connectWebSocket()
+  }
+  
+  /**
+   * 🚀 Connect to WebSocket for real-time audio events
+   */
+  private connectWebSocket() {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      console.log('🔌 [DashboardNowPlaying] WebSocket already connected')
+      return
+    }
+    
+    console.log('🔌 [DashboardNowPlaying] Connecting to WebSocket server...')
+    
+    try {
+      this.ws = new WebSocket(this.dashboardUrl)
+      
+      this.ws.on('open', () => {
+        console.log('✅ [DashboardNowPlaying] WebSocket connected for real-time audio events')
+        this.reconnectAttempts = 0
+      })
+      
+      this.ws.on('message', (data) => {
+        try {
+          const message = JSON.parse(data.toString())
+          this.handleWebSocketMessage(message)
+        } catch (error) {
+          console.error('❌ [DashboardNowPlaying] WebSocket message parse error:', error)
+        }
+      })
+      
+      this.ws.on('close', () => {
+        console.log('🔌 [DashboardNowPlaying] WebSocket disconnected')
+        this.ws = null
+        this.scheduleReconnect()
+      })
+      
+      this.ws.on('error', (error) => {
+        console.error('❌ [DashboardNowPlaying] WebSocket error:', error.message)
+      })
+      
+    } catch (error) {
+      console.error('❌ [DashboardNowPlaying] WebSocket connection failed:', error.message)
+      this.scheduleReconnect()
+    }
+  }
+  
+  /**
+   * 🎵 Handle real-time WebSocket messages
+   */
+  private handleWebSocketMessage(message: any) {
+    if (!this.isRunning) return
+    
+    if (message.type === 'timeupdate' && message.data) {
+      // Convert real-time time data to audio app format
+      const audioData = {
+        title: 'Live Audio',
+        artist: 'Chrome Extension',
+        album: '',
+        artwork: null,
+        isPlaying: message.data.isPlaying || false,
+        position: message.data.currentTime || 0,
+        duration: message.data.duration || 0,
+        canSeek: message.data.canSeek || false,
+        source: message.data.source || 'real-time',
+        timestamp: Date.now(),
+        realTime: true
+      }
+      
+      console.log(`⏱️ [DashboardNowPlaying] Real-time update: ${audioData.position}s/${audioData.duration}s`)
+      
+      // Send to audio app callback
+      if (this.callback) {
+        this.callback(audioData)
+      }
+    }
+  }
+  
+  /**
+   * 🔄 Schedule WebSocket reconnection
+   */
+  private scheduleReconnect() {
+    if (!this.isRunning || this.reconnectAttempts >= this.maxReconnectAttempts) {
+      return
+    }
+    
+    this.reconnectAttempts++
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000)
+    
+    console.log(`🔄 [DashboardNowPlaying] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`)
+    
+    setTimeout(() => {
+      if (this.isRunning) {
+        this.connectWebSocket()
+      }
+    }, delay)
   }
   
   /**
    * Stop monitoring
    */
-    stop() {
-      this.isRunning = false
-    console.log('⏹️ [DashboardNowPlaying] Stopped')
-  }
-  
-  /**
-   * Fetch current media from dashboard server's real-time API
-   * This uses Chrome Extension WebSocket data - no polling needed!
-   */
-  private async fetchCurrentMedia() {
-    if (!this.isRunning || !this.callback) return
+  stop() {
+    this.isRunning = false
+    console.log('⏹️ [DashboardNowPlaying] Stopping WebSocket monitoring')
     
-    try {
-      console.log('📡 [DashboardNowPlaying] Fetching real-time media from dashboard server...')
-      
-      const response = await fetch(`${this.dashboardUrl}/api/media/status`)
-      if (!response.ok) {
-        console.log(`⚠️ [DashboardNowPlaying] Dashboard server response: ${response.status}`)
-        return
-      }
-      
-      const mediaData = await response.json()
-      
-      if (mediaData.error) {
-        console.log('ℹ️ [DashboardNowPlaying] No media currently playing')
-        return
-      }
-      
-      // Convert dashboard server format to NowPlaying format
-      const nowPlayingMessage = {
-        trackName: mediaData.title || 'Unknown Track',
-        artist: mediaData.artist ? [mediaData.artist] : ['Unknown Artist'],
-        album: mediaData.album || 'Unknown Album',
-        isPlaying: mediaData.isPlaying || false,
-        trackDuration: mediaData.duration ? Math.floor(mediaData.duration * 1000) : 0, // Convert to ms
-        trackProgress: mediaData.position ? Math.floor(mediaData.position * 1000) : 0, // Convert to ms
-        thumbnail: mediaData.artwork || null,
-        device: 'Chrome Browser',
-        source: 'dashboard-chrome-extension',
-        id: `${mediaData.title}-${mediaData.artist}`,
-        canSkip: true,
-        canFastForward: true,
-        canLike: false,
-        canChangeVolume: false,
-        canSetOutput: false,
-        shuffleState: null,
-        repeatState: 'off'
-      }
-      
-      console.log('✅ [DashboardNowPlaying] Real-time media data received:', {
-        title: nowPlayingMessage.trackName,
-        artist: nowPlayingMessage.artist[0],
-        isPlaying: nowPlayingMessage.isPlaying,
-        duration: nowPlayingMessage.trackDuration,
-        position: nowPlayingMessage.trackProgress
-      })
-      
-      // Send to callback
-      this.callback(nowPlayingMessage)
-      
-      } catch (error) {
-      console.error('❌ [DashboardNowPlaying] Error fetching media data:', error.message)
+    if (this.ws) {
+      this.ws.close()
+      this.ws = null
     }
-  }
-  
-  /**
-   * Manually refresh current media state
-   * Called when the audio app needs updated data
-   */
-  async refresh() {
-    console.log('🔄 [DashboardNowPlaying] Manual refresh requested')
-    await this.fetchCurrentMedia()
   }
 }
 

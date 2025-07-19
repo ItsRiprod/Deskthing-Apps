@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DeskThing Media Bridge",
-  "version": "3.6.0",
+  "version": "3.7.0",
   "description": "Real-time media control bridge for DeskThing with enhanced Chrome compatibility",
   "permissions": [
     "activeTab",

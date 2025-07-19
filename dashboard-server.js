@@ -23,6 +23,30 @@ let extensionCommandIdCounter = 0;
 // 🚀 WebSocket connections for real-time extension communication
 let extensionConnections = new Set();
 
+// 🎵 NEW: Real-time time tracking from extension
+let currentTimeData = null;
+
+// Helper function to broadcast to all connected extensions
+const broadcastToExtensions = (message) => {
+  const messageStr = JSON.stringify(message);
+  let successCount = 0;
+  
+  extensionConnections.forEach(ws => {
+    try {
+      if (ws.readyState === 1) { // WebSocket.OPEN
+        ws.send(messageStr);
+        successCount++;
+      }
+    } catch (error) {
+      console.error('❌ [WebSocket] Broadcast error:', error.message);
+      extensionConnections.delete(ws);
+    }
+  });
+  
+  console.log(`📡 [WebSocket] Broadcasted to ${successCount}/${extensionConnections.size} extensions`);
+  return successCount;
+};
+
 // Middleware
 app.use(express.json());
 
@@ -213,19 +237,44 @@ app.post('/api/media/seek', async (req, res) => {
       position: currentMedia?.position
     });
     
+    // 🚀 NEW: Use WebSocket for real-time seeking (much faster than legacy methods)
+    if (extensionConnections.size > 0) {
+      console.log(`🎯 [Dashboard] Seeking via WebSocket to ${extensionConnections.size} extensions`);
+      
+      const successCount = broadcastToExtensions({
+        type: 'seek',
+        position: position,
+        timestamp: Date.now()
+      });
+      
+      if (successCount > 0) {
+        console.log(`✅ [Dashboard] WebSocket seek broadcast successful: ${position}s`);
+        res.json({
+          success: true,
+          position: position,
+          method: 'websocket',
+          extensionsNotified: successCount
+        });
+        return;
+      }
+    }
+    
+    // Fallback to legacy method if no WebSocket connections
+    console.log(`🔄 [Dashboard] Falling back to legacy seek method`);
     const success = await mediaSessionDetector.seekToPosition(position);
     
     if (success) {
-      console.log(`✅ [Dashboard] Seek successful: ${position}s`);
+      console.log(`✅ [Dashboard] Legacy seek successful: ${position}s`);
       res.json({
         success: true,
-        position: position
+        position: position,
+        method: 'legacy'
       });
     } else {
-      console.log(`❌ [Dashboard] Seek failed: ${position}s`);
+      console.log(`❌ [Dashboard] All seek methods failed: ${position}s`);
       res.status(500).json({
         success: false,
-        error: `Failed to seek to ${position}s`
+        error: `Failed to seek to ${position}s - no active connections`
       });
     }
   } catch (error) {
@@ -260,10 +309,44 @@ app.get('/api/media/status', async (req, res) => {
       console.log('✅ [Dashboard] Using Chrome Extension data (most recent)');
       console.log('📊 [Dashboard] Chrome Extension data:', currentMedia);
       music = currentMedia;
+      
+      // 🚀 NEW: Enhance with real-time time data if available
+      if (currentTimeData && currentTimeData.timestamp && (Date.now() - currentTimeData.timestamp < 5000)) {
+        console.log('⏱️ [Dashboard] Enhancing with real-time time data');
+        music = {
+          ...music,
+          position: currentTimeData.currentTime,
+          duration: currentTimeData.duration || music.duration,
+          isPlaying: currentTimeData.isPlaying,
+          canSeek: currentTimeData.canSeek,
+          realTimeData: true,
+          lastTimeUpdate: currentTimeData.timestamp
+        };
+      }
     } else {
       console.log('🔄 [Dashboard] No recent Chrome Extension data - extension may need to reconnect');
-      // No fallbacks - Chrome Extension is the only reliable source on macOS
-      music = null;
+      
+      // 🚀 NEW: Check if we have real-time data without metadata
+      if (currentTimeData && currentTimeData.timestamp && (Date.now() - currentTimeData.timestamp < 5000)) {
+        console.log('⏱️ [Dashboard] Using real-time data only');
+        music = {
+          title: 'Playing',
+          artist: 'Unknown',
+          album: '',
+          source: currentTimeData.source || 'Real-time',
+          url: null,
+          artwork: null,
+          position: currentTimeData.currentTime,
+          duration: currentTimeData.duration,
+          isPlaying: currentTimeData.isPlaying,
+          canSeek: currentTimeData.canSeek,
+          realTimeData: true,
+          lastTimeUpdate: currentTimeData.timestamp
+        };
+      } else {
+        // No fallbacks - Chrome Extension is the only reliable source on macOS
+        music = null;
+      }
     }
     
     if (music && !music.error) {
@@ -614,6 +697,86 @@ wss.on('connection', (ws, req) => {
           command.result = message.result;
           command.completedAt = Date.now();
         }
+        
+      } else if (message.type === 'timeupdate') {
+        // 🎵 Handle real-time time updates from extension
+        console.log(`⏱️ [WebSocket] Time update: ${message.currentTime}s / ${message.duration}s`);
+        
+        // Store current time data
+        currentTimeData = {
+          currentTime: message.currentTime || 0,
+          duration: message.duration || 0,
+          isPlaying: message.isPlaying || false,
+          canSeek: message.canSeek || false,
+          eventType: message.eventType || 'timeupdate',
+          source: message.source || 'unknown',
+          timestamp: Date.now()
+        };
+        
+        // Broadcast to all connected audio apps via WebSocket
+        // This enables real-time scrubber updates
+        wss.clients.forEach(client => {
+          if (client !== ws && client.readyState === 1) {
+            try {
+              client.send(JSON.stringify({
+                type: 'timeupdate',
+                data: currentTimeData
+              }));
+            } catch (error) {
+              console.error('❌ [WebSocket] Failed to broadcast time update:', error.message);
+            }
+          }
+        });
+        
+      } else if (message.type === 'seek') {
+        // Handle seeking commands from audio apps
+        console.log(`🎯 [WebSocket] Seek command: ${message.position}s`);
+        
+        // Broadcast seek command to extensions
+        broadcastToExtensions({
+          type: 'seek',
+          position: message.position,
+          timestamp: Date.now()
+        });
+        
+      } else if (message.type === 'mediaData') {
+        // 🎵 Handle media data from Chrome extension
+        console.log(`🎵 [WebSocket] Media data received:`, message.data);
+        
+        // Store media data for HTTP endpoints
+        if (!currentMedia) {
+          currentMedia = {};
+        }
+        
+        // Update currentMedia with new data
+        Object.assign(currentMedia, {
+          ...message.data,
+          timestamp: message.timestamp || Date.now(),
+          source: 'chrome-extension-websocket'
+        });
+        
+        console.log(`✅ [WebSocket] Updated currentMedia:`, currentMedia);
+        
+        // Broadcast to other connected clients
+        wss.clients.forEach(client => {
+          if (client !== ws && client.readyState === 1) {
+            try {
+              client.send(JSON.stringify({
+                type: 'media-update',
+                data: currentMedia
+              }));
+            } catch (error) {
+              console.error('❌ [WebSocket] Failed to broadcast media update:', error.message);
+            }
+          }
+        });
+        
+      } else if (message.type === 'connection') {
+        // Handle connection info from extension
+        console.log(`🔗 [WebSocket] Extension connection info:`, message);
+        extensionConnections.add(ws);
+        console.log(`🎯 [WebSocket] Extension registered. Total extensions: ${extensionConnections.size}`);
+        
       }
       
     } catch (error) {
