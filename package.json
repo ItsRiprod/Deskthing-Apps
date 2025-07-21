@@ -20,13 +20,7 @@
     "start": "node scripts/dist/index.js",
     "debug-music": "node scripts/music-debug.js",
     "player:control": "node scripts/player-control.js",
-    "kill-port": "node scripts/kill-port-8080.js",
-    "dashboard": "npm run kill-port && node dashboard-server.js",
-    "dashboard:watch": "npm run kill-port && nodemon dashboard-server.js",
-    "lint:check": "eslint *.js chrome-extension/*.js scripts/*.js",
-    "webnowplaying": "npm run kill-port && node webnowplaying-server.js",
-    "wnp": "npm run kill-port && node webnowplaying-wnp-adapter.js",
-    "wnp-python": "npm run kill-port && sleep 1 && source wnp_python_env/bin/activate && python3 webnowplaying-python-adapter.py"
+    "kill-port": "node scripts/kill-port-8080.js"
   },
   "devDependencies": {
     "@deskthing/cli": "^0.11.4",

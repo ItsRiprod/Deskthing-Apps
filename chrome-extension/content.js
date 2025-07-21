@@ -715,15 +715,17 @@ class WebSocketManager {
     
     setTimeout(() => {
       const nextButton = document.querySelector(
+        '.playControls__next, ' +
         '.skipControl__next, ' +
-        '.playControls__control.playControls__next, ' +
-        '[aria-label*="Skip to next" i], ' +
-        '[title*="next" i], ' +
-        'button[aria-label*="Skip to next track" i]'
+        'button[title="Skip to next"], ' +
+        'button[aria-label*="Skip to next" i]'
       );
       
       if (nextButton && !nextButton.disabled) {
+        console.log('⏭️ [Control] Clicking next button:', nextButton.className);
         nextButton.click();
+      } else {
+        console.log('❌ [Control] Next button not found or disabled');
       }
     }, 600);
   }
@@ -740,14 +742,17 @@ class WebSocketManager {
     
     setTimeout(() => {
       const prevButton = document.querySelector(
+        '.playControls__prev, ' +
         '.skipControl__previous, ' +
-        '.playControls__control.playControls__prev, ' +
-        '[aria-label*="Skip to previous" i], ' +
-        '[title*="previous" i]'
+        'button[title="Skip to previous"], ' +
+        'button[aria-label*="Skip to previous" i]'
       );
       
       if (prevButton && !prevButton.disabled) {
+        console.log('⏮️ [Control] Clicking prev button:', prevButton.className);
         prevButton.click();
+      } else {
+        console.log('❌ [Control] Previous button not found or disabled');
       }
     }, 200);
   }
@@ -884,4 +889,92 @@ new MutationObserver(() => {
     console.log('🔄 [Navigation] URL changed, reinitializing...');
     setTimeout(initialize, 1000);
   }
-}).observe(document, { subtree: true, childList: true }); 
+}).observe(document, { subtree: true, childList: true });
+
+// Listen for messages from popup for testing
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('🔍 [Content] Received message from popup:', message);
+  
+  if (message.type === 'extract-media') {
+    console.log('🎵 [Content] Popup requested media extraction');
+    if (window.deskThingMSE) {
+      window.deskThingMSE.requestTimingUpdate();
+      const currentData = window.deskThingMSE.getCurrentMediaData?.() || null;
+      sendResponse({ success: true, data: currentData });
+    } else {
+      sendResponse({ success: false, error: 'MSE not initialized' });
+    }
+  } else if (message.type === 'media-control') {
+    console.log(`🎮 [Content] Popup sent control: ${message.action}`);
+    try {
+      handleMediaCommand(message.action);
+      sendResponse({ success: true, action: message.action });
+    } catch (error) {
+      console.error('❌ [Content] Control failed:', error);
+      sendResponse({ success: false, error: error.message });
+    }
+  }
+  
+  return true; // Keep message channel open
+});
+
+// Handle media control commands from popup
+function handleMediaCommand(action) {
+  console.log(`🎮 [Content] Executing: ${action}`);
+  
+  switch (action) {
+    case 'play':
+      // Try multiple play button selectors
+      const playBtn = document.querySelector('[title="Play"]') || 
+                     document.querySelector('.playButton') ||
+                     document.querySelector('[aria-label*="play" i]');
+      if (playBtn) {
+        console.log('▶️ [Content] Clicking play button');
+        playBtn.click();
+      } else {
+        console.log('▶️ [Content] Using spacebar');
+        document.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+      }
+      break;
+      
+    case 'pause':
+      const pauseBtn = document.querySelector('[title="Pause"]') || 
+                      document.querySelector('.pauseButton') ||
+                      document.querySelector('[aria-label*="pause" i]');
+      if (pauseBtn) {
+        console.log('⏸️ [Content] Clicking pause button');
+        pauseBtn.click();
+      } else {
+        console.log('⏸️ [Content] Using spacebar');
+        document.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+      }
+      break;
+      
+    case 'nexttrack':
+      const nextBtn = document.querySelector('.playControls__next') ||
+                     document.querySelector('.skipControl__next') ||
+                     document.querySelector('button[title="Skip to next"]');
+      if (nextBtn) {
+        console.log('⏭️ [Content] Clicking next button:', nextBtn.className);
+        nextBtn.click();
+      } else {
+        console.log('❌ [Content] Next button not found');
+      }
+      break;
+      
+    case 'previoustrack':
+      const prevBtn = document.querySelector('.playControls__prev') ||
+                     document.querySelector('.skipControl__previous') ||
+                     document.querySelector('button[title="Skip to previous"]');
+      if (prevBtn) {
+        console.log('⏮️ [Content] Clicking previous button:', prevBtn.className);
+        prevBtn.click();
+      } else {
+        console.log('❌ [Content] Previous button not found');
+      }
+      break;
+      
+    default:
+      console.log(`⚠️ [Content] Unknown command: ${action}`);
+  }
+} 

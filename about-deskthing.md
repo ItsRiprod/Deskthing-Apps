@@ -31,6 +31,7 @@ Chromium-based web application running on the Car Thing that:
 
 ### **🎵 Audio Control**
 - **Spotify Integration**: Full playlist management, controls, output device selection
+- **SoundCloud App**: Chrome extension integration with real-time streaming and cross-window control
 - **Local Audio Control**: Cross-platform media detection and control
 - **Multi-source Support**: Works with various music apps and browsers
 
@@ -61,6 +62,7 @@ The project has gained significant traction:
 - **144,000+ App Downloads**
 - **4,800+ Discord Members**
 - **Active Development Community**
+- **Growing App Ecosystem**: New community apps like SoundCloud integration expanding platform capabilities
 
 ## 🛠️ **Technical Innovation**
 

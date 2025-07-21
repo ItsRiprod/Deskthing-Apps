@@ -15,7 +15,7 @@ chrome.runtime.onInstalled.addListener((details) => {
     
     // Open dashboard in new tab
     chrome.tabs.create({
-      url: 'http://localhost:8080'
+      url: 'http://localhost:8081'
     });
   }
 });

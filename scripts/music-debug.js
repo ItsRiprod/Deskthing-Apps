@@ -66,7 +66,7 @@ class MusicDetector {
       console.log('🔍 No system media found, checking browser...');
       
       // Use our enhanced AppleScript file for reliable detection
-      const result = execSync('osascript ./audio/debug-music.applescript', {
+      const result = execSync('osascript ./soundcloud/debug-music.applescript', {
         encoding: 'utf8',
         timeout: 10000
       }).trim();

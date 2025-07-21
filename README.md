@@ -26,7 +26,7 @@ Every app here is structured according to the [DeskThing template](https://githu
 
 ### 🎯 **The Integration Challenge**
 The audio app consists of **three working but disconnected systems**:
-1. **Audio App Server** (`audio/server/`) - DeskThing integration working, uses traditional `node-nowplaying`
+1. **SoundCloud App Server** (`soundcloud/server/`) - DeskThing integration working, uses traditional `node-nowplaying`
 2. **Dashboard Server** (`dashboard-server.js`) - Full API + WebSocket server working independently
 3. **Chrome Extension** - MediaSession detection + cross-window coordination working standalone
 
@@ -224,10 +224,10 @@ The **foundation is exceptionally solid** - all major components exist and work 
 
 ## 📚 **Documentation**
 
-- ✅ **audio/README.md** - Current audio app implementation status
-- ✅ **audio/roadmap.md** - Complete development timeline and integration plan
-- ✅ **ARCHITECTURE.md** - System design with cross-window coordination details
-- ✅ **PERFORMANCE-OPTIMIZATION.md** - Latency elimination strategies (WebSocket, Extension Bridge, SSE)
+- ✅ **soundcloud/README.md** - Current SoundCloud app implementation status
+- ✅ **soundcloud/roadmap.md** - Complete development timeline and integration plan
+- ✅ **soundcloud/ARCHITECTURE.md** - System design with cross-window coordination details
+- ✅ **soundcloud/PERFORMANCE-OPTIMIZATION.md** - Latency elimination strategies (WebSocket, Extension Bridge, SSE)
 - ✅ **chrome-extension/README.md** - Extension implementation details
 
 ---

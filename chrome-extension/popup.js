@@ -1,26 +1,33 @@
 /**
- * DeskThing Media Bridge - Popup Script
- * Enhanced with real-time WebSocket updates
+ * SoundCloud App Tester - Popup Script
+ * Tests Chrome Extension → DeskThing App Integration
  */
 
 // Get version dynamically from manifest
 const EXTENSION_VERSION = chrome.runtime.getManifest().version;
-let dashboardUrl = 'http://localhost:8080';
 let currentMedia = null;
 let isPlaying = false;
 let logs = [];
-let refreshTimer = null;
 let ws = null;
 let reconnectTimer = null;
+let currentTab = null;
 
 function log(message) {
   const timestamp = new Date().toLocaleTimeString();
   logs.unshift(`[${timestamp}] ${message}`);
-  if (logs.length > 50) logs.pop();
+  if (logs.length > 100) logs.pop();
   
   const logsEl = document.getElementById('logs');
   if (logsEl) {
-    logsEl.innerHTML = logs.slice(0, 10).join('\n');
+    const copyButton = '<button class="copy-button" id="copyLogsBtn" title="Copy all logs">📋</button>';
+    logsEl.innerHTML = copyButton + logs.slice(0, 20).join('\n');
+    logsEl.scrollTop = 0;
+    
+    // Re-attach copy button listener after updating innerHTML
+    const copyBtn = document.getElementById('copyLogsBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', copyLogs);
+    }
   }
 }
 
@@ -31,19 +38,40 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-function connectWebSocket() {
+function showCommandResult(message, isSuccess = true) {
+  const resultEl = document.getElementById('commandResult');
+  resultEl.textContent = message;
+  resultEl.className = `command-result ${isSuccess ? 'success' : 'error'}`;
+  
+  setTimeout(() => {
+    resultEl.style.display = 'none';
+  }, 3000);
+}
+
+function connectToDeskThing() {
   if (ws && ws.readyState === WebSocket.OPEN) {
-    return; // Already connected
+    log('✅ Already connected to DeskThing');
+    return;
   }
   
   try {
-    log('🔌 Connecting to WebSocket...');
-    ws = new WebSocket('ws://localhost:8080');
+    log('🔌 Connecting to DeskThing app (localhost:8081)...');
+    ws = new WebSocket('ws://localhost:8081');
     
     ws.onopen = function() {
-      log('✅ WebSocket connected - real-time updates enabled');
+      log('✅ Connected to DeskThing app WebSocket');
       document.getElementById('status').className = 'status connected';
-      document.getElementById('statusText').textContent = 'Connected (Real-time)';
+      document.getElementById('statusText').textContent = 'Connected to DeskThing';
+      
+      // Send connection message
+      const connectionMessage = {
+        type: 'connection',
+        source: 'chrome-extension-popup',
+        version: EXTENSION_VERSION,
+        message: 'Popup tester connected',
+        timestamp: Date.now()
+      };
+      ws.send(JSON.stringify(connectionMessage));
       
       if (reconnectTimer) {
         clearTimeout(reconnectTimer);
@@ -54,104 +82,138 @@ function connectWebSocket() {
     ws.onmessage = function(event) {
       try {
         const message = JSON.parse(event.data);
-        if (message.type === 'media-update' && message.data) {
-          console.log('🔍 [Popup] Raw WebSocket data:', message.data);
-          console.log('🔍 [Popup] isPlaying value:', message.data.isPlaying, typeof message.data.isPlaying);
-          
-          currentMedia = message.data;
-          updateMediaDisplay(message.data);
-          log(`🎵 Real-time update: ${message.data.title}`);
+        log(`📨 DeskThing: ${message.type || 'unknown message'}`);
+        
+        if (message.type === 'media-command') {
+          log(`🎮 Command from DeskThing: ${message.action}`);
+          showCommandResult(`Command received: ${message.action}`, true);
         }
       } catch (error) {
-        log(`❌ WebSocket message error: ${error.message}`);
+        log(`❌ Message parse error: ${error.message}`);
       }
     };
     
     ws.onclose = function() {
-      log('❌ WebSocket disconnected');
+      log('❌ DeskThing connection closed');
       document.getElementById('status').className = 'status disconnected';
-      document.getElementById('statusText').textContent = 'WebSocket Disconnected';
+      document.getElementById('statusText').textContent = 'Disconnected';
       
       // Auto-reconnect after 3 seconds
       if (!reconnectTimer) {
         reconnectTimer = setTimeout(() => {
-          log('🔄 Attempting WebSocket reconnect...');
-          connectWebSocket();
+          log('🔄 Attempting to reconnect...');
+          connectToDeskThing();
         }, 3000);
       }
     };
     
     ws.onerror = function(error) {
       log(`❌ WebSocket error: ${error.message || 'Connection failed'}`);
+      showCommandResult('Connection to DeskThing failed', false);
     };
     
   } catch (error) {
-    log(`❌ WebSocket connection failed: ${error.message}`);
-    // Fallback to REST API mode
-    fallbackToRestMode();
+    log(`❌ Connection failed: ${error.message}`);
+    showCommandResult('Failed to connect to DeskThing', false);
   }
 }
 
-function fallbackToRestMode() {
-  log('📡 Falling back to REST API mode');
-  document.getElementById('statusText').textContent = 'REST API Mode';
-  checkStatus();
+async function getCurrentTab() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    currentTab = tab;
+    return tab;
+  } catch (error) {
+    log(`❌ Failed to get current tab: ${error.message}`);
+    return null;
+  }
 }
 
-async function checkStatus() {
+async function sendMessageToContentScript(message) {
   try {
-    log('Checking dashboard health...');
-    const response = await fetch(`${dashboardUrl}/health`);
-    if (response.ok) {
-      const data = await response.json();
-      document.getElementById('status').className = 'status connected';
-      document.getElementById('statusText').textContent = `Connected (${data.status})`;
-      document.getElementById('lastUpdate').textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
-      log('✅ Dashboard health check passed');
-      
-      // Get current media if not using WebSocket
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        await refreshMedia();
-      }
+    const tab = await getCurrentTab();
+    if (!tab) {
+      throw new Error('No active tab found');
+    }
+    
+    const response = await chrome.tabs.sendMessage(tab.id, message);
+    return response;
+  } catch (error) {
+    log(`❌ Content script message failed: ${error.message}`);
+    showCommandResult('Failed to communicate with page', false);
+    throw error;
+  }
+}
+
+async function extractMediaNow() {
+  try {
+    log('🎵 Requesting immediate media extraction...');
+    const response = await sendMessageToContentScript({
+      type: 'extract-media',
+      timestamp: Date.now()
+    });
+    
+    if (response && response.success) {
+      log('✅ Media extraction triggered');
+      showCommandResult('Media extraction requested', true);
     } else {
-      throw new Error('Dashboard health check failed');
+      log('⚠️ No media found on page');
+      showCommandResult('No media detected on current page', false);
     }
   } catch (error) {
-    document.getElementById('status').className = 'status disconnected';
-    document.getElementById('statusText').textContent = 'Dashboard Not Reachable';
-    document.getElementById('lastUpdate').textContent = `Error: ${error.message}`;
-    document.getElementById('mediaInfo').className = 'media-info hidden';
-    log(`❌ Health check failed: ${error.message}`);
+    log(`❌ Media extraction failed: ${error.message}`);
   }
 }
 
-async function refreshMedia() {
+async function sendControlCommand(action) {
   try {
-    log('Refreshing media status...');
-    const mediaResponse = await fetch(`${dashboardUrl}/api/media/status`);
-    if (mediaResponse.ok) {
-      const data = await mediaResponse.json();
-      if (data.success && data.data) {
-        currentMedia = data.data;
-        updateMediaDisplay(data.data);
-        log(`🎵 Media found: ${data.data.title}`);
-      } else {
-        currentMedia = null;
-        document.getElementById('mediaInfo').className = 'media-info hidden';
-        log('No media detected');
-      }
+    log(`🎮 Sending control command: ${action}`);
+    
+    // Send to content script first
+    await sendMessageToContentScript({
+      type: 'media-control',
+      action: action,
+      timestamp: Date.now()
+    });
+    
+    // Also send via WebSocket if connected (for testing DeskThing response)
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      const command = {
+        type: 'media-command',
+        action: action,
+        timestamp: Date.now(),
+        source: 'popup-test'
+      };
+      ws.send(JSON.stringify(command));
     }
+    
+    log(`✅ Control command sent: ${action}`);
+    showCommandResult(`Command sent: ${action}`, true);
   } catch (error) {
-    log(`❌ Media refresh failed: ${error.message}`);
+    log(`❌ Control command failed: ${error.message}`);
+    showCommandResult(`Failed to send ${action} command`, false);
   }
 }
 
 function updateMediaDisplay(media) {
-  console.log('🎵 [Popup] updateMediaDisplay called with:', { isPlaying: media.isPlaying, title: media.title });
+  if (!media) {
+    document.getElementById('mediaInfo').className = 'media-info hidden';
+    return;
+  }
   
   document.getElementById('mediaInfo').className = 'media-info';
   document.getElementById('trackTitle').textContent = media.title || 'Unknown Track';
-  document.getElementById('trackArtist').textContent = `by ${media.artist || 'Unknown Artist'}`;
+  document.getElementById('trackArtist').textContent = media.artist || 'Unknown Artist';
+  document.getElementById('trackAlbum').textContent = media.album || '';
+  
+  // Update artwork
+  const artworkEl = document.getElementById('artwork');
+  if (media.artwork) {
+    artworkEl.src = media.artwork;
+    artworkEl.className = 'artwork';
+  } else {
+    artworkEl.className = 'artwork hidden';
+  }
   
   // Update time info
   document.getElementById('currentTime').textContent = formatTime(media.position);
@@ -163,109 +225,75 @@ function updateMediaDisplay(media) {
   
   // Update play state
   isPlaying = media.isPlaying;
-  const playStateElement = document.getElementById('playState');
-  const newPlayState = isPlaying ? '✅' : '❌';
-  
-  console.log('🎵 [Popup] Setting play state:', { isPlaying, newPlayState, element: !!playStateElement });
-  
-  if (playStateElement) {
-    playStateElement.textContent = newPlayState;
-  }
+  document.getElementById('playState').textContent = isPlaying ? '✅' : '❌';
   document.getElementById('playPauseBtn').textContent = isPlaying ? '⏸️' : '▶️';
   
   // Update source
-  document.getElementById('source').textContent = media.source || 'N/A';
-  
-  // Enable controls
-  const buttons = document.querySelectorAll('.media-controls button');
-  buttons.forEach(btn => btn.disabled = false);
+  document.getElementById('source').textContent = media.source || 'Page';
   
   // Update debug info
   updateDebugInfo(media);
+  
+  currentMedia = media;
 }
 
 function updateDebugInfo(media) {
   const debugContent = document.getElementById('debugContent');
-  if (debugContent) {
-    const connectionType = ws && ws.readyState === WebSocket.OPEN ? 'WebSocket (Real-time)' : 'REST API';
+  if (debugContent && media) {
     debugContent.innerHTML = `
       <strong>Extension:</strong> v${EXTENSION_VERSION}<br>
-      <strong>Connection:</strong> ${connectionType}<br>
-      <strong>Method:</strong> ${media.method || 'Event-driven'}<br>
-      <strong>Duration:</strong> ${media.duration}s<br>
-      <strong>Position:</strong> ${media.position}s<br>
-      <strong>Source:</strong> ${media.source}<br>
-      <strong>URL:</strong> ${media.url ? media.url.substring(0, 50) + '...' : 'N/A'}<br>
-      <strong>Has Artwork:</strong> ${media.hasArtwork ? 'Yes' : 'No'}<br>
-      <strong>Timestamp:</strong> ${media.timestamp ? new Date(media.timestamp).toLocaleTimeString() : 'N/A'}
+      <strong>WebSocket:</strong> ${ws && ws.readyState === WebSocket.OPEN ? 'Connected' : 'Disconnected'}<br>
+      <strong>Title:</strong> ${media.title || 'N/A'}<br>
+      <strong>Artist:</strong> ${media.artist || 'N/A'}<br>
+      <strong>Album:</strong> ${media.album || 'N/A'}<br>
+      <strong>Duration:</strong> ${media.duration || 0}s<br>
+      <strong>Position:</strong> ${media.position || 0}s<br>
+      <strong>Playing:</strong> ${media.isPlaying ? 'Yes' : 'No'}<br>
+      <strong>Source:</strong> ${media.source || 'N/A'}<br>
+      <strong>Has Artwork:</strong> ${media.artwork ? 'Yes' : 'No'}<br>
+      <strong>Timestamp:</strong> ${new Date().toLocaleTimeString()}
     `;
   }
 }
 
-async function sendControl(action) {
-  try {
-    log(`Sending control: ${action}`);
-    const response = await fetch(`${dashboardUrl}/api/media/control`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action })
-    });
-    
-    if (response.ok) {
-      log(`✅ Control sent: ${action}`);
-      // If using REST mode, refresh after control command
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        if (refreshTimer) clearTimeout(refreshTimer);
-        refreshTimer = setTimeout(refreshMedia, 500);
-      }
-    } else {
-      log(`❌ Control failed: ${action}`);
-    }
-  } catch (error) {
-    log(`❌ Control error: ${error.message}`);
-  }
-}
-
-function togglePlayPause() {
-  const action = isPlaying ? 'pause' : 'play';
-  sendControl(action);
-}
-
-async function testConnection() {
-  document.getElementById('statusText').textContent = 'Testing...';
-  log('Manual connection test initiated');
-  
-  // Try WebSocket first, then fallback to REST
-  connectWebSocket();
-  setTimeout(checkStatus, 1000);
-}
-
-function openDashboard() {
-  chrome.tabs.create({ url: dashboardUrl });
-  log('Opening dashboard in new tab');
-}
-
 function toggleDebug() {
   const debugInfo = document.getElementById('debugInfo');
-  if (debugInfo.style.display === 'none' || !debugInfo.style.display) {
+  if (debugInfo.style.display === 'none') {
     debugInfo.style.display = 'block';
-    log('Debug panel opened');
+    log('📊 Debug panel opened');
   } else {
     debugInfo.style.display = 'none';
   }
 }
 
-// Manual refresh function for user-triggered updates
-async function manualRefresh() {
-  log('🔄 Manual refresh requested');
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    log('Using WebSocket connection - data should update automatically');
-  } else {
-    await refreshMedia();
-  }
+function clearLogs() {
+  logs = [];
+  const logsEl = document.getElementById('logs');
+  logsEl.innerHTML = '<button class="copy-button" id="copyLogsBtn" title="Copy all logs">📋</button>';
+  // Re-attach copy button listener
+  document.getElementById('copyLogsBtn').addEventListener('click', copyLogs);
+  log('🗑️ Logs cleared');
 }
 
-// Cleanup function
+function copyLogs() {
+  const logText = logs.join('\n');
+  navigator.clipboard.writeText(logText).then(() => {
+    const copyBtn = document.getElementById('copyLogsBtn');
+    const originalText = copyBtn.textContent;
+    copyBtn.textContent = '✅';
+    copyBtn.style.background = '#28a745';
+    
+    setTimeout(() => {
+      copyBtn.textContent = originalText;
+      copyBtn.style.background = '#444';
+    }, 1000);
+    
+    log('📋 Logs copied to clipboard');
+  }).catch(err => {
+    log('❌ Failed to copy logs: ' + err.message);
+  });
+}
+
 function cleanup() {
   if (ws) {
     ws.close();
@@ -275,44 +303,52 @@ function cleanup() {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
   }
-  if (refreshTimer) {
-    clearTimeout(refreshTimer);
-    refreshTimer = null;
-  }
 }
+
+// Listen for content script messages
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'media-update') {
+    log(`🎵 Media update: ${message.data?.title || 'Unknown'}`);
+    updateMediaDisplay(message.data);
+  } else if (message.type === 'websocket-status') {
+    log(`🔌 WebSocket status: ${message.status}`);
+  }
+});
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-  log(`Extension popup opened (v${EXTENSION_VERSION}) - Real-time WebSocket Mode`);
+  log(`☁️ SoundCloud App Tester v${EXTENSION_VERSION} opened`);
   
   // Update version display
-  document.getElementById('version').textContent = `Version ${EXTENSION_VERSION} Enhanced (Real-time)`;
+  document.getElementById('version').textContent = `v${EXTENSION_VERSION} - Direct Integration`;
   
   // Set up event listeners
-  document.getElementById('prevBtn').addEventListener('click', () => sendControl('previoustrack'));
-  document.getElementById('playPauseBtn').addEventListener('click', togglePlayPause);
-  document.getElementById('nextBtn').addEventListener('click', () => sendControl('nexttrack'));
+  document.getElementById('prevBtn').addEventListener('click', () => sendControlCommand('previoustrack'));
+  document.getElementById('playPauseBtn').addEventListener('click', () => sendControlCommand(isPlaying ? 'pause' : 'play'));
+  document.getElementById('nextBtn').addEventListener('click', () => sendControlCommand('nexttrack'));
   
-  document.querySelector('[data-action="test"]').addEventListener('click', testConnection);
-  document.querySelector('[data-action="dashboard"]').addEventListener('click', openDashboard);
-  document.querySelector('[data-action="refresh"]').addEventListener('click', manualRefresh);
-  document.querySelector('[data-action="debug"]').addEventListener('click', toggleDebug);
+  // Test buttons
+  document.getElementById('testPlayBtn').addEventListener('click', () => sendControlCommand('play'));
+  document.getElementById('testPauseBtn').addEventListener('click', () => sendControlCommand('pause'));
+  document.getElementById('testPrevBtn').addEventListener('click', () => sendControlCommand('previoustrack'));
+  document.getElementById('testNextBtn').addEventListener('click', () => sendControlCommand('nexttrack'));
   
-  // Start with WebSocket connection
-  connectWebSocket();
+  // Main controls
+  document.getElementById('refreshBtn').addEventListener('click', extractMediaNow);
+  document.getElementById('connectBtn').addEventListener('click', connectToDeskThing);
+  document.getElementById('extractBtn').addEventListener('click', extractMediaNow);
+  document.getElementById('clearLogsBtn').addEventListener('click', clearLogs);
+  document.getElementById('debugToggle').addEventListener('click', toggleDebug);
+  document.getElementById('copyLogsBtn').addEventListener('click', copyLogs);
   
-  // Listen for page visibility changes to reconnect if needed
-  document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) {
-      log('Popup became visible - ensuring connection');
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        connectWebSocket();
-      }
-    }
-  });
+  // Auto-connect to DeskThing
+  connectToDeskThing();
+  
+  // Request initial media data
+  setTimeout(extractMediaNow, 1000);
   
   // Cleanup when popup closes
   window.addEventListener('beforeunload', cleanup);
   
-  log('✅ Popup initialized with real-time WebSocket connection');
+  log('✅ Popup initialized - ready for testing');
 }); 

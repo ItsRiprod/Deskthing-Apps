@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <style>
     body {
-      width: 350px;
+      width: 380px;
       padding: 16px;
       font-family: system-ui, -apple-system, sans-serif;
       background: #1a1a1a;
@@ -67,6 +67,7 @@
       border-radius: 4px;
       cursor: pointer;
       font-size: 11px;
+      min-width: 40px;
     }
     
     .media-controls button:hover {
@@ -103,9 +104,9 @@
     }
     
     .controls {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 8px;
-      justify-content: center;
       margin-bottom: 12px;
     }
     
@@ -123,48 +124,26 @@
       background: #0056b3;
     }
     
-    .debug-section {
-      margin-top: 12px;
-      padding: 8px;
-      background: #222;
-      border-radius: 4px;
-      border: 1px solid #333;
-    }
-    
-    .debug-toggle {
+    button:disabled {
       background: #333;
-      padding: 4px 8px;
-      font-size: 10px;
-      margin-bottom: 8px;
+      cursor: not-allowed;
     }
     
-    .debug-info {
-      display: none;
-      font-size: 10px;
-      color: #ccc;
-      font-family: monospace;
-      max-height: 100px;
-      overflow-y: auto;
+    .test-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
     }
     
-    .logs {
-      background: #111;
-      padding: 8px;
-      border-radius: 4px;
-      max-height: 80px;
-      overflow-y: auto;
-      font-size: 10px;
-      font-family: monospace;
-      color: #ccc;
-      margin-top: 8px;
-    }
-    
-    .small {
+    .test-controls button {
+      background: #28a745;
       font-size: 11px;
-      color: #aaa;
-      margin-top: 12px;
-      border-top: 1px solid #333;
-      padding-top: 8px;
+      padding: 6px 8px;
+    }
+    
+    .test-controls button:hover {
+      background: #218838;
     }
     
     .info-grid {
@@ -186,26 +165,124 @@
       color: #4caf50;
     }
     
+    .logs {
+      background: #111;
+      padding: 8px;
+      border-radius: 4px;
+      max-height: 120px;
+      overflow-y: auto;
+      font-size: 10px;
+      font-family: monospace;
+      color: #ccc;
+      margin-top: 8px;
+      border: 1px solid #333;
+      position: relative;
+    }
+    
+    .copy-button {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: #444;
+      color: #fff;
+      border: 1px solid #666;
+      border-radius: 3px;
+      padding: 2px 6px;
+      font-size: 9px;
+      cursor: pointer;
+      z-index: 10;
+    }
+    
+    .copy-button:hover {
+      background: #555;
+    }
+    
+    .copy-button:active {
+      background: #333;
+    }
+    
+    .debug-section {
+      margin-top: 12px;
+      padding: 8px;
+      background: #222;
+      border-radius: 4px;
+      border: 1px solid #333;
+    }
+    
+    .debug-toggle {
+      background: #333;
+      padding: 4px 8px;
+      font-size: 10px;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+    
+    .debug-info {
+      display: block;
+      font-size: 10px;
+      color: #ccc;
+      font-family: monospace;
+    }
+    
+    .small {
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 12px;
+      border-top: 1px solid #333;
+      padding-top: 8px;
+    }
+    
     .hidden {
       display: none;
+    }
+    
+    .command-result {
+      margin-top: 8px;
+      padding: 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      display: none;
+    }
+    
+    .command-result.success {
+      background: #2d5a3d;
+      color: #4caf50;
+      display: block;
+    }
+    
+    .command-result.error {
+      background: #5a2d2d;
+      color: #f44336;
+      display: block;
+    }
+    
+    .artwork {
+      width: 60px;
+      height: 60px;
+      border-radius: 4px;
+      object-fit: cover;
+      float: right;
+      margin-left: 12px;
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h3>🎵 DeskThing Media Bridge</h3>
+    <h3>☁️ SoundCloud App Tester</h3>
     <div id="version" class="version">Loading version...</div>
   </div>
   
   <div id="status" class="status disconnected">
-    <strong>Status:</strong> <span id="statusText">Checking...</span>
+    <strong>DeskThing Connection:</strong> <span id="statusText">Checking...</span>
     <div id="lastUpdate" style="font-size: 10px; margin-top: 4px; color: #aaa;"></div>
   </div>
   
   <div id="mediaInfo" class="media-info hidden">
-    <div style="margin-bottom: 8px;">
+    <div style="margin-bottom: 8px; overflow: hidden;">
+      <img id="artwork" class="artwork hidden" />
       <strong id="trackTitle">No media detected</strong><br>
-      <small id="trackArtist" style="color: #aaa;"></small>
+      <small id="trackArtist" style="color: #aaa;"></small><br>
+      <small id="trackAlbum" style="color: #888;"></small>
     </div>
     
     <div class="time-info">
@@ -229,35 +306,47 @@
     </div>
     
     <div class="media-controls">
-      <button id="prevBtn" disabled>⏮️</button>
-      <button id="playPauseBtn" disabled>⏯️</button>
-      <button id="nextBtn" disabled>⏭️</button>
+      <button id="prevBtn" title="Previous Track">⏮️</button>
+      <button id="playPauseBtn" title="Play/Pause">⏯️</button>
+      <button id="nextBtn" title="Next Track">⏭️</button>
     </div>
+    
+    <div id="commandResult" class="command-result"></div>
   </div>
   
   <div class="controls">
-    <button data-action="test">🔄 Test</button>
-    <button data-action="dashboard">📊 Dashboard</button>
-    <button data-action="refresh">🎵 Refresh</button>
+    <button id="refreshBtn">🔄 Refresh</button>
+    <button id="connectBtn">🔌 Connect</button>
+    <button id="extractBtn">🎵 Extract Now</button>
+    <button id="clearLogsBtn">🗑️ Clear Logs</button>
+  </div>
+  
+  <div class="test-controls">
+    <button id="testPlayBtn">▶️ Test Play</button>
+    <button id="testPauseBtn">⏸️ Test Pause</button>
+    <button id="testPrevBtn">⏮️ Test Prev</button>
+    <button id="testNextBtn">⏭️ Test Next</button>
   </div>
   
   <div class="debug-section">
-    <button class="debug-toggle" data-action="debug">🔧 Debug Info</button>
+    <button class="debug-toggle" id="debugToggle">🔧 Debug Info & Logs</button>
     <div id="debugInfo" class="debug-info">
       <div id="debugContent"></div>
-      <div id="logs" class="logs"></div>
+      <div id="logs" class="logs">
+        <button class="copy-button" id="copyLogsBtn" title="Copy all logs">📋</button>
+      </div>
     </div>
   </div>
   
   <div class="small">
-    <strong>Real-time Features:</strong><br>
-    • Live WebSocket updates from dashboard server<br>
-    • Instant media control with immediate feedback<br>
-    • Event-driven updates (no background polling)<br><br>
+    <strong>Chrome Extension → DeskThing App:</strong><br>
+    • Direct WebSocket to localhost:8081<br>
+    • Real-time media extraction from page<br>
+    • MediaSession API integration<br><br>
     
     <strong>Supported Sites:</strong><br>
-    • SoundCloud, YouTube, Spotify, YouTube Music<br>
-    • Real-time detection and streaming via WebSocket
+    • SoundCloud, YouTube, Spotify Web Player<br>
+    • YouTube Music, Apple Music (beta)
   </div>
   
   <script src="popup.js"></script>
