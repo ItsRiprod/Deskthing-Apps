@@ -16,10 +16,6 @@ const PORT = 8080;
 // Global state
 let currentMedia = null;
 
-// 🚀 NEW: Extension communication state for cross-window control
-let pendingExtensionCommands = [];
-let extensionCommandIdCounter = 0;
-
 // 🚀 WebSocket connections for real-time extension communication
 let extensionConnections = new Set();
 
@@ -196,7 +192,7 @@ app.post('/api/media/control', async (req, res) => {
     }
     
     // Create command with unique ID
-    const commandId = ++extensionCommandIdCounter;
+    const commandId = Date.now();
     const command = {
       type: 'media-command',
       id: commandId,
@@ -514,153 +510,7 @@ app.post('/nowplaying', (req, res) => {
          req.body;
 });
 
-/**
- * 🚀 BREAKTHROUGH FEATURE: Extension cross-window control endpoint
- * Stores commands for content scripts to poll and execute via background script
- */
-app.post('/api/extension/control', (req, res) => {
-  try {
-    console.log(`📨 [Dashboard] Extension control request received:`, {
-      body: req.body,
-      headers: req.headers['content-type'],
-      ip: req.ip
-    });
-    
-    const { command } = req.body;
-    console.log(`🎮 [Dashboard] Extension control request: ${command}`);
-    
-    if (!command || !['play', 'pause', 'nexttrack', 'previoustrack'].includes(command)) {
-      console.log(`❌ [Dashboard] Invalid command: ${command}`);
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid command. Use: play, pause, nexttrack, previoustrack'
-      });
-    }
-    
-    // Create pending command for content scripts to pick up
-    const commandId = ++extensionCommandIdCounter;
-    const pendingCommand = {
-      id: commandId,
-      command: command,
-      timestamp: Date.now(),
-      status: 'pending'
-    };
-    
-    pendingExtensionCommands.push(pendingCommand);
-    console.log(`📋 [Dashboard] Command queue now has ${pendingExtensionCommands.length} commands:`, 
-      pendingExtensionCommands.map(c => ({ id: c.id, command: c.command, status: c.status })));
-    
-    // Clean up old commands (older than 30 seconds)
-    const thirtySecondsAgo = Date.now() - 30000;
-    const initialLength = pendingExtensionCommands.length;
-    pendingExtensionCommands = pendingExtensionCommands.filter(cmd => cmd.timestamp > thirtySecondsAgo);
-    
-    if (pendingExtensionCommands.length < initialLength) {
-      console.log(`🧹 [Dashboard] Cleaned up ${initialLength - pendingExtensionCommands.length} old commands`);
-    }
-    
-    console.log(`✅ [Dashboard] Command queued for extension: ${command} (ID: ${commandId})`);
-    
-    const response = {
-      success: true,
-      commandId: commandId,
-      command: command,
-      method: 'extension-coordination',
-      message: 'Command queued for extension execution'
-    };
-    
-    console.log(`📤 [Dashboard] Sending response:`, response);
-    res.json(response);
-    
-  } catch (error) {
-    console.error('❌ [Dashboard] Extension control error:', error.message);
-    console.error('❌ [Dashboard] Extension control stack:', error.stack);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-/**
- * 📥 Content script polling endpoint - checks for pending commands
- */
-app.get('/api/extension/poll', (req, res) => {
-  try {
-    console.log(`🔄 [Dashboard] Poll request from: ${req.ip} at ${new Date().toISOString()}`);
-    console.log(`📋 [Dashboard] Total commands in queue: ${pendingExtensionCommands.length}`);
-    
-    // Get pending commands
-    const pending = pendingExtensionCommands.filter(cmd => cmd.status === 'pending');
-    console.log(`🔍 [Dashboard] Found ${pending.length} pending commands`);
-    
-    if (pending.length > 0) {
-      console.log(`📤 [Dashboard] Sending ${pending.length} pending command(s) to content script:`, 
-        pending.map(c => ({ id: c.id, command: c.command, age: Date.now() - c.timestamp })));
-      
-      // Mark as sent
-      pending.forEach(cmd => {
-        cmd.status = 'sent';
-        cmd.sentAt = Date.now();
-        console.log(`✅ [Dashboard] Marked command ${cmd.id} (${cmd.command}) as sent`);
-      });
-      
-      const response = {
-        success: true,
-        commands: pending
-      };
-      
-      console.log(`📤 [Dashboard] Poll response:`, response);
-      res.json(response);
-    } else {
-      console.log(`📤 [Dashboard] No pending commands, sending empty response`);
-      const response = {
-        success: true,
-        commands: []
-      };
-      res.json(response);
-    }
-    
-  } catch (error) {
-    console.error('❌ [Dashboard] Extension poll error:', error.message);
-    console.error('❌ [Dashboard] Extension poll stack:', error.stack);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-/**
- * 📬 Content script result reporting endpoint
- */
-app.post('/api/extension/result', (req, res) => {
-  try {
-    const { commandId, success, result, error } = req.body;
-    console.log(`📬 [Dashboard] Extension result: Command ${commandId} - ${success ? 'SUCCESS' : 'FAILED'}`);
-    
-    // Find and update the command
-    const command = pendingExtensionCommands.find(cmd => cmd.id === commandId);
-    if (command) {
-      command.status = success ? 'completed' : 'failed';
-      command.result = result;
-      command.error = error;
-      command.completedAt = Date.now();
-    }
-    
-    res.json({
-      success: true,
-      message: 'Result recorded'
-    });
-    
-  } catch (error) {
-    console.error('❌ [Dashboard] Extension result error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
+// Dead polling endpoints removed - cross-window control now works via WebSocket
 
 // Enhanced metadata endpoint using MediaSession
 app.get('/api/media/metadata', async (req, res) => {
@@ -728,13 +578,7 @@ wss.on('connection', (ws, req) => {
         // Handle command execution result from extension
         console.log(`📬 [WebSocket] Command result: ${message.commandId} - ${message.success ? 'SUCCESS' : 'FAILED'}`);
         
-        // Update command status in queue (if we still have polling fallback)
-        const command = pendingExtensionCommands.find(cmd => cmd.id === message.commandId);
-        if (command) {
-          command.status = message.success ? 'completed' : 'failed';
-          command.result = message.result;
-          command.completedAt = Date.now();
-        }
+        // Command acknowledgment received via WebSocket
         
       } else if (message.type === 'timeupdate') {
         // 🎵 Handle real-time time updates from extension
@@ -1291,9 +1135,8 @@ server.listen(PORT, () => {
   console.log(`  POST /obs-nowplaying      - Chrome extension data endpoint`);
   console.log(`  POST /nowplaying          - Chrome extension data endpoint`);
   console.log(`🚀 NEW CROSS-WINDOW ENDPOINTS:`);
-  console.log(`  POST /api/extension/control - Extension cross-window control`);
-  console.log(`  GET  /api/extension/poll    - Content script command polling`);
-  console.log(`  POST /api/extension/result  - Command result reporting`);
+  // Dead polling endpoints removed - using WebSocket for cross-window control
+  // Extension endpoints removed - using WebSocket for real-time communication
   console.log(`  GET  /health              - Server health check`);
   console.log(`  WS   /                    - WebSocket for real-time data`);
   console.log(`  GET  /                    - Enhanced Dashboard UI`);
