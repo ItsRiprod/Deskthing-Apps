@@ -713,6 +713,27 @@ wss.on('connection', (ws, req) => {
           timestamp: Date.now()
         };
         
+        // 🔧 ALSO update currentMedia with timing data so it persists across mediaData updates
+        if (message.duration !== undefined && message.duration > 0) {
+          currentMedia.duration = message.duration;
+        }
+        if (message.currentTime !== undefined && message.currentTime >= 0) {
+          currentMedia.position = message.currentTime;
+        }
+        if (message.isPlaying !== undefined) {
+          currentMedia.isPlaying = message.isPlaying;
+        }
+        
+        currentMedia.timestamp = Date.now();
+        currentMedia.source = message.source || currentMedia.source;
+        
+        console.log(`✅ [WebSocket] Updated currentMedia with timing:`, {
+          position: currentMedia.position,
+          duration: currentMedia.duration,
+          isPlaying: currentMedia.isPlaying,
+          title: currentMedia.title
+        });
+        
         // Broadcast to all connected audio apps via WebSocket
         // This enables real-time scrubber updates
         wss.clients.forEach(client => {
@@ -755,6 +776,14 @@ wss.on('connection', (ws, req) => {
         currentMedia.timestamp = message.timestamp || Date.now();
         currentMedia.source = 'chrome-extension-websocket';
         
+        // Check if this is a new song (different title/artist) - only then clear timing data
+        const isNewSong = (newData.title && newData.title !== currentMedia.title) || 
+                          (newData.artist && newData.artist !== currentMedia.artist);
+        
+        if (isNewSong) {
+          console.log(`🎵 [WebSocket] New song detected: "${newData.title}" by "${newData.artist}"`);
+        }
+        
         // Only update metadata fields if they're actually provided (not undefined/empty)
         if (newData.title !== undefined && newData.title !== '') {
           currentMedia.title = newData.title;
@@ -777,15 +806,30 @@ wss.on('connection', (ws, req) => {
           currentMedia.isPaused = newData.isPaused;
         }
         
-        // Update duration/position if provided
-        if (newData.duration !== undefined) {
-          currentMedia.duration = newData.duration;
-        }
-        if (newData.position !== undefined) {
-          currentMedia.position = newData.position;
+        // 🔧 TIMING DATA PRESERVATION: Only update timing if new song OR if actual timing provided
+        if (isNewSong) {
+          // New song - reset timing data (will get updated by timeupdate messages)
+          currentMedia.duration = newData.duration || 0;
+          currentMedia.position = newData.position || 0;
+        } else {
+          // Same song - PRESERVE existing timing data, only update if new values provided
+          if (newData.duration !== undefined && newData.duration > 0) {
+            currentMedia.duration = newData.duration;
+          }
+          if (newData.position !== undefined && newData.position >= 0) {
+            currentMedia.position = newData.position;
+          }
+          // If no timing provided, keep existing values (don't clear them)
         }
         
-        console.log(`✅ [WebSocket] Smart merged currentMedia:`, currentMedia);
+        console.log(`✅ [WebSocket] Smart merged currentMedia:`, {
+          title: currentMedia.title,
+          artist: currentMedia.artist,
+          isPlaying: currentMedia.isPlaying,
+          position: currentMedia.position,
+          duration: currentMedia.duration,
+          source: currentMedia.source
+        });
         
         // Broadcast to other connected clients
         wss.clients.forEach(client => {

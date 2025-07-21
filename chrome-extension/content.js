@@ -73,6 +73,9 @@ class SoundCloudMSEDetector {
 
     // Monitor MediaSession metadata changes
     const checkMediaSession = () => {
+      // 🔍 COMPREHENSIVE TIMING DEBUG LOGGING
+      this.debugAllTimingSources();
+      
       if (navigator.mediaSession.metadata) {
         const metadata = navigator.mediaSession.metadata;
         const newTrack = {
@@ -239,6 +242,14 @@ class SoundCloudMSEDetector {
    * 📊 Update current position and duration
    */
   updatePosition() {
+    // 🎯 Priority 1: Extract timing from SoundCloud DOM elements
+    const soundcloudTiming = this.extractSoundCloudTiming();
+    if (soundcloudTiming.duration > 0) {
+      console.log(`🎵 [Position] SoundCloud DOM - Position: ${soundcloudTiming.position}s / Duration: ${soundcloudTiming.duration}s`);
+      this.broadcastTimeUpdate(soundcloudTiming.position, soundcloudTiming.duration);
+      return;
+    }
+
     // Try to get position from discovered MSE element
     if (window.discoveredMSEElement) {
       const element = window.discoveredMSEElement;
@@ -276,14 +287,229 @@ class SoundCloudMSEDetector {
   }
 
   /**
+   * 🔍 DEBUG: Comprehensive timing sources analysis
+   */
+  debugAllTimingSources() {
+    // Only log comprehensive debug every 10th call to avoid spam (every 5 seconds)
+    if (!this.debugCallCount) this.debugCallCount = 0;
+    this.debugCallCount++;
+    
+    if (this.debugCallCount % 10 !== 0) return;
+    
+    console.log('🔍 ===== COMPREHENSIVE TIMING SOURCES DEBUG =====');
+    
+    // 1. MediaSession API Analysis
+    console.log('🎵 [DEBUG] MediaSession API:', {
+      available: !!navigator.mediaSession,
+      metadata: navigator.mediaSession?.metadata,
+      playbackState: navigator.mediaSession?.playbackState,
+      positionState: navigator.mediaSession?.positionState || 'NOT_AVAILABLE'
+    });
+    
+    // 2. HTML5 Audio/Video Elements
+    const mediaElements = document.querySelectorAll('audio, video');
+    console.log(`🎵 [DEBUG] Found ${mediaElements.length} HTML5 media elements:`);
+    mediaElements.forEach((element, index) => {
+      console.log(`  Element ${index}:`, {
+        tagName: element.tagName,
+        src: element.src || element.currentSrc || 'NO_SRC',
+        currentTime: element.currentTime,
+        duration: element.duration,
+        paused: element.paused,
+        readyState: element.readyState,
+        networkState: element.networkState,
+        srcObject: !!element.srcObject,
+        buffered: element.buffered.length > 0 ? `${element.buffered.start(0)}-${element.buffered.end(0)}` : 'NONE'
+      });
+    });
+    
+    // 3. SoundCloud Internal Objects
+    console.log('🎵 [DEBUG] SoundCloud Internal Objects:', {
+      SC: !!window.SC,
+      require: !!window.require,
+      webpackChunkName: !!window.webpackChunkName,
+      playerKeys: Object.keys(window).filter(k => k.toLowerCase().includes('player')),
+      audioKeys: Object.keys(window).filter(k => k.toLowerCase().includes('audio')),
+      timeKeys: Object.keys(window).filter(k => k.toLowerCase().includes('time'))
+    });
+    
+    // 4. Performance API for Network Timing
+    const performanceEntries = performance.getEntriesByType('resource');
+    const streamingResources = performanceEntries
+      .filter(entry => 
+        entry.name.includes('stream') || 
+        entry.name.includes('audio') || 
+        entry.name.includes('.mp3') || 
+        entry.name.includes('.m4a') ||
+        entry.name.includes('media')
+      )
+      .slice(-3); // Last 3 entries
+      
+    console.log('🎵 [DEBUG] Recent Streaming Resources:', streamingResources.map(entry => ({
+      url: entry.name.split('?')[0],
+      duration: entry.duration,
+      responseEnd: entry.responseEnd,
+      transferSize: entry.transferSize
+    })));
+    
+    // 5. Document Timing Properties
+    const docTiming = {
+      documentReadyState: document.readyState,
+      visibilityState: document.visibilityState,
+      lastModified: document.lastModified
+    };
+    console.log('🎵 [DEBUG] Document Timing:', docTiming);
+    
+    // 6. Advanced Audio Context Detection
+    const audioContextTypes = ['AudioContext', 'webkitAudioContext'];
+    const audioContextInfo = audioContextTypes.map(type => ({
+      type,
+      available: !!window[type],
+      instances: window.audioContexts ? window.audioContexts.length : 'UNKNOWN'
+    }));
+    console.log('🎵 [DEBUG] AudioContext Info:', audioContextInfo);
+    
+    // 7. Search for SoundCloud-specific timing data in DOM
+    const timingElements = document.querySelectorAll('[class*="time"], [class*="duration"], [class*="progress"]');
+    console.log(`🎵 [DEBUG] Found ${timingElements.length} timing-related DOM elements:`);
+    
+    // 🔍 DETAILED DOM ELEMENT INSPECTION
+    timingElements.forEach((element, index) => {
+      const elementInfo = {
+        index: index,
+        tagName: element.tagName,
+        className: element.className,
+        id: element.id || 'NO_ID',
+        textContent: element.textContent?.trim() || 'NO_TEXT',
+        innerHTML: element.innerHTML?.slice(0, 200) || 'NO_HTML',
+        value: element.value || 'NO_VALUE',
+        title: element.title || 'NO_TITLE',
+        ariaLabel: element.getAttribute('aria-label') || 'NO_ARIA',
+        style: element.style.cssText || 'NO_STYLE',
+        offsetWidth: element.offsetWidth,
+        offsetLeft: element.offsetLeft,
+        dataset: {...element.dataset}
+      };
+      console.log(`  🎯 Element ${index}:`, elementInfo);
+    });
+    
+    // 8. Look for common SoundCloud player class patterns
+    const playerElements = document.querySelectorAll('[class*="player"], [class*="Player"], [class*="playback"], [class*="Playback"]');
+    console.log(`🎵 [DEBUG] Found ${playerElements.length} player-related elements:`);
+    Array.from(playerElements).slice(0, 3).forEach((element, index) => {
+      console.log(`  🎮 Player ${index}:`, {
+        className: element.className,
+        textContent: element.textContent?.slice(0, 100),
+        childElementCount: element.childElementCount
+      });
+    });
+    
+    // 9. Look for progress bars and sliders
+    const progressElements = document.querySelectorAll('input[type="range"], [role="slider"], [class*="slider"], [class*="bar"]');
+    console.log(`🎵 [DEBUG] Found ${progressElements.length} progress/slider elements:`);
+    progressElements.forEach((element, index) => {
+      console.log(`  📊 Progress ${index}:`, {
+        tagName: element.tagName,
+        type: element.type,
+        value: element.value,
+        min: element.min,
+        max: element.max,
+        className: element.className,
+        role: element.getAttribute('role'),
+        ariaValueNow: element.getAttribute('aria-valuenow'),
+        ariaValueMin: element.getAttribute('aria-valuemin'),
+        ariaValueMax: element.getAttribute('aria-valuemax')
+      });
+    });
+    
+    console.log('🔍 ===== END COMPREHENSIVE DEBUG =====');
+  }
+
+  /**
+   * Extract timing data from SoundCloud DOM elements with continuity validation
+   * @returns {Object} {position: number, duration: number} in seconds
+   */
+  extractSoundCloudTiming() {
+    try {
+      // Get current position from playbackTimeline__timePassed
+      const positionElement = document.querySelector('.playbackTimeline__timePassed');
+      const durationElement = document.querySelector('.playbackTimeline__duration');
+      
+      let position = 0;
+      let duration = 0;
+      
+      if (positionElement && positionElement.textContent) {
+        // Parse "Current time: 11 seconds0:11" to extract seconds
+        const positionMatch = positionElement.textContent.match(/(\d+)\s+seconds?/);
+        if (positionMatch) {
+          position = parseInt(positionMatch[1], 10);
+        }
+      }
+      
+      if (durationElement && durationElement.textContent) {
+        // Parse "Duration: 3 minutes 46 seconds3:46" to extract total seconds
+        const durationText = durationElement.textContent;
+        const minutesMatch = durationText.match(/(\d+)\s+minutes?/);
+        const secondsMatch = durationText.match(/(\d+)\s+seconds?/);
+        
+        if (minutesMatch && secondsMatch) {
+          duration = (parseInt(minutesMatch[1], 10) * 60) + parseInt(secondsMatch[1], 10);
+        } else if (secondsMatch) {
+          duration = parseInt(secondsMatch[1], 10);
+        }
+      }
+      
+      // 🔧 TIMING CONTINUITY VALIDATION - Prevent chunk reload resets
+      const now = Date.now();
+      const lastTiming = window.lastSoundCloudTiming || { position: 0, duration: 0, timestamp: 0 };
+      const timeDiff = (now - lastTiming.timestamp) / 1000; // seconds since last update
+      
+      // Check for suspicious backward jumps (SoundCloud chunk reloading)
+      if (lastTiming.position > 0 && position < lastTiming.position) {
+        const backwardJump = lastTiming.position - position;
+        
+        // If we jump backward by >3 seconds but duration is same, it's likely a chunk reload
+        if (backwardJump > 3 && duration === lastTiming.duration && timeDiff < 10) {
+          console.log(`🔄 [SoundCloud] Chunk reload detected - ignoring ${backwardJump}s backward jump`);
+          // Return last known position + estimated progress
+          const estimatedPosition = Math.min(lastTiming.position + Math.floor(timeDiff), duration);
+          window.lastSoundCloudTiming = { position: estimatedPosition, duration, timestamp: now };
+          return { position: estimatedPosition, duration };
+        }
+        
+        // If duration changed significantly, it's likely a new song - allow the reset
+        if (Math.abs(duration - lastTiming.duration) > 5) {
+          console.log(`🎵 [SoundCloud] New song detected - duration changed: ${lastTiming.duration}s → ${duration}s`);
+        }
+      }
+      
+      console.log(`🎯 [SoundCloud] Extracted timing: position=${position}s, duration=${duration}s`);
+      
+      // Store current timing for next validation
+      window.lastSoundCloudTiming = { position, duration, timestamp: now };
+      
+      return { position, duration };
+    } catch (error) {
+      console.warn('🎯 [SoundCloud] Failed to extract timing:', error);
+      return { position: 0, duration: 0 };
+    }
+  }
+
+  /**
    * 📡 Broadcast time updates via WebSocket
    */
   broadcastTimeUpdate(position, duration) {
     if (window.mediaWebSocket && window.mediaWebSocket.readyState === WebSocket.OPEN) {
+      // Get current playback state from MediaSession
+      const isCurrentlyPlaying = navigator.mediaSession?.playbackState === 'playing';
+      
       window.mediaWebSocket.send(JSON.stringify({
         type: 'timeupdate',
         currentTime: position,
         duration: duration,
+        isPlaying: isCurrentlyPlaying,
+        canSeek: true,
+        source: 'soundcloud-dom',
         timestamp: Date.now()
       }));
     }
