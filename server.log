@@ -1,8 +1,0 @@
-🎵 Media Dashboard server running at http://localhost:5000
-📊 Available endpoints:
-  GET  /api/media/detect  - Detect current media
-  GET  /api/media/status  - Get media with position
-  POST /api/media/control - Send control commands
-  POST /obs-nowplaying    - Chrome extension endpoint
-  POST /nowplaying        - Chrome extension endpoint
-  GET  /                  - Dashboard UI
