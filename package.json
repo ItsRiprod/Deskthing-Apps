@@ -17,11 +17,20 @@
   "scripts": {
     "package": "npm run build:compile && npm run start",
     "build:compile": "tsc",
-    "start": "node scripts/dist/index.js"
+    "start": "node scripts/dist/index.js",
+    "debug-music": "node scripts/music-debug.js",
+    "player:control": "node scripts/player-control.js",
+    "kill-port": "node scripts/kill-port-8080.js"
   },
   "devDependencies": {
     "@deskthing/cli": "^0.11.4",
     "@deskthing/types": "^0.11.9",
-    "@types/node": "^22.13.10"
+    "@types/node": "^22.13.10",
+    "nodemon": "^3.1.10"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "node-fetch": "^3.3.2",
+    "ws": "^8.18.3"
   }
 }

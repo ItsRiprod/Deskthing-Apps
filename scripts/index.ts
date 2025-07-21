@@ -16,7 +16,7 @@ const MAINTAINED_APPS = [
   "vinylplayer",
   "weather",
   "weatherwaves",
-  "audio",
+  "soundcloud",
   "gamething"
 ];
 

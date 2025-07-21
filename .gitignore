@@ -3,8 +3,10 @@
 \node_modules
 \dist
 .env
+.specstory
 .env.old
 .vs/
+.DS_Store
 
 # Top Level Ignores
 /Releases
