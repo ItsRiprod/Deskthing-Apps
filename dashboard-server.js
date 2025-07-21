@@ -26,6 +26,44 @@ let extensionConnections = new Set();
 // 🎵 NEW: Real-time time tracking from extension
 let currentTimeData = null;
 
+// 🎯 Smart timing interpolation state
+let timingAnchor = {
+  position: 0,
+  timestamp: 0,
+  duration: 0,
+  isValid: false
+};
+
+// 🎯 Helper function to calculate interpolated position
+const getInterpolatedPosition = (isPlaying) => {
+  if (!timingAnchor.isValid) return null;
+  
+  const now = Date.now();
+  const timeElapsed = (now - timingAnchor.timestamp) / 1000;
+  
+  if (!isPlaying) {
+    // Paused - return anchor position
+    return {
+      position: timingAnchor.position,
+      duration: timingAnchor.duration,
+      source: 'anchor-paused'
+    };
+  }
+  
+  // Playing - interpolate from anchor
+  const interpolatedPosition = Math.min(
+    timingAnchor.position + timeElapsed,
+    timingAnchor.duration
+  );
+  
+  return {
+    position: Math.max(0, interpolatedPosition),
+    duration: timingAnchor.duration,
+    source: 'interpolated',
+    anchorAge: timeElapsed
+  };
+};
+
 // Helper function to broadcast to all connected extensions
 const broadcastToExtensions = (message) => {
   const messageStr = JSON.stringify(message);
@@ -713,7 +751,28 @@ wss.on('connection', (ws, req) => {
           timestamp: Date.now()
         };
         
-        // 🔧 ALSO update currentMedia with timing data so it persists across mediaData updates
+        // 🎯 Set timing anchor from DOM data (for interpolation)
+        const now = Date.now();
+        const newPosition = message.currentTime || 0;
+        const newDuration = message.duration || 0;
+        
+        // Detect if this is a significant position change (seek or chunk reload)
+        const timingGap = timingAnchor.isValid ? Math.abs(newPosition - timingAnchor.position) : 0;
+        const timeElapsed = timingAnchor.isValid ? (now - timingAnchor.timestamp) / 1000 : 0;
+        const expectedPosition = timingAnchor.isValid ? timingAnchor.position + timeElapsed : newPosition;
+        const isLargeJump = timingGap > 3; // 3+ second difference
+        
+        // Always update anchor with DOM data (trusted source)
+        timingAnchor = {
+          position: newPosition,
+          timestamp: now,
+          duration: newDuration,
+          isValid: true
+        };
+        
+        console.log(`🎯 [Timing Anchor] Set: ${newPosition}s @ ${now} ${isLargeJump ? '(JUMP DETECTED)' : ''}`);
+        
+        // 🔧 Update currentMedia with timing data
         if (message.duration !== undefined && message.duration > 0) {
           currentMedia.duration = message.duration;
         }
@@ -806,20 +865,31 @@ wss.on('connection', (ws, req) => {
           currentMedia.isPaused = newData.isPaused;
         }
         
-        // 🔧 TIMING DATA PRESERVATION: Only update timing if new song OR if actual timing provided
+        // 🎯 SMART TIMING INTERPOLATION: Calculate position from anchor + playback state
         if (isNewSong) {
-          // New song - reset timing data (will get updated by timeupdate messages)
+          // New song - reset timing anchor (will get updated by timeupdate messages)
+          timingAnchor.isValid = false;
           currentMedia.duration = newData.duration || 0;
           currentMedia.position = newData.position || 0;
+          console.log(`🎯 [New Song] Reset timing anchor`);
         } else {
-          // Same song - PRESERVE existing timing data, only update if new values provided
-          if (newData.duration !== undefined && newData.duration > 0) {
-            currentMedia.duration = newData.duration;
+          // Same song - use interpolation if anchor available
+          const interpolated = getInterpolatedPosition(newData.isPlaying);
+          
+          if (interpolated) {
+            currentMedia.position = Math.round(interpolated.position * 10) / 10; // 0.1s precision
+            currentMedia.duration = interpolated.duration;
+            console.log(`🎯 [Interpolated] ${interpolated.position.toFixed(1)}s (${interpolated.source}, anchor age: ${interpolated.anchorAge?.toFixed(1)}s)`);
+          } else {
+            // No anchor yet - preserve existing or use provided values
+            if (newData.duration !== undefined && newData.duration > 0) {
+              currentMedia.duration = newData.duration;
+            }
+            if (newData.position !== undefined && newData.position >= 0) {
+              currentMedia.position = newData.position;
+            }
+            console.log(`🎯 [No Anchor] Using existing/provided timing`);
           }
-          if (newData.position !== undefined && newData.position >= 0) {
-            currentMedia.position = newData.position;
-          }
-          // If no timing provided, keep existing values (don't clear them)
         }
         
         console.log(`✅ [WebSocket] Smart merged currentMedia:`, {
