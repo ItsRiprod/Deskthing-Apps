@@ -189,20 +189,29 @@ Audio resources: (57) [PerformanceResourceTiming, ...]
 
 ## 🎯 **Fix Priority & Strategy**
 
-### **Priority 1: Dashboard Real-time Updates (Easiest Win)**
-- Add WebSocket listener to dashboard UI
-- Remove manual refresh requirement  
-- Enable live track change display
+### **Priority 1: Dashboard Real-time Updates** ✅ **COMPLETED**
+- ✅ Added WebSocket listener to dashboard UI
+- ✅ Removed manual refresh requirement (no more refresh button)
+- ✅ Enabled live track change display
+- ✅ Smart play/pause toggle (single button that adapts)
+- ✅ Real-time connection status indicator
+- ✅ Automatic reconnection on disconnect
+
+**Result:** Dashboard now updates in real-time without manual intervention!
 
 ### **Priority 2: Duration/Position Extraction**
 - Extract duration from PerformanceResourceTiming
 - Implement MediaSession position tracking
 - Add seeking capability
 
-### **Priority 3: Control Command Reliability**  
-- Improve MediaSession command handlers
-- Add command confirmation system
-- Fix play/pause toggle logic
+### **Priority 3: Control Command Reliability** ✅ **PARTIALLY COMPLETED**
+- ✅ Fixed next/previous track controls (were disabling instead of triggering)
+- ✅ Improved SoundCloud button selectors and fallback keyboard shortcuts  
+- ✅ Added proper button state checking (disabled/enabled)
+- ✅ Smart play/pause toggle implemented
+- 🔄 Command confirmation system (basic acknowledgment working)
+
+**Result:** All basic media controls (play/pause/next/previous) now working properly!
 
 ### **Priority 4: Event-based State Detection**
 - Replace polling with MediaSession event listeners

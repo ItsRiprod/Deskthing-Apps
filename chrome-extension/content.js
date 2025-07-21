@@ -317,7 +317,11 @@ class WebSocketManager {
 
   connect() {
     try {
-      console.log('🔗 [WebSocket] Connecting to dashboard server...');
+      console.log('🔗 [WebSocket] Connecting to dashboard server...', {
+        attempt: this.reconnectAttempts + 1,
+        maxAttempts: this.maxReconnectAttempts,
+        url: 'ws://localhost:8080'
+      });
       this.ws = new WebSocket('ws://localhost:8080');
       window.mediaWebSocket = this.ws;
       
@@ -337,7 +341,13 @@ class WebSocketManager {
       };
 
       this.ws.onerror = (error) => {
-        console.error('💥 [WebSocket] Connection error:', error);
+        console.error('💥 [WebSocket] Connection error:', {
+          type: error.type,
+          target: error.target.url,
+          readyState: error.target.readyState,
+          error: error
+        });
+        this.scheduleReconnect();
       };
       
     } catch (error) {
@@ -485,37 +495,68 @@ class WebSocketManager {
   handleNext() {
     console.log('⏭️ [Control] Next track command');
     
-    // Try MediaSession first
-    if (navigator.mediaSession && navigator.mediaSession.setActionHandler) {
-      navigator.mediaSession.setActionHandler('nexttrack', null);
-    }
-
-    // Try clicking next button
-    const nextButton = document.querySelector('.skipControl__next, .nextButton, [aria-label*="next" i], [title*="next" i]');
-    if (nextButton) {
-      nextButton.click();
-      return;
-    }
-
-    console.warn('⚠️ [Control] No next button found');
+    // Add small delay to prevent rapid-fire commands (SoundCloud rate limits 'j' key)
+    setTimeout(() => {
+      console.log('🎹 [Control] Trying SoundCloud keyboard shortcut (j)');
+      const success = document.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'j', // SoundCloud shortcut for next
+        code: 'KeyJ',
+        bubbles: true,
+        cancelable: true
+      }));
+      
+      console.log(`🎹 [Control] Keyboard shortcut dispatched: ${success}`);
+    }, 50);
+    
+    // Backup: DOM click after longer delay (SoundCloud seems to rate limit 'j' more than other keys)
+    setTimeout(() => {
+      const nextButton = document.querySelector(
+        '.skipControl__next, ' +
+        '.playControls__control.playControls__next, ' +
+        '[aria-label*="Skip to next" i], ' +
+        '[title*="next" i], ' +
+        'button[aria-label*="Skip to next track" i]'
+      );
+      
+      if (nextButton && !nextButton.disabled) {
+        console.log('🔄 [Control] Backup: clicking next button');
+        nextButton.click();
+      } else {
+        console.log('⚠️ [Control] No next button found for backup');
+      }
+    }, 600); // Longer delay for next track to avoid rate limiting
   }
 
   handlePrevious() {
     console.log('⏮️ [Control] Previous track command');
     
-    // Try MediaSession first
-    if (navigator.mediaSession && navigator.mediaSession.setActionHandler) {
-      navigator.mediaSession.setActionHandler('previoustrack', null);
-    }
-
-    // Try clicking previous button
-    const prevButton = document.querySelector('.skipControl__previous, .prevButton, [aria-label*="previous" i], [title*="previous" i]');
-    if (prevButton) {
-      prevButton.click();
-      return;
-    }
-
-    console.warn('⚠️ [Control] No previous button found');
+    // Primary: Try SoundCloud keyboard shortcut (most reliable for SoundCloud)
+    console.log('🎹 [Control] Trying SoundCloud keyboard shortcut (k)');
+    const success = document.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'k', // SoundCloud shortcut for previous
+      code: 'KeyK',
+      bubbles: true,
+      cancelable: true
+    }));
+    
+    console.log(`🎹 [Control] Keyboard shortcut dispatched: ${success}`);
+    
+    // Backup: DOM click after delay (only if hotkey might have failed)  
+    setTimeout(() => {
+      const prevButton = document.querySelector(
+        '.skipControl__previous, ' +
+        '.playControls__control.playControls__prev, ' +
+        '[aria-label*="Skip to previous" i], ' +
+        '[title*="previous" i]'
+      );
+      
+      if (prevButton && !prevButton.disabled) {
+        console.log('🔄 [Control] Backup: clicking previous button');
+        prevButton.click();
+      } else {
+        console.log('⚠️ [Control] No previous button found for backup');
+      }
+    }, 200);
   }
 
   send(data) {

@@ -748,14 +748,44 @@ wss.on('connection', (ws, req) => {
           currentMedia = {};
         }
         
-        // Update currentMedia with new data
-        Object.assign(currentMedia, {
-          ...message.data,
-          timestamp: message.timestamp || Date.now(),
-          source: 'chrome-extension-websocket'
-        });
+        // Smart merge: Only update provided fields, preserve existing metadata
+        const newData = message.data;
         
-        console.log(`✅ [WebSocket] Updated currentMedia:`, currentMedia);
+        // Always update these fields
+        currentMedia.timestamp = message.timestamp || Date.now();
+        currentMedia.source = 'chrome-extension-websocket';
+        
+        // Only update metadata fields if they're actually provided (not undefined/empty)
+        if (newData.title !== undefined && newData.title !== '') {
+          currentMedia.title = newData.title;
+        }
+        if (newData.artist !== undefined && newData.artist !== '') {
+          currentMedia.artist = newData.artist;
+        }
+        if (newData.album !== undefined) {
+          currentMedia.album = newData.album;
+        }
+        if (newData.artwork !== undefined && newData.artwork !== '') {
+          currentMedia.artwork = newData.artwork;
+        }
+        
+        // Always update playback state
+        if (newData.isPlaying !== undefined) {
+          currentMedia.isPlaying = newData.isPlaying;
+        }
+        if (newData.isPaused !== undefined) {
+          currentMedia.isPaused = newData.isPaused;
+        }
+        
+        // Update duration/position if provided
+        if (newData.duration !== undefined) {
+          currentMedia.duration = newData.duration;
+        }
+        if (newData.position !== undefined) {
+          currentMedia.position = newData.position;
+        }
+        
+        console.log(`✅ [WebSocket] Smart merged currentMedia:`, currentMedia);
         
         // Broadcast to other connected clients
         wss.clients.forEach(client => {
@@ -776,6 +806,25 @@ wss.on('connection', (ws, req) => {
         console.log(`🔗 [WebSocket] Extension connection info:`, message);
         extensionConnections.add(ws);
         console.log(`🎯 [WebSocket] Extension registered. Total extensions: ${extensionConnections.size}`);
+        
+      } else if (message.type === 'dashboard-register') {
+        // Handle dashboard UI connection registration
+        console.log(`🖥️ [WebSocket] Dashboard UI registered from:`, message.source);
+        
+        ws.send(JSON.stringify({
+          type: 'registration-success',
+          message: 'Dashboard UI connected successfully',
+          timestamp: Date.now()
+        }));
+        
+        // Send current media data immediately if available
+        if (currentMedia && currentMedia.timestamp && (Date.now() - currentMedia.timestamp < 60000)) {
+          console.log(`📤 [WebSocket] Sending current media to dashboard:`, currentMedia);
+          ws.send(JSON.stringify({
+            type: 'media-update',
+            data: currentMedia
+          }));
+        }
         
       }
       
@@ -849,12 +898,13 @@ app.get('/', (req, res) => {
           
           <div class="controls">
             <button onclick="sendControl('previoustrack')">⏮️ Previous</button>
-            <button onclick="sendControl('play')">▶️ Play</button>
-            <button onclick="sendControl('pause')">⏸️ Pause</button>
+            <button id="playPauseBtn" onclick="togglePlayPause()">▶️ Play</button>
             <button onclick="sendControl('nexttrack')">⏭️ Next</button>
           </div>
           
-          <button onclick="refreshStatus()" class="refresh-btn">🔄 Refresh Status</button>
+          <div id="connectionStatus" style="margin: 1rem 0; padding: 0.5rem; border-radius: 6px; background: #f8f9fa; font-size: 0.9rem; color: #6c757d;">
+            🔌 Connecting to real-time updates...
+          </div>
         </div>
         
         <script>
@@ -947,6 +997,10 @@ app.get('/', (req, res) => {
             }
           }
           
+          // Global state
+          let currentMediaData = null;
+          let ws = null;
+          
           async function sendControl(action) {
             try {
               const response = await fetch('/api/media/control', {
@@ -958,18 +1012,153 @@ app.get('/', (req, res) => {
               const data = await response.json();
               console.log('Control response:', data);
               
-              // Refresh status after control
-              setTimeout(refreshStatus, 500);
+              // No need to refresh - WebSocket will update automatically
             } catch (error) {
               console.error('Control error:', error);
             }
           }
           
-          // Auto-refresh every 5 seconds
-          setInterval(refreshStatus, 5000);
+          // Smart play/pause toggle
+          function togglePlayPause() {
+            if (currentMediaData && currentMediaData.isPlaying) {
+              sendControl('pause');
+            } else {
+              sendControl('play');
+            }
+          }
           
-          // Initial load
-          refreshStatus();
+          // Update play/pause button based on current state
+          function updatePlayPauseButton() {
+            const btn = document.getElementById('playPauseBtn');
+            if (currentMediaData && currentMediaData.isPlaying) {
+              btn.innerHTML = '⏸️ Pause';
+              btn.onclick = () => sendControl('pause');
+            } else {
+              btn.innerHTML = '▶️ Play';
+              btn.onclick = () => sendControl('play');
+            }
+          }
+          
+          // Real-time UI update function
+          function updateUI(mediaData) {
+            const statusDiv = document.getElementById('status');
+            
+            if (mediaData) {
+              currentMediaData = mediaData;
+              const progress = mediaData.duration > 0 ? (mediaData.position / mediaData.duration) * 100 : 0;
+              
+              statusDiv.innerHTML = \`
+                <div class="metadata">
+                  \${mediaData.artwork ? \`<img src="\${mediaData.artwork}" class="artwork" alt="Artwork">\` : '<div class="artwork" style="background: #e9ecef;"></div>'}
+                  <div class="track-info">
+                    <h3>\${mediaData.title}</h3>
+                    <p><strong>Artist:</strong> \${mediaData.artist}</p>
+                    <p><strong>Album:</strong> \${mediaData.album || 'N/A'}</p>
+                    <p><strong>Source:</strong> \${mediaData.source}</p>
+                    <p><strong>Status:</strong> \${mediaData.isPlaying ? '▶️ Playing' : '⏸️ Paused'}</p>
+                    
+                    <div class="progress-container">
+                      <div class="progress-bar" onclick="seekTo(event)" data-duration="\${mediaData.duration || 0}">
+                        <div class="progress-fill" style="width: \${progress}%"></div>
+                      </div>
+                      <div class="progress-times">
+                        <span>\${formatTime(mediaData.position || 0)}</span>
+                        <span>\${formatTime(mediaData.duration || 0)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              \`;
+              
+              updatePlayPauseButton();
+            } else {
+              statusDiv.innerHTML = '<p>❌ No media detected</p>';
+              currentMediaData = null;
+              updatePlayPauseButton();
+            }
+          }
+          
+          // WebSocket connection for real-time updates
+          function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = \`\${protocol}//\${window.location.host}\`;
+            
+            console.log('🔌 Connecting to WebSocket:', wsUrl);
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+              console.log('✅ WebSocket connected - real-time updates enabled');
+              document.getElementById('connectionStatus').innerHTML = '✅ Real-time updates active';
+              document.getElementById('connectionStatus').style.background = '#d4edda';
+              document.getElementById('connectionStatus').style.color = '#155724';
+              
+              // Send registration
+              ws.send(JSON.stringify({
+                type: 'dashboard-register',
+                source: 'dashboard-ui',
+                timestamp: Date.now()
+              }));
+              
+              // Initial data load
+              refreshStatus();
+            };
+            
+            ws.onmessage = (event) => {
+              try {
+                const message = JSON.parse(event.data);
+                console.log('📥 [WebSocket] Received:', message);
+                
+                if (message.type === 'media-update') {
+                  // Real-time media data update
+                  updateUI(message.data);
+                } else if (message.type === 'timeupdate') {
+                  // Real-time position update
+                  if (currentMediaData && message.data) {
+                    currentMediaData.position = message.data.currentTime;
+                    currentMediaData.duration = message.data.duration;
+                    currentMediaData.isPlaying = message.data.isPlaying;
+                    updateUI(currentMediaData);
+                  }
+                }
+              } catch (error) {
+                console.error('❌ WebSocket message error:', error);
+              }
+            };
+            
+            ws.onclose = () => {
+              console.log('❌ WebSocket disconnected');
+              document.getElementById('connectionStatus').innerHTML = '❌ Connection lost - attempting reconnect...';
+              document.getElementById('connectionStatus').style.background = '#f8d7da';
+              document.getElementById('connectionStatus').style.color = '#721c24';
+              
+              // Reconnect after 2 seconds
+              setTimeout(connectWebSocket, 2000);
+            };
+            
+            ws.onerror = (error) => {
+              console.error('💥 WebSocket error:', error);
+            };
+          }
+          
+          // Fallback manual refresh (only used on initial load and for manual testing)
+          async function refreshStatus() {
+            try {
+              const response = await fetch('/api/media/status');
+              const data = await response.json();
+              
+              if (data.success && data.data) {
+                updateUI(data.data);
+              } else {
+                updateUI(null);
+              }
+            } catch (error) {
+              console.error('❌ Error fetching status:', error);
+              updateUI(null);
+            }
+          }
+          
+          // Initialize WebSocket connection on page load
+          connectWebSocket();
         </script>
       </body>
     </html>
