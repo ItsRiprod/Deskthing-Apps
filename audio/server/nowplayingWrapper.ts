@@ -1,176 +1,381 @@
 // @ts-nocheck
 
+import { readFileSync } from 'node:fs'
+import { execSync } from 'node:child_process'
 import type { NowPlaying as NowPlayingType } from 'node-nowplaying'
-import { WebSocket } from 'ws'
 
-/**
- * Real-time Now Playing implementation using WebSocket from Chrome Extension
- * NO POLLING - 100% event-driven via Chrome Extension audio monitoring
- */
-export class DashboardNowPlaying {
-  private callback: (message: any) => void
-  private isRunning = false
-  private dashboardUrl = 'ws://localhost:8080'
-  private ws: WebSocket | null = null
-  private reconnectAttempts = 0
-  private maxReconnectAttempts = 10
-  
-  constructor(callback: (message: any) => void, options?: any) {
-    this.callback = callback
-    console.log('🚀 [DashboardNowPlaying] Initialized with real-time WebSocket audio events')
-    console.log('🎵 [DashboardNowPlaying] Zero polling - 100% event-driven!')
-  }
-  
-  /**
-   * Subscribe to Now Playing updates - connects to WebSocket for real-time events
-   */
-  async subscribe(callback?: (message: any) => void) {
-    if (callback) {
-      this.callback = callback
+import { createRequire } from 'module';
+const dkRequire = createRequire(import.meta.url);
+
+let nativeBinding = null
+const loadErrors: Error[] = []
+
+const isMusl = async () => {
+  let musl: boolean | null = false
+  if (process.platform === 'linux') {
+    musl = isMuslFromFilesystem()
+    if (musl === null) {
+      musl = isMuslFromReport()
     }
-    this.isRunning = true
-    console.log('✅ [DashboardNowPlaying] Subscribing to real-time WebSocket events')
-    
-    // Connect to WebSocket for real-time updates
-    this.connectWebSocket()
-  }
-  
-  /**
-   * Unsubscribe from updates
-   */
-  unsubscribe() {
-    this.isRunning = false
-    console.log('🔌 [DashboardNowPlaying] Unsubscribing from WebSocket events')
-    
-    if (this.ws) {
-      this.ws.close()
-      this.ws = null
+    if (musl === null) {
+      musl = await isMuslFromChildProcess()
     }
   }
-  
-  /**
-   * Start monitoring - connects to WebSocket for real-time events
-   */
-  start() {
-    this.isRunning = true
-    console.log('▶️ [DashboardNowPlaying] Starting real-time WebSocket monitoring')
-    this.connectWebSocket()
+  return musl
+}
+
+const isFileMusl = (f) => f.includes('libc.musl-') || f.includes('ld-musl-')
+
+const isMuslFromFilesystem = () => {
+  try {
+    return readFileSync('/usr/bin/ldd', 'utf-8').includes('musl')
+  } catch {
+    return null
   }
-  
-  /**
-   * 🚀 Connect to WebSocket for real-time audio events
-   */
-  private connectWebSocket() {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log('🔌 [DashboardNowPlaying] WebSocket already connected')
-      return
+}
+
+const isMuslFromReport = () => {
+  const report: any = typeof process.report.getReport === 'function' ? process.report.getReport() : null
+  if (!report) {
+    return null
+  }
+
+
+  if (report.header && report.header.glibcVersionRuntime) {
+    return false
+  }
+  if (Array.isArray(report.sharedObjects)) {
+    if (report.sharedObjects.some(isFileMusl)) {
+      return true
     }
-    
-    console.log('🔌 [DashboardNowPlaying] Connecting to WebSocket server...')
-    
+  }
+  return false
+}
+
+const isMuslFromChildProcess = async () => {
+  try {
+    return await execSync('ldd --version', { encoding: 'utf8' }).includes('musl')
+  } catch (e) {
+    // If we reach this case, we don't know if the system is musl or not, so is better to just fallback to false
+    return false
+  }
+}
+
+async function importNative() {
+  if (process.env.NAPI_RS_NATIVE_LIBRARY_PATH) {
     try {
-      this.ws = new WebSocket(this.dashboardUrl)
-      
-      this.ws.on('open', () => {
-        console.log('✅ [DashboardNowPlaying] WebSocket connected for real-time audio events')
-        this.reconnectAttempts = 0
-      })
-      
-      this.ws.on('message', (data) => {
+      nativeBinding = await import(process.env.NAPI_RS_NATIVE_LIBRARY_PATH);
+    } catch (err) {
+      loadErrors.push(err);
+    }
+  } else if (process.platform === 'android') {
+    if (process.arch === 'arm64') {
+      try {
+        return dkRequire('./n-nowplaying.android-arm64.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-android-arm64')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+    } else if (process.arch === 'arm') {
+      try {
+        return dkRequire('./n-nowplaying.android-arm-eabi.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-android-arm-eabi')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+    } else {
+      loadErrors.push(new Error(`Unsupported architecture on Android ${process.arch}`))
+    }
+  } else if (process.platform === 'win32') {
+    if (process.arch === 'x64') {
+      try {
+        return dkRequire('./n-nowplaying.win32-x64-msvc.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-win32-x64-msvc')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+    } else if (process.arch === 'ia32') {
+      try {
+        return dkRequire('./n-nowplaying.win32-ia32-msvc.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-win32-ia32-msvc')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+    } else if (process.arch === 'arm64') {
+      try {
+        return dkRequire('./n-nowplaying.win32-arm64-msvc.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-win32-arm64-msvc')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+    } else {
+      loadErrors.push(new Error(`Unsupported architecture on Windows: ${process.arch}`))
+    }
+  } else if (process.platform === 'darwin') {
+    try {
+        return dkRequire('./n-nowplaying.darwin-universal.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-darwin-universal')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+    if (process.arch === 'x64') {
+      try {
+        return dkRequire('./n-nowplaying.darwin-x64.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-darwin-x64')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+    } else if (process.arch === 'arm64') {
+      try {
+        return dkRequire('./n-nowplaying.darwin-arm64.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-darwin-arm64')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+    } else {
+      loadErrors.push(new Error(`Unsupported architecture on macOS: ${process.arch}`))
+    }
+  } else if (process.platform === 'freebsd') {
+    if (process.arch === 'x64') {
+      try {
+        return dkRequire('./n-nowplaying.freebsd-x64.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-freebsd-x64')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+    } else if (process.arch === 'arm64') {
+      try {
+        return dkRequire('./n-nowplaying.freebsd-arm64.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-freebsd-arm64')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+    } else {
+      loadErrors.push(new Error(`Unsupported architecture on FreeBSD: ${process.arch}`))
+    }
+  } else if (process.platform === 'linux') {
+    if (process.arch === 'x64') {
+      if (await isMusl()) {
         try {
-          const message = JSON.parse(data.toString())
-          this.handleWebSocketMessage(message)
-        } catch (error) {
-          console.error('❌ [DashboardNowPlaying] WebSocket message parse error:', error)
-        }
-      })
-      
-      this.ws.on('close', () => {
-        console.log('🔌 [DashboardNowPlaying] WebSocket disconnected')
-        this.ws = null
-        this.scheduleReconnect()
-      })
-      
-      this.ws.on('error', (error) => {
-        console.error('❌ [DashboardNowPlaying] WebSocket error:', error.message)
-      })
-      
-    } catch (error) {
-      console.error('❌ [DashboardNowPlaying] WebSocket connection failed:', error.message)
-      this.scheduleReconnect()
+        return dkRequire('./n-nowplaying.linux-x64-musl.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-linux-x64-musl')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+      } else {
+        try {
+        return dkRequire('./n-nowplaying.linux-x64-gnu.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-linux-x64-gnu')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+      }
+    } else if (process.arch === 'arm64') {
+      if (await isMusl()) {
+        try {
+        return dkRequire('./n-nowplaying.linux-arm64-musl.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-linux-arm64-musl')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+      } else {
+        try {
+        return dkRequire('./n-nowplaying.linux-arm64-gnu.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-linux-arm64-gnu')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+      }
+    } else if (process.arch === 'arm') {
+      if (await isMusl()) {
+        try {
+        return dkRequire('./n-nowplaying.linux-arm-musleabihf.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-linux-arm-musleabihf')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+      } else {
+        try {
+        return dkRequire('./n-nowplaying.linux-arm-gnueabihf.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-linux-arm-gnueabihf')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+      }
+    } else if (process.arch === 'riscv64') {
+      if (await isMusl()) {
+        try {
+        return dkRequire('./n-nowplaying.linux-riscv64-musl.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-linux-riscv64-musl')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+      } else {
+        try {
+        return dkRequire('./n-nowplaying.linux-riscv64-gnu.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-linux-riscv64-gnu')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+      }
+    } else if (process.arch === 'ppc64') {
+      try {
+        return dkRequire('./n-nowplaying.linux-ppc64-gnu.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-linux-ppc64-gnu')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+    } else if (process.arch === 's390x') {
+      try {
+        return dkRequire('./n-nowplaying.linux-s390x-gnu.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return dkRequire('nowplaying-linux-s390x-gnu')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+
+    } else {
+      loadErrors.push(new Error(`Unsupported architecture on Linux: ${process.arch}`))
+    }
+  } else {
+    loadErrors.push(new Error(`Unsupported OS: ${process.platform}, architecture: ${process.arch}`))
+  }
+}
+
+nativeBinding = await importNative()
+
+if (!nativeBinding || process.env.NAPI_RS_FORCE_WASI) {
+  try {
+    nativeBinding = dkRequire('./n-nowplaying.wasi.cjs')
+  } catch (err) {
+    if (process.env.NAPI_RS_FORCE_WASI) {
+      loadErrors.push(err)
     }
   }
-  
-  /**
-   * 🎵 Handle real-time WebSocket messages
-   */
-  private handleWebSocketMessage(message: any) {
-    if (!this.isRunning) return
-    
-    if (message.type === 'timeupdate' && message.data) {
-      // Convert real-time time data to audio app format
-      const audioData = {
-        title: 'Live Audio',
-        artist: 'Chrome Extension',
-        album: '',
-        artwork: null,
-        isPlaying: message.data.isPlaying || false,
-        position: message.data.currentTime || 0,
-        duration: message.data.duration || 0,
-        canSeek: message.data.canSeek || false,
-        source: message.data.source || 'real-time',
-        timestamp: Date.now(),
-        realTime: true
+  if (!nativeBinding) {
+    try {
+      nativeBinding = dkRequire('nowplaying-wasm32-wasi')
+    } catch (err) {
+      if (process.env.NAPI_RS_FORCE_WASI) {
+        loadErrors.push(err)
       }
-      
-      console.log(`⏱️ [DashboardNowPlaying] Real-time update: ${audioData.position}s/${audioData.duration}s`)
-      
-      // Send to audio app callback
-      if (this.callback) {
-        this.callback(audioData)
-      }
-    }
-  }
-  
-  /**
-   * 🔄 Schedule WebSocket reconnection
-   */
-  private scheduleReconnect() {
-    if (!this.isRunning || this.reconnectAttempts >= this.maxReconnectAttempts) {
-      return
-    }
-    
-    this.reconnectAttempts++
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000)
-    
-    console.log(`🔄 [DashboardNowPlaying] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`)
-    
-    setTimeout(() => {
-      if (this.isRunning) {
-        this.connectWebSocket()
-      }
-    }, delay)
-  }
-  
-  /**
-   * Stop monitoring
-   */
-  stop() {
-    this.isRunning = false
-    console.log('⏹️ [DashboardNowPlaying] Stopping WebSocket monitoring')
-    
-    if (this.ws) {
-      this.ws.close()
-      this.ws = null
     }
   }
 }
 
-/**
- * Factory function that replaces the original NowPlaying class
- * with our modern dashboard-integrated version
- */
-export function NowPlaying(callback: (message: any) => void, options?: any): NowPlayingType {
-  console.log('🏭 [NowPlaying Factory] Creating dashboard-integrated Now Playing instance')
-  return new DashboardNowPlaying(callback, options) as unknown as NowPlayingType
+if (!nativeBinding) {
+  if (loadErrors.length > 0) {
+    // TODO Link to documentation with potential fixes
+    //  - The package owner could build/publish bindings for this arch
+    //  - The user may need to bundle the correct files
+    //  - The user may need to re-install node_modules to get new packages
+    console.log(loadErrors.toString())
+    throw new Error('Failed to load native binding', { cause: loadErrors })
+  }
+  throw new Error(`Failed to load native binding`)
 }
+
+const { NowPlaying: NowPlayingImpl } = nativeBinding as { NowPlaying: any }
+// Assert that NowPlayingImpl is a constructable class
+export const NowPlaying = NowPlayingImpl as new (
+  callback: (event: any) => void, 
+  options?: any
+) => NowPlayingType

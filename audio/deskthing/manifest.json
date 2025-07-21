@@ -1,16 +1,16 @@
 {
-  "label": "SoundCloud App",
+  "label": "Local Audio",
   "tags": [
     "audiosource"
   ],
   "requires": [],
-  "version": "1.0.0",
+  "version": "0.11.1",
   "requiredVersions": {
     "server": ">=0.11.0",
     "client": ">=0.11.0"
   },
-  "description": "Real-time SoundCloud web player control via Chrome Extension with cross-window support and live progress tracking",
-  "author": "crimsonsunset",
+  "description": "A cross-platform audio app that lets you control any locally playing music",
+  "author": "Riprod",
   "postinstall": true,
   "platforms": [
     "windows",
