@@ -1,16 +1,16 @@
 {
-  "label": "Local Audio (macOS Fixed)",
+  "label": "SoundCloud App",
   "tags": [
     "audiosource"
   ],
   "requires": [],
-  "version": "0.11.9-macos-fix",
+  "version": "1.0.0",
   "requiredVersions": {
     "server": ">=0.11.0",
     "client": ">=0.11.0"
   },
-  "description": "FIXED VERSION: macOS audio app with working Now Playing detection via AppleScript fallback",
-  "author": "Riprod (Fixed by AI Assistant)",
+  "description": "Real-time SoundCloud web player control via Chrome Extension with cross-window support and live progress tracking",
+  "author": "crimsonsunset",
   "postinstall": true,
   "platforms": [
     "windows",

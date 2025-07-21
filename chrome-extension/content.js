@@ -21,6 +21,82 @@ console.log(`🔍 [Content] Page URL:`, window.location.href);
 console.log(`🔍 [Content] Page readyState:`, document.readyState);
 
 /**
+ * 🎯 Smart Logging Manager - Reduces verbose playback logs
+ */
+class SmartLogger {
+  constructor() {
+    this.lastLoggedPosition = 0;
+    this.lastLoggedTime = 0;
+    this.logInterval = 20000; // 20 seconds
+    this.jumpThreshold = 5; // 5 second jump considered scrubbing (increased from 3)
+    this.scrubSessionActive = false;
+    this.lastPlaybackState = null;
+    this.lastLoggedJump = { position: 0, time: 0 };
+    this.jumpLogCooldown = 2000; // 2 seconds cooldown between jump logs
+  }
+
+  shouldLogPosition(position, currentTime = Date.now()) {
+    const timeSinceLastLog = currentTime - this.lastLoggedTime;
+    const positionDiff = Math.abs(position - this.lastLoggedPosition);
+    
+    // Always log if it's been 20+ seconds
+    if (timeSinceLastLog >= this.logInterval) {
+      this.lastLoggedPosition = position;
+      this.lastLoggedTime = currentTime;
+      return { shouldLog: true, reason: 'interval' };
+    }
+    
+    // Only log jumps if not in cooldown and significant enough
+    if (positionDiff >= this.jumpThreshold) {
+      const timeSinceLastJump = currentTime - this.lastLoggedJump.time;
+      const jumpPosDiff = Math.abs(position - this.lastLoggedJump.position);
+      
+      // Only log if enough time has passed or position is significantly different
+      if (timeSinceLastJump >= this.jumpLogCooldown && jumpPosDiff >= this.jumpThreshold) {
+        this.lastLoggedPosition = position;
+        this.lastLoggedTime = currentTime;
+        this.lastLoggedJump = { position, time: currentTime };
+        return { shouldLog: true, reason: 'jump' };
+      }
+    }
+    
+    return { shouldLog: false, reason: 'normal' };
+  }
+
+  shouldLogPlaybackState(state) {
+    if (this.lastPlaybackState !== state) {
+      this.lastPlaybackState = state;
+      return true;
+    }
+    return false;
+  }
+
+  startScrubSession() {
+    if (!this.scrubSessionActive) {
+      this.scrubSessionActive = true;
+      return true; // Log scrub start
+    }
+    return false; // Don't log, already in session
+  }
+
+  endScrubSession() {
+    if (this.scrubSessionActive) {
+      this.scrubSessionActive = false;
+      return true; // Log scrub end
+    }
+    return false;
+  }
+
+  reset() {
+    this.lastLoggedPosition = 0;
+    this.lastLoggedTime = 0;
+    this.scrubSessionActive = false;
+    this.lastPlaybackState = null;
+    this.lastLoggedJump = { position: 0, time: 0 };
+  }
+}
+
+/**
  * 🎯 SoundCloud MSE Detection & MediaSession Integration
  * Based on actual SoundCloud architecture: Fetch API + MediaSource Extensions + MediaSession
  */
@@ -31,6 +107,7 @@ class SoundCloudMSEDetector {
     this.currentTrack = null;
     this.mediaSessionData = {};
     this.positionUpdateInterval = null;
+    this.logger = new SmartLogger();
     this.setupFetchInterception();
     this.setupMediaSessionMonitoring();
     this.setupMediaSourceDetection();
@@ -51,11 +128,10 @@ class SoundCloudMSEDetector {
       if (urlString.includes('media-streaming.soundcloud.cloud') && 
           (urlString.includes('.m4s') || urlString.includes('aac_'))) {
         
-        // Only log first few segments to avoid spam
-        if (!this.segmentCount) this.segmentCount = 0;
-        if (this.segmentCount < 3) {
-          console.log('🎵 [MSE] Audio segment detected');
-          this.segmentCount++;
+        // Only log first segment to avoid spam
+        if (!this.segmentLogged) {
+          console.log('🎵 [MSE] Audio segment streaming detected');
+          this.segmentLogged = true;
         }
         this.handleAudioSegmentRequest(urlString);
       }
@@ -78,9 +154,6 @@ class SoundCloudMSEDetector {
 
     // Monitor MediaSession metadata changes
     const checkMediaSession = () => {
-      // Simplified debug logging (every 10 seconds instead of every 2.5 seconds)
-      this.debugAllTimingSources();
-      
       if (navigator.mediaSession.metadata) {
         const metadata = navigator.mediaSession.metadata;
         const newTrack = {
@@ -94,6 +167,7 @@ class SoundCloudMSEDetector {
         if (!this.currentTrack || this.currentTrack.title !== newTrack.title) {
           console.log('🎵 [Track] New track detected:', newTrack.title);
           this.currentTrack = newTrack;
+          this.logger.reset(); // Reset logging when track changes
           this.onTrackChange(newTrack);
         }
       }
@@ -105,7 +179,7 @@ class SoundCloudMSEDetector {
       }
     };
 
-    // Poll MediaSession data less frequently to reduce log spam
+    // Poll MediaSession data
     setInterval(checkMediaSession, 1000);
   }
 
@@ -207,7 +281,10 @@ class SoundCloudMSEDetector {
    * ⏯️ Handle playback state changes
    */
   handlePlaybackStateChange(state) {
-    console.log('🎵 [MediaSession] Playback state:', state);
+    // Only log state changes, not every state check
+    if (this.logger.shouldLogPlaybackState(state)) {
+      console.log('🎵 [MediaSession] Playback state:', state);
+    }
     
     if (state === 'playing') {
       this.startPositionTracking();
@@ -249,14 +326,17 @@ class SoundCloudMSEDetector {
    * 📊 Update current position and duration
    */
   updatePosition() {
-    // 🎯 Priority 1: Extract timing from SoundCloud DOM elements
+    // Extract timing from SoundCloud DOM elements
     const soundcloudTiming = this.extractSoundCloudTiming();
     if (soundcloudTiming.duration > 0) {
-      // Only log every 10th position update to reduce spam
-      if (!this.positionLogCount) this.positionLogCount = 0;
-      this.positionLogCount++;
-      if (this.positionLogCount % 10 === 0) {
-        console.log(`🎵 [Position] ${soundcloudTiming.position}s / ${soundcloudTiming.duration}s`);
+      // Smart logging - only log jumps or every 20 seconds
+      const logCheck = this.logger.shouldLogPosition(soundcloudTiming.position);
+      if (logCheck.shouldLog) {
+        if (logCheck.reason === 'jump') {
+          console.log(`🎯 [Position] JUMP detected: ${soundcloudTiming.position}s / ${soundcloudTiming.duration}s`);
+        } else {
+          console.log(`⏱️ [Position] ${soundcloudTiming.position}s / ${soundcloudTiming.duration}s`);
+        }
       }
       this.broadcastTimeUpdate(soundcloudTiming.position, soundcloudTiming.duration);
       return;
@@ -282,38 +362,6 @@ class SoundCloudMSEDetector {
         return;
       }
     }
-
-    // Last resort: Use MediaSession position data if available
-    this.estimatePositionFromMediaSession();
-  }
-
-  /**
-   * 🔮 Estimate position from MediaSession (experimental)
-   */
-  estimatePositionFromMediaSession() {
-    // MediaSession doesn't directly provide position, but we can estimate
-    // This is a placeholder for more advanced position detection
-    console.log('🎵 [Position] Using MediaSession estimation (limited accuracy)');
-  }
-
-  /**
-   * 🔍 Simplified debug for critical timing issues only
-   */
-  debugAllTimingSources() {
-    // Only log every 20th call to reduce spam (every 10 seconds)
-    if (!this.debugCallCount) this.debugCallCount = 0;
-    this.debugCallCount++;
-    
-    if (this.debugCallCount % 20 !== 0) return;
-    
-    // Only log critical timing status
-    const timing = this.extractSoundCloudTiming();
-    console.log('🔍 [DEBUG] Timing Status:', {
-      position: timing.position,
-      duration: timing.duration,
-      mediaSession: navigator.mediaSession?.playbackState,
-      hasMetadata: !!navigator.mediaSession?.metadata
-    });
   }
 
   /**
@@ -325,7 +373,7 @@ class SoundCloudMSEDetector {
       let position = 0;
       let duration = 0;
       
-      // 🎯 ALWAYS get duration from text elements (reliable)
+      // Get duration from text elements (reliable)
       const durationElement = document.querySelector('.playbackTimeline__duration');
       if (durationElement && durationElement.textContent) {
         const durationText = durationElement.textContent;
@@ -347,7 +395,7 @@ class SoundCloudMSEDetector {
         }
       }
       
-      // 🎯 ALWAYS calculate position from progress bar percentage (on every tick)
+      // Calculate position from progress bar percentage (on every tick)
       if (duration > 0) {
         // Try the main timeline progress bar first
         const progressBar = document.querySelector('.playbackTimeline__progressBar');
@@ -362,13 +410,6 @@ class SoundCloudMSEDetector {
           if (barWidth >= 0 && parentWidth > 0) {
             const percentage = barWidth / parentWidth;
             position = Math.round(duration * percentage);
-            
-            // Only log calculation occasionally to avoid spam
-            if (!this.progressLogCount) this.progressLogCount = 0;
-            this.progressLogCount++;
-            if (this.progressLogCount % 20 === 0) {
-              console.log(`📊 [Progress] ${barWidth.toFixed(1)}px/${parentWidth.toFixed(1)}px = ${(percentage * 100).toFixed(1)}% = ${position}s/${duration}s`);
-            }
           }
         }
       }
@@ -397,7 +438,6 @@ class SoundCloudMSEDetector {
         const mediaElements = document.querySelectorAll('audio, video');
         for (const element of mediaElements) {
           if (element.currentTime >= 0 && element.duration > 0) {
-            console.log('🔍 [Timing] Found media element:', element.currentTime, '/', element.duration);
             position = Math.floor(element.currentTime);
             duration = Math.floor(element.duration);
             break;
@@ -405,13 +445,8 @@ class SoundCloudMSEDetector {
         }
       }
       
-      // 🎯 TEMPORARILY DISABLED: Chunk reload detection (was interfering with scrubbing)
-      // Let all position changes through during scrubbing debugging
-      const now = Date.now();
-      
-      console.log(`🎯 [SoundCloud] Raw extracted timing: position=${position}s, duration=${duration}s`);
-      
       // Store current timing
+      const now = Date.now();
       window.lastSoundCloudTiming = { position, duration, timestamp: now };
       
       return { position, duration };
@@ -483,12 +518,12 @@ class WebSocketManager {
 
   connect() {
     try {
-      console.log(`🔗 [WebSocket] Connecting... (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
-      this.ws = new WebSocket('ws://localhost:8080');
+              console.log(`🔗 [WebSocket] Connecting to Audio App... (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+        this.ws = new WebSocket('ws://localhost:8081');
       window.mediaWebSocket = this.ws;
       
       this.ws.onopen = () => {
-        console.log('✅ [WebSocket] Connected to dashboard server');
+                  console.log('✅ [WebSocket] Connected to Audio App server');
         this.reconnectAttempts = 0;
         this.sendConnectionInfo();
       };
@@ -534,7 +569,7 @@ class WebSocketManager {
   }
 
   handleMessage(message) {
-    // Only log important commands, not every message
+    // Only log important commands
     if (message.type === 'media-command' || message.type === 'seek') {
       console.log(`📨 [WebSocket] ${message.type}:`, message.action || `${message.time}s`);
     }
@@ -651,40 +686,33 @@ class WebSocketManager {
   }
 
   handleSeeking() {
-    console.log('🎯 [Seek] User seeking detected');
-    // Force immediate timing update when seeking starts via the MSE detector
+    // Don't log individual seeking events
     if (window.deskThingMSE) {
       window.deskThingMSE.requestTimingUpdate();
     }
   }
 
   handleSeeked() {
-    console.log('🎯 [Seek] User seek completed');
-    // Force immediate timing update when seeking ends via the MSE detector
+    // Don't log individual seeked events
     setTimeout(() => {
       if (window.deskThingMSE) {
         window.deskThingMSE.requestTimingUpdate();
       }
-    }, 100); // Small delay to ensure position has updated
+    }, 100);
   }
 
   handleNext() {
     console.log('⏭️ [Control] Next track command');
     
-    // Add small delay to prevent rapid-fire commands (SoundCloud rate limits 'j' key)
     setTimeout(() => {
-      console.log('🎹 [Control] Trying SoundCloud keyboard shortcut (j)');
       const success = document.dispatchEvent(new KeyboardEvent('keydown', {
-        key: 'j', // SoundCloud shortcut for next
+        key: 'j',
         code: 'KeyJ',
         bubbles: true,
         cancelable: true
       }));
-      
-      console.log(`🎹 [Control] Keyboard shortcut dispatched: ${success}`);
     }, 50);
     
-    // Backup: DOM click after longer delay (SoundCloud seems to rate limit 'j' more than other keys)
     setTimeout(() => {
       const nextButton = document.querySelector(
         '.skipControl__next, ' +
@@ -695,29 +723,21 @@ class WebSocketManager {
       );
       
       if (nextButton && !nextButton.disabled) {
-        console.log('🔄 [Control] Backup: clicking next button');
         nextButton.click();
-      } else {
-        console.log('⚠️ [Control] No next button found for backup');
       }
-    }, 600); // Longer delay for next track to avoid rate limiting
+    }, 600);
   }
 
   handlePrevious() {
     console.log('⏮️ [Control] Previous track command');
     
-    // Primary: Try SoundCloud keyboard shortcut (most reliable for SoundCloud)
-    console.log('🎹 [Control] Trying SoundCloud keyboard shortcut (k)');
     const success = document.dispatchEvent(new KeyboardEvent('keydown', {
-      key: 'k', // SoundCloud shortcut for previous
+      key: 'k',
       code: 'KeyK',
       bubbles: true,
       cancelable: true
     }));
     
-    console.log(`🎹 [Control] Keyboard shortcut dispatched: ${success}`);
-    
-    // Backup: DOM click after delay (only if hotkey might have failed)  
     setTimeout(() => {
       const prevButton = document.querySelector(
         '.skipControl__previous, ' +
@@ -727,10 +747,7 @@ class WebSocketManager {
       );
       
       if (prevButton && !prevButton.disabled) {
-        console.log('🔄 [Control] Backup: clicking previous button');
         prevButton.click();
-      } else {
-        console.log('⚠️ [Control] No previous button found for backup');
       }
     }, 200);
   }
@@ -748,16 +765,30 @@ class WebSocketManager {
 function setupTimelineScrubDetection() {
   console.log('🎯 [Scrub] Setting up timeline scrub detection...');
   
-  // Debounce function to avoid too many updates - longer delay for scrubbing
   let scrubTimeout;
+  let scrubSessionTimeout;
+  
   const debouncedUpdate = () => {
     clearTimeout(scrubTimeout);
     scrubTimeout = setTimeout(() => {
       if (window.deskThingMSE) {
-        console.log('⏰ [Scrub] Debounced update triggered - getting timing...');
         window.deskThingMSE.requestTimingUpdate();
       }
-    }, 200); // 200ms debounce - give SoundCloud time to update DOM
+    }, 200);
+  };
+  
+  const startScrubSession = () => {
+    if (window.deskThingMSE && window.deskThingMSE.logger.startScrubSession()) {
+      console.log('🎯 [Scrub] Scrub session started');
+    }
+    clearTimeout(scrubSessionTimeout);
+    
+    // End scrub session after 1 second of no activity
+    scrubSessionTimeout = setTimeout(() => {
+      if (window.deskThingMSE && window.deskThingMSE.logger.endScrubSession()) {
+        console.log('🎯 [Scrub] Scrub session ended');
+      }
+    }, 1000);
   };
   
   // Set up observers for timeline elements
@@ -777,38 +808,24 @@ function setupTimelineScrubDetection() {
         if (element.dataset.scrubDetected) return;
         element.dataset.scrubDetected = 'true';
         
-        console.log(`🎯 [Scrub] Added scrub detection to: ${selector}`);
+        // Only log the scrub detection setup once per selector
+        if (!element.dataset.setupLogged) {
+          console.log(`🎯 [Scrub] Added scrub detection to: ${selector}`);
+          element.dataset.setupLogged = 'true';
+        }
         
-        element.addEventListener('mousedown', () => {
-          console.log('🎯🎯🎯 [SCRUB DETECTED] Mouse down on timeline 🎯🎯🎯');
+        // Use the same handler for all events to avoid spam
+        const scrubHandler = () => {
+          startScrubSession();
           debouncedUpdate();
-        });
+        };
         
-        element.addEventListener('mouseup', () => {
-          console.log('🎯🎯🎯 [SCRUB DETECTED] Mouse up on timeline 🎯🎯🎯');
-          debouncedUpdate();
-        });
-        
-        element.addEventListener('click', () => {
-          console.log('🎯🎯🎯 [SCRUB DETECTED] Click on timeline 🎯🎯🎯');
-          debouncedUpdate();
-        });
-        
-        element.addEventListener('input', () => {
-          console.log('🎯🎯🎯 [SCRUB DETECTED] Input on timeline 🎯🎯🎯');
-          debouncedUpdate();
-        });
-        
-        element.addEventListener('change', () => {
-          console.log('🎯🎯🎯 [SCRUB DETECTED] Change on timeline 🎯🎯🎯');
-          debouncedUpdate();
-        });
-        
-        // Listen for keyboard interactions on timeline (arrow keys, etc.)
-        element.addEventListener('keyup', () => {
-          console.log('🎯🎯🎯 [SCRUB DETECTED] Key up on timeline 🎯🎯🎯');
-          debouncedUpdate();
-        });
+        element.addEventListener('mousedown', scrubHandler);
+        element.addEventListener('mouseup', scrubHandler);
+        element.addEventListener('click', scrubHandler);
+        element.addEventListener('input', scrubHandler);
+        element.addEventListener('change', scrubHandler);
+        element.addEventListener('keyup', scrubHandler);
       });
     });
   };
