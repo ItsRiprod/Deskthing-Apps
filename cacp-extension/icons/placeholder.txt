@@ -1,0 +1,16 @@
+CACP Extension Icons
+
+The following icon files are referenced in manifest.json but need to be created:
+- icon16.png (16x16 pixels)
+- icon32.png (32x32 pixels) 
+- icon48.png (48x48 pixels)
+- icon128.png (128x128 pixels)
+
+For testing, you can use any PNG images with these dimensions, or copy icons from the soundcloud-extension folder.
+
+Simple icon creation options:
+1. Copy from soundcloud-extension/icons/ (if they exist)
+2. Create simple colored squares with online tools
+3. Use CACP logo design with audio wave pattern
+
+Colors: #007aff (CACP blue) with audio wave elements 

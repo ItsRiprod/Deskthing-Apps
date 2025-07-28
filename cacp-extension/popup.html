@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 380px;
+      padding: 16px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+      margin: 0;
+      font-size: 13px;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 12px;
+    }
+    
+    .logo {
+      font-size: 18px;
+      font-weight: bold;
+      color: #fff;
+    }
+    
+    .subtitle {
+      font-size: 11px;
+      color: #888;
+      margin-top: 4px;
+    }
+    
+    .version {
+      font-size: 10px;
+      color: #888;
+      margin-top: 4px;
+    }
+    
+    /* System Status Grid */
+    .system-status {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .status {
+      padding: 10px;
+      background: #2a2a2a;
+      border-radius: 6px;
+      border: 1px solid #333;
+      text-align: center;
+    }
+    
+    .status.connected {
+      background: #2d5a3d;
+      border: 1px solid #4caf50;
+    }
+    
+    .status.disconnected {
+      background: #5a2d2d;
+      border: 1px solid #f44336;
+    }
+    
+    .status.partial {
+      background: #5a4d2d;
+      border: 1px solid #ff9800;
+    }
+    
+    .status-label {
+      font-size: 11px;
+      color: #aaa;
+      margin-bottom: 4px;
+    }
+    
+    .status-value {
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    /* Site Detection Panel */
+    .site-detection {
+      background: #2a2a2a;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #333;
+    }
+    
+    .detection-header {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    
+    .detected-sites {
+      margin-bottom: 8px;
+    }
+    
+    .site {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 8px;
+      margin-bottom: 4px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    
+    .site.active {
+      background: #2d5a3d;
+      border: 1px solid #4caf50;
+      color: #4caf50;
+    }
+    
+    .site.detected {
+      background: #404040;
+      border: 1px solid #666;
+      color: #ccc;
+    }
+    
+    .site.inactive {
+      background: #333;
+      border: 1px solid #555;
+      color: #888;
+    }
+    
+    .site-priority {
+      font-size: 10px;
+      color: #aaa;
+    }
+    
+    .site-controls {
+      display: flex;
+      gap: 4px;
+      font-size: 10px;
+    }
+    
+    .site-controls span {
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: #444;
+      color: #ccc;
+    }
+    
+    /* Media Info (preserved from SoundCloud) */
+    .media-info {
+      padding: 12px;
+      background: #2a2a2a;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 1px solid #333;
+    }
+    
+    .media-controls {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin: 12px 0;
+    }
+    
+    .media-controls button {
+      padding: 8px 12px;
+      background: #333;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      min-width: 40px;
+    }
+    
+    .media-controls button:hover {
+      background: #444;
+    }
+    
+    .media-controls button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      margin: 8px 0;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: #007aff;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    .time-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+    
+    .artwork {
+      width: 60px;
+      height: 60px;
+      border-radius: 4px;
+      object-fit: cover;
+      float: right;
+      margin-left: 12px;
+    }
+    
+    .track-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .site-badge {
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: bold;
+      margin-right: 8px;
+    }
+    
+    .site-badge.soundcloud {
+      background: #ff5500;
+      color: white;
+    }
+    
+    .site-badge.youtube {
+      background: #ff0000;
+      color: white;
+    }
+    
+    .site-badge.spotify {
+      background: #1db954;
+      color: white;
+    }
+    
+    .site-badge.generic {
+      background: #666;
+      color: white;
+    }
+    
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 8px 0;
+    }
+    
+    .info-item {
+      background: #2a2a2a;
+      padding: 8px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    
+    .info-value {
+      font-weight: bold;
+      color: #4caf50;
+    }
+    
+    /* Controls */
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    button {
+      padding: 8px 12px;
+      background: #007aff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    button:hover {
+      background: #0056b3;
+    }
+    
+    button:disabled {
+      background: #333;
+      cursor: not-allowed;
+    }
+    
+    .cacp-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    
+    .cacp-controls button {
+      font-size: 11px;
+      padding: 6px 8px;
+    }
+    
+    .test-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .test-controls button {
+      background: #28a745;
+      font-size: 11px;
+      padding: 6px 8px;
+    }
+    
+    .test-controls button:hover {
+      background: #218838;
+    }
+    
+    /* Debug Section (preserved from SoundCloud) */
+    .debug-section {
+      margin-top: 12px;
+      padding: 8px;
+      background: #222;
+      border-radius: 4px;
+      border: 1px solid #333;
+    }
+    
+    .debug-toggle {
+      background: #333;
+      padding: 4px 8px;
+      font-size: 10px;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+    
+    .debug-info {
+      display: block;
+      font-size: 10px;
+      color: #ccc;
+      font-family: monospace;
+    }
+    
+    .logs {
+      background: #111;
+      padding: 8px;
+      border-radius: 4px;
+      max-height: 120px;
+      overflow-y: auto;
+      font-size: 10px;
+      font-family: monospace;
+      color: #ccc;
+      margin-top: 8px;
+      border: 1px solid #333;
+      position: relative;
+    }
+    
+    .copy-button {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: #444;
+      color: #fff;
+      border: 1px solid #666;
+      border-radius: 3px;
+      padding: 2px 6px;
+      font-size: 9px;
+      cursor: pointer;
+      z-index: 10;
+    }
+    
+    .copy-button:hover {
+      background: #555;
+    }
+    
+    .copy-button:active {
+      background: #333;
+    }
+    
+    .small {
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 12px;
+      border-top: 1px solid #333;
+      padding-top: 8px;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .command-result {
+      margin-top: 8px;
+      padding: 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      display: none;
+    }
+    
+    .command-result.success {
+      background: #2d5a3d;
+      color: #4caf50;
+      display: block;
+    }
+    
+    .command-result.error {
+      background: #5a2d2d;
+      color: #f44336;
+      display: block;
+    }
+    
+    .loading {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      padding: 20px;
+    }
+    
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">🎯 CACP</div>
+    <div class="subtitle">Chrome Audio Control Platform</div>
+    <div id="version" class="version">Loading version...</div>
+  </div>
+
+  <div id="loading" class="loading">Initializing CACP...</div>
+
+  <div id="content" style="display: none;">
+    <div id="error" class="error" style="display: none;"></div>
+    
+    <!-- System Status Grid -->
+    <div class="system-status">
+      <div id="websocket-status" class="status disconnected">
+        <div class="status-label">DeskThing</div>
+        <div id="websocket-value" class="status-value">Checking...</div>
+      </div>
+      <div id="orchestrator-status" class="status disconnected">
+        <div class="status-label">CACP System</div>
+        <div id="orchestrator-value" class="status-value">Starting...</div>
+      </div>
+      <div id="handler-status" class="status disconnected">
+        <div class="status-label">Site Handler</div>
+        <div id="handler-value" class="status-value">None</div>
+      </div>
+      <div id="detection-status" class="status disconnected">
+        <div class="status-label">Site Detection</div>
+        <div id="detection-value" class="status-value">Scanning...</div>
+      </div>
+    </div>
+
+    <!-- Site Detection Panel -->
+    <div class="site-detection">
+      <div class="detection-header">🎵 Detected Sites</div>
+      <div id="detected-sites" class="detected-sites">
+        <div class="site inactive">
+          <span>No sites detected</span>
+          <span class="site-priority">Refresh page</span>
+        </div>
+      </div>
+      <div class="site-controls">
+        <span id="auto-switch-status">Auto-Switch: Unknown</span>
+        <span id="conflict-status">Conflicts: None</span>
+      </div>
+    </div>
+
+    <!-- Media Info (Enhanced from SoundCloud) -->
+    <div id="mediaInfo" class="media-info hidden">
+      <div class="track-header">
+        <div id="site-badge" class="site-badge generic">Unknown</div>
+        <div style="flex: 1; overflow: hidden;">
+          <img id="artwork" class="artwork hidden" />
+          <strong id="trackTitle">No media detected</strong><br>
+          <small id="trackArtist" style="color: #aaa;"></small><br>
+          <small id="trackAlbum" style="color: #888;"></small>
+        </div>
+      </div>
+      
+      <div class="time-info">
+        <span id="currentTime">0:00</span>
+        <span id="totalTime">0:00</span>
+      </div>
+      
+      <div class="progress-bar">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+      
+      <div class="info-grid">
+        <div class="info-item">
+          <div>Playing</div>
+          <div id="playState" class="info-value">❌</div>
+        </div>
+        <div class="info-item">
+          <div>Source</div>
+          <div id="source" class="info-value">N/A</div>
+        </div>
+      </div>
+      
+      <div class="media-controls">
+        <button id="prevBtn" title="Previous Track">⏮️</button>
+        <button id="playPauseBtn" title="Play/Pause">⏯️</button>
+        <button id="nextBtn" title="Next Track">⏭️</button>
+      </div>
+      
+      <div id="commandResult" class="command-result"></div>
+    </div>
+
+    <!-- CACP Controls -->
+    <div class="cacp-controls">
+      <button id="refreshBtn">🔄 Refresh</button>
+      <button id="connectBtn">🔌 Connect</button>
+      <button id="settingsBtn">⚙️ Settings</button>
+    </div>
+
+    <!-- Main Controls -->
+    <div class="controls">
+      <button id="extractBtn">🎵 Extract Now</button>
+      <button id="clearLogsBtn">🗑️ Clear Logs</button>
+    </div>
+    
+    <!-- Test Controls -->
+    <div class="test-controls">
+      <button id="testPlayBtn">▶️ Test Play</button>
+      <button id="testPauseBtn">⏸️ Test Pause</button>
+      <button id="testPrevBtn">⏮️ Test Prev</button>
+      <button id="testNextBtn">⏭️ Test Next</button>
+    </div>
+
+    <!-- Debug Section (Preserved from SoundCloud) -->
+    <div class="debug-section">
+      <button class="debug-toggle" id="debugToggle">🔧 Debug Info & Logs</button>
+      <div id="debugInfo" class="debug-info">
+        <div id="debugContent"></div>
+        <div id="logs" class="logs">
+          <button class="copy-button" id="copyLogsBtn" title="Copy all logs">📋</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Section -->
+    <div class="small">
+      <strong>CACP - Universal Audio Control:</strong><br>
+      • Multi-site detection and priority management<br>
+      • Smart conflict resolution and auto-switching<br>
+      • Direct WebSocket to DeskThing (localhost:8081)<br><br>
+      
+      <strong>Supported Sites:</strong><br>
+      • SoundCloud, YouTube, YouTube Music<br>
+      • Spotify Web, Apple Music (extensible architecture)<br><br>
+      
+      <strong>Priority Management:</strong><br>
+      • User-configurable site ranking<br>
+      • Automatic switching to higher priority sites<br>
+      • Manual override and conflict resolution
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html> 

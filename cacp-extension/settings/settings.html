@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CACP Settings</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    
+    .header {
+      background: #007aff;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    
+    .header p {
+      margin: 8px 0 0 0;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    
+    .content {
+      padding: 20px;
+    }
+    
+    .section {
+      margin-bottom: 32px;
+    }
+    
+    .section h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+      color: #333;
+    }
+    
+    .section p {
+      color: #666;
+      margin: 0 0 16px 0;
+      line-height: 1.5;
+    }
+    
+    /* Priority Management */
+    .priority-container {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px;
+      border: 2px dashed #ddd;
+      min-height: 200px;
+    }
+    
+    .priority-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .priority-item {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      cursor: move;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    
+    .priority-item:hover {
+      border-color: #007aff;
+      box-shadow: 0 2px 8px rgba(0,122,255,0.2);
+    }
+    
+    .priority-item.dragging {
+      opacity: 0.5;
+      transform: rotate(5deg);
+    }
+    
+    .priority-item.drag-over {
+      border-color: #007aff;
+      background: #e3f2fd;
+    }
+    
+    .priority-rank {
+      background: #007aff;
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      margin-right: 12px;
+    }
+    
+    .site-info {
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+    
+    .site-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      margin-right: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: bold;
+      color: white;
+    }
+    
+    .site-icon.soundcloud { background: #ff5500; }
+    .site-icon.youtube { background: #ff0000; }
+    .site-icon.spotify { background: #1db954; }
+    .site-icon.apple { background: #000; }
+    .site-icon.generic { background: #666; }
+    
+    .site-details h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    
+    .site-details p {
+      margin: 2px 0 0 0;
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .drag-handle {
+      color: #999;
+      font-size: 18px;
+      cursor: grab;
+      padding: 4px;
+    }
+    
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+    
+    /* Auto-Switch Section */
+    .switch-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+    }
+    
+    .switch-info h3 {
+      margin: 0 0 4px 0;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    
+    .switch-info p {
+      margin: 0;
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 24px;
+      background: #ccc;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    
+    .toggle-switch.active {
+      background: #007aff;
+    }
+    
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.3s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    
+    .toggle-switch.active::after {
+      transform: translateX(26px);
+    }
+    
+    /* Status Section */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    
+    .status-card {
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    
+    .status-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #007aff;
+      margin-bottom: 4px;
+    }
+    
+    .status-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    /* Buttons */
+    .button-group {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 24px;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-primary {
+      background: #007aff;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #0056b3;
+    }
+    
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #545b62;
+    }
+    
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #c82333;
+    }
+    
+    /* Messages */
+    .message {
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .loading::after {
+      content: '...';
+      animation: dots 1.5s steps(5, end) infinite;
+    }
+    
+    @keyframes dots {
+      0%, 20% { color: rgba(0,0,0,0); text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0); }
+      40% { color: #666; text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0); }
+      60% { text-shadow: .25em 0 0 #666, .5em 0 0 rgba(0,0,0,0); }
+      80%, 100% { text-shadow: .25em 0 0 #666, .5em 0 0 #666; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎯 CACP Settings</h1>
+      <p>Chrome Audio Control Platform - Site Priority Management</p>
+    </div>
+    
+    <div class="content">
+      <div id="loading" class="loading">Loading CACP settings</div>
+      
+      <div id="settings-content" style="display: none;">
+        <!-- Messages -->
+        <div id="message" class="message"></div>
+        
+        <!-- Site Priority Management -->
+        <div class="section">
+          <h2>Site Priority</h2>
+          <p>Drag and drop to reorder sites by priority. Higher priority sites will take control when multiple sites are playing audio simultaneously.</p>
+          
+          <div class="priority-container">
+            <ul id="priority-list" class="priority-list">
+              <!-- Priority items will be populated here -->
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Auto-Switch Settings -->
+        <div class="section">
+          <h2>Auto-Switch Behavior</h2>
+          <div class="switch-container">
+            <div class="switch-info">
+              <h3>Automatic Site Switching</h3>
+              <p>Automatically switch to higher priority sites when they start playing audio</p>
+            </div>
+            <div id="auto-switch-toggle" class="toggle-switch">
+            </div>
+          </div>
+        </div>
+        
+        <!-- System Status -->
+        <div class="section">
+          <h2>System Status</h2>
+          <div class="status-grid">
+            <div class="status-card">
+              <div id="registered-count" class="status-value">-</div>
+              <div class="status-label">Registered Sites</div>
+            </div>
+            <div class="status-card">
+              <div id="active-count" class="status-value">-</div>
+              <div class="status-label">Active Sites</div>
+            </div>
+            <div class="status-card">
+              <div id="connection-status" class="status-value">-</div>
+              <div class="status-label">DeskThing Status</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="button-group">
+          <button id="save-btn" class="btn btn-primary">Save Settings</button>
+          <button id="reset-btn" class="btn btn-secondary">Reset to Defaults</button>
+          <button id="test-btn" class="btn btn-secondary">Test Connection</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="settings.js"></script>
+</body>
+</html>
