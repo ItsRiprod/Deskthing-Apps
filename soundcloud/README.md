@@ -1,44 +1,48 @@
-# DeskThing SoundCloud App - ✅ **PRODUCTION READY**
+# DeskThing SoundCloud App - 🚧 **BETA RELEASE**
 
-🎯 **Status: ✅ COMPLETED** - Direct Chrome Extension → Audio App integration successfully implemented and working
+🎯 **Status: 🚧 BETA** - Direct Chrome Extension → Audio App integration functional with some features pending
 
-## 🚀 **✅ PRODUCTION IMPLEMENTATION** *(Completed July 21, 2025)*
+## 🚀 **🚧 BETA IMPLEMENTATION** *(Updated July 28, 2025)*
 
-### **✅ What's Successfully Working:**
-- ✅ **Chrome Extension v1.0.0** - Real-time SoundCloud data extraction, cross-window control, modern popup testing interface
-- ✅ **WebSocket Direct Integration** - Bidirectional real-time messaging working perfectly on port 8081
-- ✅ **Cross-Window Control** - DeskThing controls SoundCloud in different windows flawlessly
-- ✅ **Real-time Data Pipeline** - Position/duration/metadata extraction with 1-second precision
-- ✅ **Smart Control Targeting** - Fixed prev/next buttons (no more queue button confusion)
-- ✅ **Modern Testing Interface** - Popup with copy logs, connection status, debug panels
-- ✅ **Clean Production Codebase** - Streamlined architecture following DeskThing patterns
+### **✅ What's Currently Working:**
+- ✅ **Chrome Extension v1.0.0** - Real-time SoundCloud data extraction, cross-window control, popup testing interface
+- ✅ **WebSocket Direct Integration** - Bidirectional real-time messaging on port 8081
+- ✅ **Cross-Window Control** - DeskThing controls SoundCloud in different windows
+- ✅ **Real-time Data Pipeline** - Position/duration/metadata extraction
+- ✅ **Basic Controls** - Play, pause, next, previous track functionality
+- ✅ **Testing Interface** - Popup with logs and connection status
 
-### **🎯 Production Architecture:**
-**Successfully Implemented:**
+### **🚧 Known Limitations:**
+- ⏳ **Seek/Scrubbing** - Not yet implemented for Chrome extension mode
+- ⏳ **Volume Control** - Not supported for browser-based playback  
+- ⏳ **Shuffle Control** - Not yet implemented for Chrome extension mode
+
+### **🎯 Current Architecture:**
+**Implementation:**
 ```javascript
 Chrome Extension → SoundCloud App WebSocket (port 8081) → DeskThing
 ```
 
-### **✅ Why This Implementation Succeeded:**
-- ✅ **Follows DeskThing conventions** - Discord/Spotify apps handle their own external connections
-- ✅ **Self-contained** - No external dependencies
-- ✅ **Direct communication** - Eliminated middleman complexity
-- ✅ **Clean ownership** - Audio app owns its data source
-- ✅ **Performance optimized** - Sub-30ms latency achieved
+### **✅ Architecture Benefits:**
+- ✅ **Follows DeskThing conventions** - Apps handle their own external connections
+- ✅ **Self-contained** - No external dependencies required
+- ✅ **Direct communication** - Minimal latency WebSocket connection
+- ✅ **Clean ownership** - SoundCloud app owns its data pipeline
+- ✅ **Responsive performance** - Real-time updates and controls
 
-## 🏗️ **✅ Production Architecture Working** 
+## 🏗️ **🚧 Current Architecture Implementation** 
 
-### **Completed Implementation:**
+### **Data Flow:**
 ```javascript
 SoundCloud MediaSession → Chrome Extension → SoundCloud App WebSocket → DeskThing Platform → Car Thing
 ```
 
-### **✅ Core Benefits Achieved:**
+### **✅ Current Benefits:**
 - ✅ **Real-time synchronization** - Position, duration, play state streaming
-- ✅ **Cross-window reliability** - >95% command success rate
-- ✅ **Modern testing tools** - Popup interface with log copying, connection monitoring
-- ✅ **Smart button targeting** - Proper prev/next controls (fixed queue button issue)
-- ✅ **Clean codebase** - Production-ready, maintainable architecture
+- ✅ **Cross-window control** - Reliable command execution across browser windows
+- ✅ **Testing tools** - Popup interface with logs and connection monitoring
+- ✅ **Smart button targeting** - Proper prev/next controls
+- ✅ **Maintainable codebase** - Clear separation of concerns
 
 ## 💻 **✅ Implementation Complete**
 
