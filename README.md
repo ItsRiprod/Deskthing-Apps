@@ -18,7 +18,9 @@
 
 ### **🛠️ Shared Infrastructure**
 - **`scripts/`** - Build tools and utilities
-- **`docs/`** - Project documentation
+- **`docs/`** - Organized project documentation
+  - **`docs/cacp/`** - CACP architecture and development guides
+  - **`docs/soundcloud/`** - Historical SoundCloud implementation docs
 
 ---
 
@@ -49,7 +51,7 @@ CACP is a **universal Chrome audio control platform** that provides seamless mus
 ### **For Developers (CACP Development)**
 1. **Working baseline** - Use `soundcloud-app/` and `soundcloud-extension/` as reference
 2. **New development** - Work in `cacp-app/` and `cacp-extension/` directories
-3. **Architecture** - See `cacp-app/docs/` for technical design
+3. **Architecture** - See `docs/cacp/` for technical design and roadmap
 4. **Contribute** - Use modular site handler system in `cacp-extension/sites/`
 
 ## 🏗️ **Architecture**
@@ -71,9 +73,16 @@ Multiple Sites → Universal Chrome Extension → CACP App WebSocket (port 8081)
 
 ## 📚 **Documentation**
 
-- **[Current SoundCloud](./soundcloud-app/docs/)** - Working implementation docs
-- **[CACP Development](./cacp-app/docs/)** - New architecture and design
-- **[About DeskThing](./about-deskthing.md)** - Platform background
+### **🎯 CACP Development**
+- **[Architecture](./docs/cacp/architecture.md)** - Technical design and patterns
+- **[Roadmap](./docs/cacp/roadmap.md)** - Project vision and implementation phases  
+- **[Contributing](./docs/cacp/contributing.md)** - How to add new site support
+- **[Site Template](./docs/cacp/site-template.md)** - Template for new site handlers
+- **[API Reference](./docs/cacp/api-reference.md)** - Interface specifications
+
+### **🎵 SoundCloud Legacy**
+- **[Implementation History](./docs/soundcloud/)** - Historical development documentation
+- **[About DeskThing](./about-deskthing.md)** - Platform background and context
 
 ---
 
