@@ -17,7 +17,7 @@ export class SoundCloudHandler extends SiteHandler {
       durationElement: '.playbackTimeline__duration',
       positionElement: '.playbackTimeline__timePassed',
       progressBar: '.playbackTimeline__progressBar',
-      timeline: '.playbackTimeline, .playbackTimeline__progressWrapper',
+      timeline: '.playbackTimeline, .playbackTimeline__progressWrapper, .playbackTimeline__progressBackground, .playbackTimeline__progressHandle',
       playerContainer: '.playControls, .soundTitle, .playbackSoundBadge'
     }
   };
@@ -256,87 +256,137 @@ export class SoundCloudHandler extends SiteHandler {
   }
 
   /**
-   * Play current track
+   * Play current track (with MediaSession fallback + position tracking)
    */
   async play() {
-    console.log('[SoundCloud] Play command');
+    this.log.debug('Play command - trying MediaSession first, then buttons');
     
+    // Try MediaSession API first (matches original approach)
+    if (navigator.mediaSession && navigator.mediaSession.setActionHandler) {
+      try {
+        this.log.trace('Attempting MediaSession play control');
+        navigator.mediaSession.setActionHandler('play', null);
+        // Note: MediaSession control is more for signaling, still need button clicks
+      } catch (error) {
+        this.log.warn('MediaSession play control failed', { error: error.message });
+      }
+    }
+    
+    // Try play button
     const playButton = this.getElement(this.constructor.config.selectors.playButton);
     if (playButton) {
+      this.log.debug('Clicking play button', { className: playButton.className });
       this.clickElement(playButton);
+      
+      // Start position tracking when playback begins
+      this.startPositionTracking();
+      
       return { success: true, action: 'play' };
     }
     
     // Fallback: try spacebar
+    this.log.debug('Play button not found, trying spacebar fallback');
     document.dispatchEvent(new KeyboardEvent('keydown', { 
       code: 'Space', 
       bubbles: true, 
       cancelable: true 
     }));
+    
+    // Start position tracking even with keyboard fallback
+    this.startPositionTracking();
     
     return { success: true, action: 'play', method: 'keyboard' };
   }
 
   /**
-   * Pause current track
+   * Pause current track (with MediaSession fallback + stop position tracking)
    */
   async pause() {
-    console.log('[SoundCloud] Pause command');
+    this.log.debug('Pause command - trying MediaSession first, then buttons');
     
+    // Try MediaSession API first (matches original approach)
+    if (navigator.mediaSession && navigator.mediaSession.setActionHandler) {
+      try {
+        this.log.trace('Attempting MediaSession pause control');
+        navigator.mediaSession.setActionHandler('pause', null);
+        // Note: MediaSession control is more for signaling, still need button clicks
+      } catch (error) {
+        this.log.warn('MediaSession pause control failed', { error: error.message });
+      }
+    }
+    
+    // Try pause button
     const pauseButton = this.getElement(this.constructor.config.selectors.pauseButton);
     if (pauseButton) {
+      this.log.debug('Clicking pause button', { className: pauseButton.className });
       this.clickElement(pauseButton);
+      
+      // Stop position tracking when playback pauses
+      this.stopPositionTracking();
+      
       return { success: true, action: 'pause' };
     }
     
     // Fallback: try spacebar
+    this.log.debug('Pause button not found, trying spacebar fallback');
     document.dispatchEvent(new KeyboardEvent('keydown', { 
       code: 'Space', 
       bubbles: true, 
       cancelable: true 
     }));
     
+    // Stop position tracking even with keyboard fallback
+    this.stopPositionTracking();
+    
     return { success: true, action: 'pause', method: 'keyboard' };
   }
 
   /**
-   * Skip to next track
+   * Skip to next track (matches original timing: keyboard first + delays)
    */
   async next() {
-    console.log('[SoundCloud] Next track command');
+    this.log.debug('Next track command - using original timing strategy');
     
-    // Try next button first
-    const nextButton = this.getElement(this.constructor.config.selectors.nextButton);
-    if (nextButton && !nextButton.disabled) {
-      this.clickElement(nextButton);
-      return { success: true, action: 'next' };
-    }
+    // KEYBOARD SHORTCUT FIRST with 50ms delay (matches original)
+    setTimeout(() => {
+      this.log.trace('Dispatching keyboard event: j key');
+      document.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'j',
+        code: 'KeyJ',
+        bubbles: true,
+        cancelable: true
+      }));
+    }, 50);
     
-    // Fallback: try keyboard shortcut (J key)
-    document.dispatchEvent(new KeyboardEvent('keydown', {
-      key: 'j',
-      code: 'KeyJ',
-      bubbles: true,
-      cancelable: true
-    }));
+    // BUTTON CLICK SECOND with 600ms delay (matches original)
+    setTimeout(() => {
+      const nextButton = this.getElement(this.constructor.config.selectors.nextButton);
+      
+      if (nextButton && !nextButton.disabled) {
+        this.log.debug('Clicking next button after delay', { 
+          className: nextButton.className,
+          disabled: nextButton.disabled 
+        });
+        this.clickElement(nextButton);
+      } else {
+        this.log.warn('Next button not found or disabled after delay', {
+          found: !!nextButton,
+          disabled: nextButton?.disabled
+        });
+      }
+    }, 600);
     
-    return { success: true, action: 'next', method: 'keyboard' };
+    return { success: true, action: 'next', method: 'keyboard-first-with-button-fallback' };
   }
 
   /**
-   * Skip to previous track
+   * Skip to previous track (matches original timing: keyboard immediate + button delay)
    */
   async previous() {
-    console.log('[SoundCloud] Previous track command');
+    this.log.debug('Previous track command - using original timing strategy');
     
-    // Try previous button first
-    const prevButton = this.getElement(this.constructor.config.selectors.prevButton);
-    if (prevButton && !prevButton.disabled) {
-      this.clickElement(prevButton);
-      return { success: true, action: 'previous' };
-    }
-    
-    // Fallback: try keyboard shortcut (K key)
+    // KEYBOARD SHORTCUT IMMEDIATELY (matches original - no delay)
+    this.log.trace('Dispatching keyboard event: k key');
     document.dispatchEvent(new KeyboardEvent('keydown', {
       key: 'k',
       code: 'KeyK',
@@ -344,14 +394,32 @@ export class SoundCloudHandler extends SiteHandler {
       cancelable: true
     }));
     
-    return { success: true, action: 'previous', method: 'keyboard' };
+    // BUTTON CLICK SECOND with 200ms delay (matches original)
+    setTimeout(() => {
+      const prevButton = this.getElement(this.constructor.config.selectors.prevButton);
+      
+      if (prevButton && !prevButton.disabled) {
+        this.log.debug('Clicking prev button after delay', { 
+          className: prevButton.className,
+          disabled: prevButton.disabled 
+        });
+        this.clickElement(prevButton);
+      } else {
+        this.log.warn('Prev button not found or disabled after delay', {
+          found: !!prevButton,
+          disabled: prevButton?.disabled
+        });
+      }
+    }, 200);
+    
+    return { success: true, action: 'previous', method: 'keyboard-first-with-button-fallback' };
   }
 
   /**
    * Seek to specific time
    */
   async seek(time) {
-    console.log(`[SoundCloud] Seeking to ${time}s`);
+    this.log.debug('Seeking to position', { time, timeFormatted: `${time}s` });
     
     // Try MSE element first
     if (this.mseElement) {
@@ -443,6 +511,67 @@ export class SoundCloudHandler extends SiteHandler {
     } catch (error) {
       console.warn('[SoundCloud] Failed to extract timing:', error);
       return { position: 0, duration: 0 };
+    }
+  }
+
+  /**
+   * Start tracking playback position (matches original 1000ms interval)
+   */
+  startPositionTracking() {
+    if (this.positionUpdateInterval) return;
+    
+    this.log.debug('Starting position tracking with 1000ms interval');
+    
+    this.positionUpdateInterval = setInterval(() => {
+      this.updatePosition();
+    }, 1000);
+  }
+
+  /**
+   * Stop tracking playback position
+   */
+  stopPositionTracking() {
+    if (this.positionUpdateInterval) {
+      clearInterval(this.positionUpdateInterval);
+      this.positionUpdateInterval = null;
+      this.log.debug('Stopped position tracking');
+    }
+  }
+
+  /**
+   * Update current position and duration (called by interval)
+   */
+  updatePosition() {
+    // Extract timing from SoundCloud DOM elements
+    const soundcloudTiming = this.extractSoundCloudTiming();
+    
+    if (soundcloudTiming.duration > 0) {
+      // For now, just log the position - TODO: implement smart logging
+      this.log.trace('Position update', {
+        position: soundcloudTiming.position,
+        duration: soundcloudTiming.duration,
+        percentage: Math.round((soundcloudTiming.position / soundcloudTiming.duration) * 100)
+      });
+      
+      // TODO: Add broadcastTimeUpdate to send to DeskThing app
+      // this.broadcastTimeUpdate(soundcloudTiming.position, soundcloudTiming.duration);
+      return;
+    }
+
+    // Try to get position from discovered MSE element (matches original)
+    if (this.mseElement) {
+      const position = this.mseElement.currentTime || 0;
+      const duration = this.mseElement.duration || 0;
+      
+      if (duration > 0) {
+        this.log.trace('MSE position update', {
+          position: Math.floor(position),
+          duration: Math.floor(duration)
+        });
+        
+        // TODO: Add broadcastTimeUpdate to send to DeskThing app
+        // this.broadcastTimeUpdate(Math.floor(position), Math.floor(duration));
+      }
     }
   }
 
