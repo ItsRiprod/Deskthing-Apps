@@ -1,21 +1,68 @@
-# Deskthing Apps 
+# Chrome Audio Control Platform (CACP)
 
-This is where all of the apps developed for the DeskThing is located! If you want to make your own or are just browsing, these act as great reference points! 
+**Universal Chrome Extension for Audio Control in DeskThing**
 
-Every app here is the precompiled apps you download into DeskThing. The structure of each app is defined [here](https://github.com/itsriprod/deskthing-template)
+> **Previous Version:** [SoundCloud App README](../old/readme-old.md)
 
+---
 
-## Making your own app
+## 🎯 **What is CACP?**
 
-Prereqs: Ensure you have [node](https://nodejs.org/en/download/package-manager) installed! 
+CACP is a **universal Chrome audio control platform** that provides seamless music control integration between web-based audio services and DeskThing. Instead of being limited to just SoundCloud, CACP supports multiple music streaming platforms through a modular, contributor-friendly architecture.
 
-Run
+## 🎵 **Supported Sites**
+
+### **✅ Fully Supported**
+- **SoundCloud** - Complete implementation with real-time control
+- **YouTube** - *Coming Soon* - Basic implementation in progress
+
+### **🚧 Planned Support**
+- **Spotify Web** - Existing code needs refactoring
+- **Apple Music Web** - Basic selectors implemented
+- **YouTube Music** - Framework ready for implementation
+
+## 🚀 **Quick Start**
+
+### **For Users**
+1. **Install** the Chrome Extension (CACP v1.0.1+)
+2. **Install** the CACP app in DeskThing
+3. **Configure** site priority in extension settings
+4. **Open** any supported music site and start listening
+5. **Control** music from your DeskThing device
+
+### **For Contributors**
+1. **Read** the [contributor guide](./contributing.md)
+2. **Use** the [site handler template](./site-template.md)
+3. **Implement** the required interface methods
+4. **Test** your integration thoroughly
+5. **Submit** a pull request
+
+## 🏗️ **Architecture**
+
 ```
-npm create deskthing@latest
+Chrome Extension (CACP)
+├── Site Detection & Priority Management
+├── Site-Specific Handlers (SoundCloud, YouTube, etc.)
+├── WebSocket Communication Manager
+└── Settings UI
+
+DeskThing App (CACP)
+├── WebSocket Server (port 8081)
+├── Multi-Site Message Routing
+└── DeskThing Integration
 ```
-in the terminal and it will prompt you to make a new app!
 
-From there, review https://github.com/ItsRiprod/Deskthing-Apps/wiki for the next steps
+**Communication:** Single WebSocket connection with site identification in messages
 
+## 📚 **Documentation**
 
-Once things are more finalized, I will document things more thoroughly here. However, until then, you can go to the discord [linked here](https://deskthing.app/discord) and I can help you get started!
+- **[Roadmap](./roadmap.md)** - Project vision and implementation phases
+- **[Architecture](./architecture.md)** - Technical design and patterns
+- **[Contributing](./contributing.md)** - How to add new site support
+- **[Site Template](./site-template.md)** - Template for new site handlers
+- **[API Reference](./api-reference.md)** - Interface specifications
+
+---
+
+**Evolution Path:** SoundCloud App → Chrome Audio Control Platform (CACP)  
+**Compatibility:** Maintains backward compatibility with existing SoundCloud functionality
