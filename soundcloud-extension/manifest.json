@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "DeskThing Media Bridge",
+  "version": "1.0.0",
+  "description": "Real-time media control bridge for DeskThing with enhanced Chrome compatibility",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://localhost:8080/*",
+    "ws://localhost:8080/*",
+    "https://*.youtube.com/*",
+    "https://*.soundcloud.com/*",
+    "https://*.spotify.com/*",
+    "https://*.music.apple.com/*",
+    "https://*.pandora.com/*",
+    "https://*.twitch.tv/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.youtube.com/*",
+        "https://*.soundcloud.com/*",
+        "https://*.spotify.com/*",
+        "https://*.music.apple.com/*",
+        "https://*.pandora.com/*",
+        "https://*.twitch.tv/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "DeskThing Media Bridge v1.0.0"
+  }
+}
