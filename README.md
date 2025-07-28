@@ -2,7 +2,23 @@
 
 **Universal Chrome Extension for Audio Control in DeskThing**
 
-> **Previous Version:** [SoundCloud App README](../old/readme-old.md)
+> **🚧 Project Evolution:** This repository is transitioning from SoundCloud-only to universal audio control platform
+
+---
+
+## 📁 **Repository Structure**
+
+### **🎵 Current Working Apps (SoundCloud)**
+- **`soundcloud-app/`** - Working SoundCloud DeskThing app (v1.0.1 beta)
+- **`soundcloud-extension/`** - Working Chrome extension for SoundCloud
+
+### **🎯 Next Generation (CACP Development)**
+- **`cacp-app/`** - New universal DeskThing app (in development)
+- **`cacp-extension/`** - New multi-site Chrome extension (in development)
+
+### **🛠️ Shared Infrastructure**
+- **`scripts/`** - Build tools and utilities
+- **`docs/`** - Project documentation
 
 ---
 
@@ -12,55 +28,66 @@ CACP is a **universal Chrome audio control platform** that provides seamless mus
 
 ## 🎵 **Supported Sites**
 
-### **✅ Fully Supported**
-- **SoundCloud** - Complete implementation with real-time control
-- **YouTube** - *Coming Soon* - Basic implementation in progress
+### **✅ Currently Working (SoundCloud Apps)**
+- **SoundCloud** - Complete implementation with real-time control via `soundcloud-extension/`
 
-### **🚧 Planned Support**
+### **🚧 Planned Support (CACP)**
+- **SoundCloud** - Migrated to modular architecture
+- **YouTube** - Basic implementation in progress
 - **Spotify Web** - Existing code needs refactoring
 - **Apple Music Web** - Basic selectors implemented
 - **YouTube Music** - Framework ready for implementation
 
 ## 🚀 **Quick Start**
 
-### **For Users**
-1. **Install** the Chrome Extension (CACP v1.0.1+)
-2. **Install** the CACP app in DeskThing
-3. **Configure** site priority in extension settings
-4. **Open** any supported music site and start listening
-5. **Control** music from your DeskThing device
+### **For Users (Current SoundCloud)**
+1. **Install** the Chrome Extension from `soundcloud-extension/`
+2. **Install** the SoundCloud app from `soundcloud-app/` in DeskThing
+3. **Configure** and start using SoundCloud control
+4. **Control** music from your DeskThing device
 
-### **For Contributors**
-1. **Read** the [contributor guide](./contributing.md)
-2. **Use** the [site handler template](./site-template.md)
-3. **Implement** the required interface methods
-4. **Test** your integration thoroughly
-5. **Submit** a pull request
+### **For Developers (CACP Development)**
+1. **Working baseline** - Use `soundcloud-app/` and `soundcloud-extension/` as reference
+2. **New development** - Work in `cacp-app/` and `cacp-extension/` directories
+3. **Architecture** - See `cacp-app/docs/` for technical design
+4. **Contribute** - Use modular site handler system in `cacp-extension/sites/`
 
 ## 🏗️ **Architecture**
 
+### **Current SoundCloud Architecture**
 ```
-Chrome Extension (CACP)
-├── Site Detection & Priority Management
-├── Site-Specific Handlers (SoundCloud, YouTube, etc.)
-├── WebSocket Communication Manager
-└── Settings UI
+SoundCloud → Chrome Extension → SoundCloud App WebSocket (port 8081) → DeskThing → Car Thing
+```
 
-DeskThing App (CACP)
-├── WebSocket Server (port 8081)
-├── Multi-Site Message Routing
-└── DeskThing Integration
+### **CACP Architecture (In Development)**
+```
+Multiple Sites → Universal Chrome Extension → CACP App WebSocket (port 8081) → DeskThing → Car Thing
+                 ├── Site Detection & Priority
+                 ├── Modular Site Handlers  
+                 └── User Settings UI
 ```
 
 **Communication:** Single WebSocket connection with site identification in messages
 
 ## 📚 **Documentation**
 
-- **[Roadmap](./roadmap.md)** - Project vision and implementation phases
-- **[Architecture](./architecture.md)** - Technical design and patterns
-- **[Contributing](./contributing.md)** - How to add new site support
-- **[Site Template](./site-template.md)** - Template for new site handlers
-- **[API Reference](./api-reference.md)** - Interface specifications
+- **[Current SoundCloud](./soundcloud-app/docs/)** - Working implementation docs
+- **[CACP Development](./cacp-app/docs/)** - New architecture and design
+- **[About DeskThing](./about-deskthing.md)** - Platform background
+
+---
+
+## 🔄 **Transition Status**
+
+**Current Phase:** 🚧 **Dual Development**
+- **SoundCloud apps** remain functional for daily use
+- **CACP apps** under active development
+- **No breaking changes** to existing functionality
+
+**Next Phase:** 🎯 **CACP Foundation**
+- Complete base handler class implementation
+- Multi-site detection and routing
+- User priority settings interface
 
 ---
 
