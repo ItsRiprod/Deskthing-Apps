@@ -21,54 +21,54 @@ interface ControlStore {
 export const useControlStore = create<ControlStore>(() => ({
   mute: () => {
     DeskThing.debug('Muting user');
-    DeskThing.triggerAction({ id: DISCORD_ACTIONS.MUTE, value: 'mute' });
+    DeskThing.triggerAction({ id: DISCORD_ACTIONS.MUTE, value: 'mute', source: 'discord' });
   },
   unmute: () => {
     DeskThing.debug('Unmuting user');
-    DeskThing.triggerAction({ id: DISCORD_ACTIONS.MUTE, value: 'unmute' });
+    DeskThing.triggerAction({ id: DISCORD_ACTIONS.MUTE, value: 'unmute', source: 'discord' });
   },
   toggleMute: () => {
     DeskThing.debug('Toggling mute');
-    DeskThing.triggerAction({ id: DISCORD_ACTIONS.MUTE, value: 'toggle' });
+    DeskThing.triggerAction({ id: DISCORD_ACTIONS.MUTE, value: 'toggle', source: 'discord' });
   },
   deafen: () => {
     DeskThing.debug('Deafening user');
-    DeskThing.triggerAction({ id: DISCORD_ACTIONS.DEAFEN, value: 'deafen' });
+    DeskThing.triggerAction({ id: DISCORD_ACTIONS.DEAFEN, value: 'deafen', source: 'discord' });
   },
   undeafen: () => {
     DeskThing.debug('Undeafening user');
-    DeskThing.triggerAction({ id: DISCORD_ACTIONS.DEAFEN, value: 'undeafen' });
+    DeskThing.triggerAction({ id: DISCORD_ACTIONS.DEAFEN, value: 'undeafen', source: 'discord' });
   },
   toggleDeafen: () => {
     DeskThing.debug('Toggling deafen');
-    DeskThing.triggerAction({ id: DISCORD_ACTIONS.DEAFEN, value: 'toggle' });
+    DeskThing.triggerAction({ id: DISCORD_ACTIONS.DEAFEN, value: 'toggle', source: 'discord' });
   },
   disconnect: () => {
     DeskThing.debug('Disconnecting');
-    DeskThing.triggerAction({ id: DISCORD_ACTIONS.DISCONNECT });
+    DeskThing.triggerAction({ id: DISCORD_ACTIONS.DISCONNECT, source: 'discord' });
   },
   reauthorize: () => {
     DeskThing.debug('Reauthorizing');
-    DeskThing.triggerAction({ id: DISCORD_ACTIONS.REAUTH });
+    DeskThing.triggerAction({ id: DISCORD_ACTIONS.REAUTH, source: 'discord' });
   },
   updateRichPresence: () => {
     DeskThing.debug('Updating rich presence');
-    DeskThing.triggerAction({ id: DISCORD_ACTIONS.REPRESENCE });
+    DeskThing.triggerAction({ id: DISCORD_ACTIONS.REPRESENCE, source: 'discord' });
   },
   expandChat: () => {
     DeskThing.debug('Expanding chat');
-    DeskThing.triggerAction({ id: DISCORD_ACTIONS.EXPAND_CHAT });
+    DeskThing.triggerAction({ id: DISCORD_ACTIONS.EXPAND_CHAT, source: 'discord' });
   },
   collapseChat: () => {
     DeskThing.debug('Collapsing chat');
-    DeskThing.triggerAction({ id: DISCORD_ACTIONS.COLLAPSE_CHAT });
+    DeskThing.triggerAction({ id: DISCORD_ACTIONS.COLLAPSE_CHAT, source: 'discord' });
   },
   selectTextChannel: (channelId: string) => {
     DeskThing.debug('Selecting text channel');
-    DeskThing.triggerAction({ id: DISCORD_ACTIONS.SELECT_TEXT_CHANNEL, value: channelId });
+    DeskThing.triggerAction({ id: DISCORD_ACTIONS.SELECT_TEXT_CHANNEL, value: channelId, source: 'discord' });
   },
   dispatchAction: (actionId: string, value?: string) => {
     DeskThing.debug(`Dispatching action: ${actionId}${value ? ` with value: ${value}` : ''}`);
-    DeskThing.triggerAction({ id: actionId, value });
+    DeskThing.triggerAction({ id: actionId, value, source: 'discord' });
   },
 }));

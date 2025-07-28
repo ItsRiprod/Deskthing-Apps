@@ -28,6 +28,10 @@ const COMMUNITY_REPOS: GitRepoUrl[] = [
   'https://github.com/dakota-kallas/DeskThing-SportsHub',
   'https://github.com/ankziety/DeskThingDiscord',
   'https://github.com/grahamplace/pomodoro-thing',
+  'https://github.com/JustAHippo/StreamThingy',
+  'https://github.com/DannyTheHeretic/betterWeatheringWavesThing',
+  'https://github.com/acymbalski/LifeThing',
+  'https://github.com/DannyTheHeretic/betterLocalAudioThing',
   'https://github.com/Jarsa132/deskthing-volctrl',
   'https://github.com/nwo122383/sonos-webapp',
   'https://github.com/RandomDebugGuy/DeskThing-GMP',
@@ -88,7 +92,7 @@ const buildApp = async (appName: string) => {
   try {
     const appPath = join(process.cwd(), appName);
     console.log(`\x1b[34m\x1b[1m🔨 Building ${appName} ${appPath}...\x1b[0m`);
-    const child = exec("npx @deskthing/cli@latest package", { 
+    const child = exec("npx @deskthing/cli@latest package", {
       cwd: appPath
     });
 

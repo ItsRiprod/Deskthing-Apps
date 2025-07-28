@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { createDeskThing } from '@deskthing/client';  // Import DeskThing client for Spotify data
 import { IconPinwheel } from "../assets/Icons";
 import { ToClientData, GenericTransitData, WeatherData } from "../types/weather"
-import { DEVICE_CLIENT, CLIENT_REQUESTS } from "@deskthing/types"
+import { DEVICE_CLIENT, CLIENT_REQUESTS, AppSettings } from "@deskthing/types"
 
 const DeskThing = createDeskThing<ToClientData, GenericTransitData>()
 
@@ -15,6 +15,22 @@ interface WeatherProps {
 const Simple = ({ weatherData }: WeatherProps) => {
   // Initial time fetched from SettingsStore
   const [time, setTime] = useState<string | null>(null)
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+
+  useEffect(() => {
+    
+    const unsubscribe = DeskThing.on(DEVICE_CLIENT.SETTINGS, (settings) => {
+      setSettings(settings.payload)
+    })
+
+    if (!settings) {
+      DeskThing.getSettings() // will trigger the DEVICE_CLIENT.SETTINGS event
+    }
+
+    return () => {
+      unsubscribe()
+    }
+  }, [])
 
   // State to store the Spotify thumbnail URL, start with a placeholder image
   const [thumbnail, setThumbnail] = useState<string | null>();
