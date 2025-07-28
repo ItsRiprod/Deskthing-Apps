@@ -1,52 +1,50 @@
-# DeskThing Audio App Architecture - **✅ COMPLETED IMPLEMENTATION**
+# DeskThing SoundCloud App Architecture - **🚧 BETA IMPLEMENTATION**
 
 ## 🎯 **System Overview**
 
-The DeskThing Audio App successfully implements a **Chrome Extension + Direct WebSocket Integration** system that **solves MediaSession API cross-window limitations**. Following the **proven patterns of Discord and Spotify DeskThing apps**, the audio app directly owns its external data connections without requiring middleware servers.
+The DeskThing SoundCloud App implements a **Chrome Extension + Direct WebSocket Integration** system that provides real-time music control. Following **DeskThing app patterns**, the SoundCloud app owns its external data connections, providing a clean architecture for browser-based music control.
 
-## 🏗️ **✅ Production Architecture - WORKING**
+## 🏗️ **🚧 Current Architecture - FUNCTIONAL**
 
 ```mermaid
 graph TD
-    A["🖥️ SoundCloud App Server<br/>WebSocket Server on :8081"] -->|"1. DeskThing Integration ✅"| B["📡 DeskThing Platform<br/>Car Thing Device"]
+    A["🖥️ SoundCloud App Server<br/>WebSocket Server on :8081"] -->|"1. DeskThing Integration 🚧"| B["📡 DeskThing Platform<br/>Car Thing Device"]
     C["🌐 Chrome Extension<br/>v1.0.0 (SoundCloud App)"] -->|"2. WebSocket Real-time ✅"| A
     A -->|"3. WebSocket Commands ✅"| C
     
     D["🎵 SoundCloud<br/>MediaSession API"] -->|"4. Real-time Data ✅"| C
-    C -->|"5. Cross-Window Control ✅"| E["🎵 SoundCloud Window B"]
+    C -->|"5. Cross-Window Control 🚧"| E["🎵 SoundCloud Window B"]
     
-    style A fill:#c8e6c9
-    style B fill:#c8e6c9
+    style A fill:#fff3cd
+    style B fill:#fff3cd
     style C fill:#c8e6c9
     style D fill:#c8e6c9
-    style E fill:#c8e6c9
+    style E fill:#fff3cd
 ```
 
-## 🔄 **Architecture Evolution - COMPLETED**
+## 🔄 **Architecture Approach**
 
-### **Development Path:**
+### **Current Implementation:**
 ```
-Chrome Extension → Dashboard Server (port 8080) → Audio App → DeskThing
-                                ↓ (ELIMINATED)
 Chrome Extension → SoundCloud App WebSocket (port 8081) → DeskThing
 ```
 
-### **✅ Why This Approach Succeeded:**
-- ✅ **Follows DeskThing Conventions** - Discord/Spotify apps handle their own external connections
-- ✅ **Eliminates Middleware** - No external server dependencies
-- ✅ **Self-Contained** - Audio app owns its data pipeline
-- ✅ **Simple Deployment** - One app, one process
-- ✅ **Better Performance** - No middleman latency
+### **✅ Architecture Benefits:**
+- ✅ **Follows DeskThing Conventions** - Apps handle their own external connections
+- ✅ **Direct Communication** - No external middleware dependencies
+- ✅ **Self-Contained** - SoundCloud app owns its data pipeline
+- ✅ **Simple Deployment** - Single app architecture
+- ✅ **Responsive Performance** - Direct WebSocket communication
 
-## 🔧 **✅ Core Components - ALL COMPLETED**
+## 🔧 **🚧 Core Components Status**
 
-### 1. **SoundCloud App Server** (`soundcloud/server/`) ✅ **COMPLETE**
+### 1. **SoundCloud App Server** (`soundcloud/server/`) ✅ **FUNCTIONAL**
 - **Purpose**: DeskThing platform integration + Chrome extension WebSocket management
-- **Status**: ✅ Full WebSocket server on port 8081 receiving Chrome extension data
-- **Features**: Real-time media data processing, prev/next command handling, focused logging
-- **Pattern**: Successfully follows Discord/Spotify app approach
+- **Status**: ✅ WebSocket server on port 8081 receiving Chrome extension data
+- **Features**: Real-time media data processing, basic command handling, logging
+- **Limitations**: ⏳ Some commands not yet implemented (seek, volume, shuffle)
 
-### 2. **Chrome Extension** (`chrome-extension/`) ✅ **COMPLETE**
+### 2. **Chrome Extension** (`chrome-extension/`) ✅ **FUNCTIONAL**
 - **Purpose**: MediaSession detection and cross-window coordination
 - **Status**: ✅ Production-ready v1.0.0 with modern popup testing interface
 - **Features**:
