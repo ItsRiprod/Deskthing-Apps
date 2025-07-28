@@ -2,7 +2,8 @@
 
 **Chrome Audio Control Platform - Technical Design**
 
-> **Previous Version:** [SoundCloud Architecture](../old/architecture-old.md)
+**Updated:** July 28, 2025  
+**Current Structure:** Dual development with separated CACP and SoundCloud implementations
 
 ---
 
@@ -10,42 +11,53 @@
 
 CACP implements a **modular site handler architecture** that allows multiple music streaming services to be controlled through a single Chrome extension and DeskThing app integration.
 
-## 📋 **Core Components**
+## 📁 **Physical Structure**
 
-### **Chrome Extension Architecture**
+### **CACP Implementation (New)**
 ```
-cacp.js (Orchestrator)
-├── Site Detection & Priority Manager
-├── Active Site Handler Management  
-├── WebSocket Communication
-└── Settings Management
-
-sites/ (Site Handlers)
-├── base-handler.js (Config + Override Pattern)
-├── soundcloud.js (Full Implementation)
-├── youtube.js (Phase 1 Target)
-└── _template.js (Contributor Template)
-
-managers/ (Core Services)
-├── site-detector.js (URL Pattern Matching)
-├── priority-manager.js (User Preferences)
-└── websocket-manager.js (DeskThing Communication)
+cacp-extension/
+├── cacp.js                 # Main orchestrator
+├── sites/
+│   ├── base-handler.js     # Base class with config + override pattern
+│   ├── soundcloud.js       # SoundCloud implementation
+│   ├── youtube.js          # YouTube implementation
+│   └── _template.js        # Template for contributors
+├── managers/
+│   ├── site-detector.js    # URL pattern matching
+│   ├── priority-manager.js # User priority ranking
+│   └── websocket-manager.js # DeskThing communication
+├── settings/
+│   ├── settings.html       # Priority drag-drop interface
+│   └── settings.js         # Settings logic
+└── manifest.json           # Multi-site permissions
 ```
 
-### **DeskThing App Architecture**
 ```
-server/index.ts (WebSocket Server)
-├── Multi-Site Message Router
-├── Site-Specific Data Management
-└── DeskThing Platform Integration
+cacp-app/
+├── server/
+│   ├── index.ts            # WebSocket server (port 8081)
+│   ├── mediaStore.ts       # Multi-site message routing
+│   └── siteManager.ts      # Site-specific data handling
+├── src/
+│   └── App.tsx             # React frontend
+└── deskthing/
+    └── manifest.json       # CACP app manifest
+```
+
+### **SoundCloud Legacy (Working Baseline)**
+```
+soundcloud-extension/       # Current working Chrome extension
+soundcloud-app/            # Current working DeskThing app
 ```
 
 ## 🔄 **Communication Protocol**
 
-### **WebSocket Messages**
+### **WebSocket Messages (Unchanged)**
+The protocol is already designed for multi-site support:
+
 **Extension → DeskThing:**
 ```javascript
-{ type: 'mediaData', site: 'soundcloud', data: { title, artist, isPlaying, ... } }
+{ type: 'mediaData', site: 'soundcloud', data: { title, artist, isPlaying } }
 { type: 'timeupdate', site: 'soundcloud', currentTime, duration, isPlaying }
 { type: 'command-result', site: 'soundcloud', commandId, success, result }
 ```
@@ -56,43 +68,64 @@ server/index.ts (WebSocket Server)
 { type: 'seek', time: 120, targetSite?: 'soundcloud' }
 ```
 
-### **Site Handler Interface**
+## 🎯 **Site Handler Interface**
+
+### **Base Handler Pattern**
 ```javascript
-class SiteHandler {
-  static config = { name, urlPatterns, selectors }
+export class SiteHandler {
+  // Config-driven defaults
+  static config = {
+    name: 'Site Name',
+    urlPatterns: ['example.com'],
+    selectors: { playButton: '.play', /* ... */ }
+  };
   
-  // Core Controls
-  play() / pause() / next() / previous()
+  // Core methods (can use config or override)
+  play() { /* click config.selectors.playButton or custom logic */ }
+  pause() { /* click config.selectors.pauseButton or custom logic */ }
+  getTrackInfo() { /* extract from config.selectors or custom logic */ }
   
-  // Metadata Extraction  
-  getTrackInfo() → { title, artist, album, artwork, isPlaying }
-  
-  // Progress Tracking
-  getCurrentTime() / getDuration()
-  
-  // Optional Features
-  seek(time) / isReady() / isLoggedIn()
+  // Override for complex cases
+  isReady() { return true; }
+  isLoggedIn() { return true; }
 }
 ```
 
+## 🔧 **Core Components**
+
+### **Site Detection & Priority**
+- **URL pattern matching** determines active site
+- **User priority settings** resolve conflicts when multiple sites have audio
+- **Auto-switching** when higher-priority site becomes active
+
+### **Message Routing**
+- **Single WebSocket** connection on port 8081
+- **Site identification** in all messages
+- **Command targeting** via optional `targetSite` parameter
+
+### **Settings Management**
+- **Chrome extension options page** for site priority
+- **Drag-drop interface** for user configuration
+- **Per-site enable/disable** controls
+
 ## 🎯 **Design Patterns**
 
-### **Config-Driven Defaults + Override Pattern**
-- **Declarative config** handles 80% of common cases
-- **Custom method overrides** handle complex edge cases
-- **Graceful fallbacks** when selectors fail
+### **Progressive Enhancement**
+1. **Config-only** handlers for simple sites (80% of cases)
+2. **Selective overrides** for complex edge cases (15% of cases)  
+3. **Full custom implementation** for unique architectures (5% of cases)
 
-### **Priority-Based Site Selection**
-- **User-configurable** site ranking via drag-drop UI
-- **Auto-detection** of active audio sites
-- **Smart switching** when priority site becomes active
-
-### **Robust Error Handling**
-- **Try/catch** around all DOM interactions
-- **Fallback strategies** when primary methods fail
-- **Graceful degradation** to MediaSession API when needed
+### **Graceful Degradation**
+- **Fallback strategies** when selectors change
+- **MediaSession API** as backup when site-specific detection fails
+- **Error isolation** preventing one site from breaking others
 
 ---
 
-**Status:** 🚧 **Under Development** - Migrating from SoundCloud-only to multi-site platform  
-**Next:** Site handler base class implementation
+## 🚧 **Current Development Status**
+
+**Scaffolded:** ✅ Directory structure, manifests, documentation  
+**Next Phase:** 🔄 Base handler class implementation  
+**Working Baseline:** ✅ SoundCloud implementation preserved for reference
+
+**Target:** Universal platform supporting 5+ streaming services with contributor-friendly architecture.

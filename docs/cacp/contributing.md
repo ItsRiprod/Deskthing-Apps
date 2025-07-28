@@ -2,168 +2,209 @@
 
 **How to Add Support for New Music Sites**
 
+**Updated:** July 28, 2025  
+**Current Status:** Foundation development phase
+
 ---
 
 ## 🎯 **Overview**
 
-Adding support for a new music streaming site involves creating a **site handler** that implements the CACP interface. This guide walks you through the process.
+Adding support for a new music streaming site involves creating a **site handler** that implements the CACP interface. This guide walks you through the process using the current development structure.
+
+## 🏗️ **Development Setup**
+
+### **Repository Structure**
+```
+DeskThing-Apps/
+├── cacp-extension/         # 🎯 New universal Chrome extension
+│   ├── sites/             # Your site handler goes here
+│   ├── managers/          # Core system (don't modify)
+│   └── settings/          # Settings UI (for priority)
+├── cacp-app/              # 🎯 Universal DeskThing app
+├── soundcloud-extension/  # ✅ Reference implementation
+└── soundcloud-app/        # ✅ Working baseline
+```
+
+### **Development Workflow**
+```bash
+# Setup CACP development environment
+npm run install:all        # Install all dependencies
+npm run dev:cacp           # Start CACP app development
+
+# Load cacp-extension/ in Chrome Developer Mode
+# Test with your target streaming site
+```
 
 ## 🚀 **Quick Start**
 
-1. **Copy** the [site template](./site-template.md)
-2. **Update** the config with your site's details
-3. **Implement** the required methods
-4. **Test** thoroughly on the target site
-5. **Submit** a pull request
+1. **Study reference** - Examine `soundcloud-extension/` for working patterns
+2. **Copy template** - Use `cacp-extension/sites/_template.js` as starting point
+3. **Implement handler** - Create your site-specific handler
+4. **Test thoroughly** - Verify functionality across different scenarios
+5. **Submit PR** - Follow contribution guidelines
 
-## 📋 **Minimum Requirements**
+## 📋 **Site Handler Requirements**
 
-Your site handler must implement:
+### **Minimum Implementation**
+Your site handler must extend the base handler and provide:
 
-### **Site Identification**
 ```javascript
-static config = {
-  name: 'Your Site Name',
-  urlPatterns: ['yoursite.com', 'music.yoursite.com'],
-  selectors: {
-    playButton: '.play-selector',
-    pauseButton: '.pause-selector', 
-    nextButton: '.next-selector',
-    prevButton: '.prev-selector',
-    title: '.track-title-selector',
-    artist: '.artist-name-selector'
+// cacp-extension/sites/yoursite.js
+import { SiteHandler } from './base-handler.js';
+
+export class YourSiteHandler extends SiteHandler {
+  static config = {
+    name: 'Your Site Name',
+    urlPatterns: ['yoursite.com', 'music.yoursite.com'],
+    selectors: {
+      playButton: '.play-btn',
+      pauseButton: '.pause-btn',
+      nextButton: '.next-btn',
+      prevButton: '.prev-btn',
+      title: '.track-title',
+      artist: '.artist-name'
+    }
+  };
+  
+  // Optional: Override for complex behavior
+  getTrackInfo() {
+    // Custom extraction logic if needed
+    return super.getTrackInfo(); // Use config defaults
   }
 }
 ```
 
-### **Core Controls**
-```javascript
-play() // Start/resume playback
-pause() // Pause playback  
-next() // Skip to next track
-previous() // Go to previous track
-```
+## 🔧 **Implementation Approaches**
 
-### **Metadata Extraction**
-```javascript
-getTrackInfo() {
-  return {
-    title: 'Track Title',
-    artist: 'Artist Name', 
-    album: 'Album Name', // optional
-    artwork: ['url1', 'url2'], // optional, array of URLs
-    isPlaying: true // required
-  }
-}
-```
-
-### **Progress Tracking**
-```javascript
-getCurrentTime() // Return current position in seconds
-getDuration() // Return total track length in seconds  
-```
-
-## 🛠️ **Implementation Approaches**
-
-### **Option 1: Config-Only (Simplest)**
+### **Level 1: Config-Only (Recommended Start)**
 Perfect for sites with stable, simple DOM structures:
 
 ```javascript
-export class YourSiteHandler extends SiteHandler {
+export class SimpleHandler extends SiteHandler {
   static config = {
-    name: 'Your Site',
-    urlPatterns: ['yoursite.com'],
+    name: 'Simple Site',
+    urlPatterns: ['simple.com'],
     selectors: {
-      playButton: '.play-btn',
-      title: '.track-title'
-      // ... all required selectors
+      playButton: '.play',
+      title: '.song-title',
+      artist: '.artist'
+      // Base handler does the rest automatically
     }
   }
-  
-  // No custom methods needed - base class handles everything!
+  // No custom methods needed!
 }
 ```
 
-### **Option 2: Selective Overrides (Recommended)**
-Override only the methods that need custom logic:
+### **Level 2: Selective Overrides (Most Common)**
+Override specific methods for complex edge cases:
 
 ```javascript
-export class YourSiteHandler extends SiteHandler {
-  static config = { /* ... */ }
+export class CustomHandler extends SiteHandler {
+  static config = { /* basic selectors */ };
   
-  // Custom logic for complex play/pause detection
+  // Custom logic for play state detection
   getTrackInfo() {
     if (this.isPodcastMode()) {
       return this.extractPodcastInfo();
     }
     return super.getTrackInfo(); // Use config defaults
   }
+  
+  // Override if site has unusual play/pause behavior
+  play() {
+    if (this.isInSpecialMode()) {
+      // Custom play logic
+    } else {
+      super.play(); // Use config defaults
+    }
+  }
 }
 ```
 
-### **Option 3: Full Custom Implementation (Complex Sites)**
+### **Level 3: Full Custom (Complex Sites)**
 For sites requiring extensive custom logic:
 
 ```javascript
-export class YourSiteHandler extends SiteHandler {
-  static config = { /* basic info only */ }
+export class AdvancedHandler extends SiteHandler {
+  static config = { /* basic info only */ };
   
-  play() { /* complex site-specific logic */ }
-  pause() { /* complex site-specific logic */ }
-  getTrackInfo() { /* custom extraction logic */ }
-  // ... override as needed
+  // Completely custom implementations
+  play() { /* site-specific logic */ }
+  getTrackInfo() { /* complex extraction */ }
+  getCurrentTime() { /* custom progress tracking */ }
 }
 ```
 
 ## 🧪 **Testing Guidelines**
 
 ### **Manual Testing Checklist**
-- [ ] **Play/Pause** commands work reliably
-- [ ] **Next/Previous** track navigation functions
-- [ ] **Metadata extraction** returns correct info
-- [ ] **Progress tracking** updates accurately
-- [ ] **Error handling** gracefully handles failures
-- [ ] **Site variations** work (logged in/out, different layouts)
+Test your handler across these scenarios:
 
-### **Edge Cases to Test**
-- [ ] Site not loaded yet
-- [ ] User not logged in
-- [ ] No audio content playing
-- [ ] Ad interruptions (if applicable)
-- [ ] Different player modes (playlist, radio, etc.)
-- [ ] Mobile vs desktop layouts
+- [ ] **Basic playback** - Play, pause, next, previous
+- [ ] **Metadata extraction** - Title, artist, album, artwork
+- [ ] **Progress tracking** - Current time, duration updates
+- [ ] **Edge cases** - Site not loaded, user not logged in
+- [ ] **State transitions** - Song changes, playlist navigation
+- [ ] **Error scenarios** - Network issues, DOM changes
 
-## 📝 **Documentation Requirements**
+### **Testing Environment**
+```bash
+# Development setup
+npm run dev:cacp
 
-Include in your pull request:
+# Load cacp-extension/ in Chrome Developer Mode
+# Navigate to your target site
+# Open extension popup for real-time debugging
+```
 
-1. **Site handler file** (`sites/yoursite.js`)
-2. **Updated manifest.json** (add host permissions)
-3. **Testing notes** documenting what you tested
-4. **Known limitations** or edge cases
-5. **Screenshots** showing the integration working
+## 📝 **Required Documentation**
+
+When submitting your site handler, include:
+
+1. **Handler file** - `cacp-extension/sites/yoursite.js`
+2. **Manifest update** - Add your site to `cacp-extension/manifest.json` host permissions
+3. **Testing notes** - Document what scenarios you tested
+4. **Known limitations** - Any edge cases or missing features
+5. **Screenshots** - Show the integration working
+
+## 📋 **Submission Process**
+
+### **Pull Request Requirements**
+- [ ] Handler implements required interface methods
+- [ ] Manifest includes necessary host permissions
+- [ ] Code follows existing style patterns
+- [ ] Testing completed across edge cases
+- [ ] Documentation provided
+
+### **Review Process**
+1. **Automated checks** - Code style, manifest validation
+2. **Manual testing** - Maintainer verification
+3. **Integration** - Added to supported sites list
+4. **Documentation** - Updated contributor guides
 
 ## ❓ **Common Questions**
 
-### **Q: What if the site uses complex authentication?**
+### **Q: What if the site changes its DOM structure?**
+A: Use multiple fallback selectors or implement custom detection logic.
+
+### **Q: How do I handle sites with authentication?**
 A: Implement `isLoggedIn()` method and gracefully handle auth states.
 
-### **Q: What if selectors change frequently?**
-A: Use multiple fallback selectors in your custom implementation.
+### **Q: What about sites with ads or interruptions?**
+A: Handle ad states in your custom logic, pause metadata during ads.
 
-### **Q: How do I handle sites with multiple players?**
-A: Implement custom logic to detect and target the active player.
-
-### **Q: What about sites with ads?**
-A: Handle ad states in your custom logic, possibly pause metadata during ads.
-
----
+### **Q: Can I support mobile versions of sites?**
+A: Yes, add mobile URL patterns and handle responsive differences.
 
 ## 🤝 **Getting Help**
 
-- **Template:** Use [site-template.md](./site-template.md) as starting point
-- **Examples:** Study `soundcloud.js` implementation
+- **Template:** Start with `cacp-extension/sites/_template.js`
+- **Reference:** Study `soundcloud-extension/` for working patterns
+- **Documentation:** See `docs/cacp/api-reference.md` for interface details
 - **Issues:** Open GitHub issue for technical questions
-- **Testing:** Test thoroughly before submitting PR
 
-**Remember:** Start simple with config-only approach, then add custom logic as needed!
+---
+
+**Current Development Phase:** Foundation implementation  
+**Next Phase:** Multi-site core with contributor pipeline  
+**Target:** Easy community contributions for 10+ streaming sites
