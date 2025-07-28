@@ -4,17 +4,32 @@
  * Handles extension lifecycle and background tasks.
  */
 
-console.log('[CACP Background] Service worker started');
+import { logger } from './logger.js';
+
+// Initialize logger
+const backgroundLogger = logger.cacp.child({ component: 'background' });
+
+backgroundLogger.info('CACP Background service worker started', {
+  version: chrome.runtime.getManifest().version,
+  timestamp: Date.now()
+});
 
 // Handle extension installation and updates
 chrome.runtime.onInstalled.addListener((details) => {
-  console.log('[CACP Background] Extension installed/updated:', details.reason);
+  backgroundLogger.info('Extension lifecycle event', {
+    reason: details.reason,
+    previousVersion: details.previousVersion,
+    id: details.id
+  });
   
   if (details.reason === 'install') {
-    console.log('[CACP Background] First-time installation');
+    backgroundLogger.info('First-time CACP installation detected');
     // Set default settings if needed
   } else if (details.reason === 'update') {
-    console.log('[CACP Background] Extension updated');
+    backgroundLogger.info('CACP extension updated', {
+      fromVersion: details.previousVersion,
+      toVersion: chrome.runtime.getManifest().version
+    });
     // Handle updates if needed
   }
 });
@@ -34,7 +49,13 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     const isSupported = supportedDomains.some(domain => tab.url.includes(domain));
     
     if (isSupported) {
-      console.log(`[CACP Background] Supported site detected: ${tab.url}`);
+      const matchedDomain = supportedDomains.find(domain => tab.url.includes(domain));
+      backgroundLogger.debug('Supported streaming site detected', {
+        tabId,
+        url: tab.url,
+        domain: matchedDomain,
+        title: tab.title
+      });
       // Content scripts are automatically injected via manifest
     }
   }
@@ -42,11 +63,17 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 // Handle messages from content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('[CACP Background] Message received:', message, 'from:', sender.tab?.url);
+  backgroundLogger.debug('Message received from content script', {
+    messageType: message.type,
+    tabUrl: sender.tab?.url,
+    tabId: sender.tab?.id,
+    hasData: !!message.data
+  });
   
   switch (message.type) {
     case 'get-status':
       // Return extension status
+      backgroundLogger.trace('Status request handled');
       sendResponse({
         status: 'active',
         version: chrome.runtime.getManifest().version
@@ -54,15 +81,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
       
     case 'site-detected':
-      console.log(`[CACP Background] Site detected: ${message.siteName}`);
+      backgroundLogger.info('Site detection notification', {
+        siteName: message.siteName,
+        tabUrl: sender.tab?.url,
+        tabId: sender.tab?.id
+      });
       break;
       
     case 'error':
-      console.error(`[CACP Background] Error from ${sender.tab?.url}:`, message.error);
+      backgroundLogger.error('Content script error reported', {
+        error: message.error,
+        tabUrl: sender.tab?.url,
+        tabId: sender.tab?.id,
+        context: message.context
+      });
       break;
       
     default:
-      console.log(`[CACP Background] Unknown message type: ${message.type}`);
+      backgroundLogger.warn('Unknown message type received', {
+        messageType: message.type,
+        tabUrl: sender.tab?.url,
+        fullMessage: message
+      });
   }
   
   return true; // Keep message channel open for async responses
@@ -70,15 +110,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Handle extension startup
 chrome.runtime.onStartup.addListener(() => {
-  console.log('[CACP Background] Extension startup');
+  backgroundLogger.info('CACP extension startup event', {
+    version: chrome.runtime.getManifest().version
+  });
 });
 
 // Monitor storage changes (for settings sync)
 chrome.storage.onChanged.addListener((changes, namespace) => {
-  console.log('[CACP Background] Storage changed:', changes, 'in namespace:', namespace);
+  backgroundLogger.debug('Chrome storage changed', {
+    namespace,
+    changedKeys: Object.keys(changes),
+    changes: Object.fromEntries(
+      Object.entries(changes).map(([key, change]) => [
+        key,
+        { hasOldValue: 'oldValue' in change, hasNewValue: 'newValue' in change }
+      ])
+    )
+  });
   
   if (changes['cacp-site-priorities']) {
-    console.log('[CACP Background] Site priorities updated');
+    backgroundLogger.info('Site priorities configuration updated', {
+      oldValue: changes['cacp-site-priorities'].oldValue,
+      newValue: changes['cacp-site-priorities'].newValue
+    });
     // Notify content scripts of priority changes if needed
   }
 });

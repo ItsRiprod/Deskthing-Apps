@@ -5,8 +5,13 @@
  * Provides the logic for determining which site should take precedence.
  */
 
+import { logger } from '../logger.js';
+
 export class PriorityManager {
   constructor() {
+    // Initialize logger
+    this.log = logger.priorityManager;
+    
     this.sitePriorities = new Map(); // siteName -> priority number (lower = higher priority)
     this.defaultPriority = 100;
     this.autoSwitchEnabled = true;
@@ -14,6 +19,12 @@ export class PriorityManager {
     
     // Load saved priorities
     this.loadPriorities();
+    
+    this.log.debug('Priority Manager created', {
+      defaultPriority: this.defaultPriority,
+      autoSwitchEnabled: this.autoSwitchEnabled,
+      storageKey: this.storageKey
+    });
   }
 
   /**
@@ -22,9 +33,16 @@ export class PriorityManager {
    * @param {number} priority Priority number (lower = higher priority)
    */
   setSitePriority(siteName, priority) {
+    const oldPriority = this.sitePriorities.get(siteName);
     this.sitePriorities.set(siteName, priority);
     this.savePriorities();
-    console.log(`[CACP] Set priority for ${siteName}: ${priority}`);
+    
+    this.log.info('Site priority updated', {
+      siteName,
+      newPriority: priority,
+      oldPriority: oldPriority || this.defaultPriority,
+      totalSites: this.sitePriorities.size
+    });
   }
 
   /**
@@ -41,11 +59,26 @@ export class PriorityManager {
    * @param {Object} priorities Object mapping siteName -> priority
    */
   setSitePriorities(priorities) {
+    const changes = [];
+    
     for (const [siteName, priority] of Object.entries(priorities)) {
+      const oldPriority = this.sitePriorities.get(siteName);
       this.sitePriorities.set(siteName, priority);
+      
+      changes.push({
+        siteName,
+        oldPriority: oldPriority || this.defaultPriority,
+        newPriority: priority
+      });
     }
+    
     this.savePriorities();
-    console.log('[CACP] Updated site priorities:', priorities);
+    
+    this.log.info('Bulk site priorities updated', {
+      changes,
+      totalSites: this.sitePriorities.size,
+      updatedCount: Object.keys(priorities).length
+    });
   }
 
   /**

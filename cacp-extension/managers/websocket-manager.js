@@ -5,8 +5,13 @@
  * Sends site-identified messages and routes commands to appropriate handlers.
  */
 
+import { logger } from '../logger.js';
+
 export class WebSocketManager {
   constructor() {
+    // Initialize logger
+    this.log = logger.websocketManager;
+    
     this.ws = null;
     this.isConnected = false;
     this.isConnecting = false;
@@ -29,6 +34,16 @@ export class WebSocketManager {
     this.onConnectedHandler = null;
     this.onDisconnectedHandler = null;
     this.onErrorHandler = null;
+    
+    this.log.debug('WebSocket Manager created', {
+      config: {
+        host: this.host,
+        port: this.port,
+        protocol: this.protocol,
+        maxReconnectAttempts: this.maxReconnectAttempts,
+        pingInterval: this.pingIntervalTime
+      }
+    });
   }
 
   /**
@@ -44,7 +59,11 @@ export class WebSocketManager {
     const url = `${this.protocol}://${this.host}:${this.port}`;
 
     try {
-      console.log(`[CACP] Connecting to WebSocket: ${url}`);
+      this.log.info('Connecting to WebSocket', { 
+        url, 
+        attempt: this.reconnectAttempts + 1,
+        maxAttempts: this.maxReconnectAttempts 
+      });
       
       this.ws = new WebSocket(url);
       
@@ -57,6 +76,10 @@ export class WebSocketManager {
       // Wait for connection to establish
       return new Promise((resolve) => {
         const timeout = setTimeout(() => {
+          this.log.warn('WebSocket connection timeout', { 
+            url, 
+            timeoutMs: 5000 
+          });
           resolve(false);
         }, 5000);
 
@@ -74,7 +97,11 @@ export class WebSocketManager {
       });
 
     } catch (error) {
-      console.error('[CACP] WebSocket connection failed:', error);
+      this.log.error('WebSocket connection failed', {
+        error: error.message,
+        url,
+        stack: error.stack
+      });
       this.isConnecting = false;
       return false;
     }
@@ -98,7 +125,13 @@ export class WebSocketManager {
    */
   sendMessage(message, siteName) {
     if (!this.isConnected || !this.ws) {
-      console.warn('[CACP] Cannot send message - not connected:', message);
+      this.log.warn('Cannot send message - WebSocket not connected', {
+        messageType: message.type,
+        siteName,
+        isConnected: this.isConnected,
+        hasWebSocket: !!this.ws,
+        readyState: this.ws?.readyState
+      });
       return false;
     }
 
@@ -110,10 +143,21 @@ export class WebSocketManager {
       };
 
       this.ws.send(JSON.stringify(messageWithSite));
-      console.log(`[CACP] Sent message to DeskThing:`, messageWithSite);
+      this.log.debug('Message sent to DeskThing', {
+        messageType: message.type,
+        siteName,
+        messageSize: JSON.stringify(messageWithSite).length,
+        hasData: !!message.data
+      });
       return true;
     } catch (error) {
-      console.error('[CACP] Failed to send message:', error);
+      this.log.error('Failed to send WebSocket message', {
+        error: error.message,
+        messageType: message.type,
+        siteName,
+        connectionState: this.isConnected,
+        readyState: this.ws?.readyState
+      });
       return false;
     }
   }
@@ -236,7 +280,13 @@ export class WebSocketManager {
    * Handle WebSocket open event
    */
   handleOpen(event) {
-    console.log('[CACP] WebSocket connected');
+    this.log.info('WebSocket connected successfully', {
+      readyState: this.ws.readyState,
+      url: this.ws.url,
+      reconnectAttempts: this.reconnectAttempts,
+      protocol: this.ws.protocol
+    });
+    
     this.isConnected = true;
     this.isConnecting = false;
     this.reconnectAttempts = 0;
@@ -244,9 +294,11 @@ export class WebSocketManager {
 
     // Start ping interval
     this.startPingInterval();
+    this.log.debug('Ping interval started', { intervalMs: this.pingIntervalTime });
 
     // Notify handler
     if (this.onConnectedHandler) {
+      this.log.trace('Notifying connected handler');
       this.onConnectedHandler(event);
     }
   }
@@ -257,21 +309,42 @@ export class WebSocketManager {
   handleMessage(event) {
     try {
       const message = JSON.parse(event.data);
-      console.log('[CACP] Received message from DeskThing:', message);
+      
+      this.log.debug('Received message from DeskThing', {
+        type: message.type,
+        hasData: !!message.data,
+        messageSize: event.data.length,
+        commandId: message.commandId || null
+      });
 
       // Handle command responses
       if (message.type === 'command-result' && message.commandId) {
+        this.log.trace('Handling command response', { 
+          commandId: message.commandId,
+          success: message.success 
+        });
         this.handleCommandResponse(message);
         return;
       }
 
       // Forward to message handler
       if (this.onMessageHandler) {
+        this.log.trace('Forwarding message to handler', { 
+          messageType: message.type 
+        });
         this.onMessageHandler(message);
+      } else {
+        this.log.warn('No message handler registered for incoming message', {
+          messageType: message.type
+        });
       }
 
     } catch (error) {
-      console.error('[CACP] Failed to parse WebSocket message:', error);
+      this.log.error('Failed to parse WebSocket message', {
+        error: error.message,
+        rawData: event.data.substring(0, 200), // First 200 chars for debugging
+        dataLength: event.data.length
+      });
     }
   }
 
@@ -279,17 +352,40 @@ export class WebSocketManager {
    * Handle WebSocket close event
    */
   handleClose(event) {
-    console.log(`[CACP] WebSocket closed: ${event.code} - ${event.reason}`);
+    const isIntentional = event.code === 1000;
+    const willReconnect = !isIntentional && this.reconnectAttempts < this.maxReconnectAttempts;
+    
+    this.log.info('WebSocket closed', {
+      code: event.code,
+      reason: event.reason || 'No reason provided',
+      wasClean: event.wasClean,
+      isIntentional,
+      willReconnect,
+      reconnectAttempts: this.reconnectAttempts,
+      maxReconnectAttempts: this.maxReconnectAttempts
+    });
+    
     this.cleanup();
 
     // Notify handler
     if (this.onDisconnectedHandler) {
+      this.log.trace('Notifying disconnected handler');
       this.onDisconnectedHandler(event);
     }
 
     // Attempt reconnection if not intentional close
-    if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+    if (willReconnect) {
+      this.log.debug('Scheduling reconnect attempt', {
+        attempt: this.reconnectAttempts + 1,
+        maxAttempts: this.maxReconnectAttempts,
+        delay: this.reconnectDelay
+      });
       this.scheduleReconnect();
+    } else if (!isIntentional) {
+      this.log.warn('WebSocket closed and max reconnect attempts reached', {
+        finalAttempts: this.reconnectAttempts,
+        maxAttempts: this.maxReconnectAttempts
+      });
     }
   }
 
@@ -297,11 +393,20 @@ export class WebSocketManager {
    * Handle WebSocket error event
    */
   handleError(event) {
-    console.error('[CACP] WebSocket error:', event);
+    this.log.error('WebSocket error occurred', {
+      type: event.type,
+      target: event.target?.constructor?.name,
+      readyState: this.ws?.readyState,
+      url: this.ws?.url,
+      isConnecting: this.isConnecting,
+      reconnectAttempts: this.reconnectAttempts
+    });
+    
     this.isConnecting = false;
 
     // Notify handler
     if (this.onErrorHandler) {
+      this.log.trace('Notifying error handler');
       this.onErrorHandler(event);
     }
   }

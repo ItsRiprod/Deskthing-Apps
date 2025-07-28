@@ -8,6 +8,7 @@
 import { SiteDetector } from './managers/site-detector.js';
 import { PriorityManager } from './managers/priority-manager.js';
 import { WebSocketManager } from './managers/websocket-manager.js';
+import { logger } from './logger.js';
 
 // Import site handlers
 import { SoundCloudHandler } from './sites/soundcloud.js';
@@ -15,6 +16,9 @@ import { YouTubeHandler } from './sites/youtube.js';
 
 class CACP {
   constructor() {
+    // Initialize logger
+    this.log = logger.cacp;
+    
     // Core managers
     this.siteDetector = new SiteDetector();
     this.priorityManager = new PriorityManager();
@@ -35,7 +39,14 @@ class CACP {
     this.maxRetries = 3;
     this.retryDelay = 1000;
     
-    console.log('[CACP] Orchestrator created');
+    this.log.debug('CACP Orchestrator created', {
+      config: {
+        mediaUpdateInterval: this.mediaUpdateIntervalMs,
+        timeUpdateInterval: this.timeUpdateIntervalMs,
+        maxRetries: this.maxRetries,
+        retryDelay: this.retryDelay
+      }
+    });
   }
 
   /**
@@ -43,42 +54,60 @@ class CACP {
    */
   async initialize() {
     if (this.isInitialized) {
-      console.log('[CACP] Already initialized');
+      this.log.debug('CACP already initialized, skipping');
       return;
     }
 
-    try {
-      console.log('[CACP] Initializing...');
+    this.log.info('Initializing CACP system...');
+    const startTime = performance.now();
 
+    try {
       // Register site handlers
+      this.log.debug('Registering site handlers');
       await this.registerSiteHandlers();
 
       // Set up WebSocket event handlers
+      this.log.debug('Setting up WebSocket handlers');
       this.setupWebSocketHandlers();
 
       // Set up popup communication
+      this.log.debug('Setting up popup communication');
       this.setupPopupCommunication();
 
       // Detect current site
+      this.log.debug('Detecting current site');
       await this.detectCurrentSite();
 
       // Connect to DeskThing
+      this.log.debug('Connecting to DeskThing');
       await this.connectToDeskThing();
 
       // Start monitoring intervals
+      this.log.debug('Starting monitoring intervals');
       this.startMonitoring();
 
       // Listen for URL changes
+      this.log.debug('Setting up URL change listener');
       this.setupURLChangeListener();
 
       this.isInitialized = true;
-      console.log('[CACP] Initialization complete');
+      const initTime = performance.now() - startTime;
+      
+      this.log.info('CACP initialization complete', {
+        initializationTime: `${initTime.toFixed(2)}ms`,
+        activeSite: this.activeSiteName,
+        hasHandler: !!this.currentHandler
+      });
 
       // Notify popup of status change
       this.notifyPopupStatusUpdate();
 
     } catch (error) {
-      console.error('[CACP] Initialization failed:', error);
+      this.log.error('CACP initialization failed', {
+        error: error.message,
+        stack: error.stack,
+        initializationStep: 'unknown'
+      });
       throw error;
     }
   }

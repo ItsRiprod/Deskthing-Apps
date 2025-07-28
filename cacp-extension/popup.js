@@ -3,6 +3,8 @@
  * Enhanced from SoundCloud popup with multi-site capabilities
  */
 
+import { logger } from './logger.js';
+
 // Get version dynamically from manifest
 const EXTENSION_VERSION = chrome.runtime.getManifest().version;
 let currentMedia = null;
@@ -13,10 +15,20 @@ let reconnectTimer = null;
 let currentTab = null;
 let cacpStatus = null;
 
-function log(message) {
+// Initialize structured logger
+const popupLogger = logger.popup;
+
+function log(message, level = 'info', data = null) {
   const timestamp = new Date().toLocaleTimeString();
   logs.unshift(`[${timestamp}] ${message}`);
   if (logs.length > 100) logs.pop();
+  
+  // Also log to structured logger
+  if (data) {
+    popupLogger[level](message, data);
+  } else {
+    popupLogger[level](message);
+  }
   
   const logsEl = document.getElementById('logs');
   if (logsEl) {

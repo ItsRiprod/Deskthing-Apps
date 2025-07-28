@@ -81,3 +81,4 @@ npm run dev:cacp          # Start CACP app development
 
 **Last Updated:** July 28, 2025  
 **Current Focus:** Base handler implementation and site detection system
+

@@ -382,3 +382,4 @@ function showMessage(text, type = 'success') {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', initializeSettings);
+

@@ -5,12 +5,25 @@
  * Determines which site handlers should be active based on current tab URL.
  */
 
+import { logger } from '../logger.js';
+
 export class SiteDetector {
   constructor() {
+    // Initialize logger
+    this.log = logger.siteDetector;
+    
     this.registeredHandlers = new Map(); // handlerClass -> { name, patterns, priority }
     this.activeSites = new Set(); // Currently active site names
     this.currentUrl = '';
     this.matchedHandlers = []; // Handlers that match current URL
+    
+    this.log.debug('Site Detector created', {
+      initialState: {
+        registeredHandlers: this.registeredHandlers.size,
+        activeSites: Array.from(this.activeSites),
+        currentUrl: this.currentUrl
+      }
+    });
   }
 
   /**
@@ -20,8 +33,15 @@ export class SiteDetector {
    */
   registerHandler(HandlerClass, priority = 100) {
     const config = HandlerClass.config;
+    
     if (!config || !config.name || !config.urlPatterns) {
-      console.error('[CACP] Invalid handler config:', HandlerClass);
+      this.log.error('Invalid handler config - missing required fields', {
+        handlerClass: HandlerClass.name,
+        hasConfig: !!config,
+        hasName: !!config?.name,
+        hasUrlPatterns: !!config?.urlPatterns,
+        configKeys: config ? Object.keys(config) : []
+      });
       return false;
     }
 
@@ -32,7 +52,13 @@ export class SiteDetector {
       class: HandlerClass
     });
 
-    console.log(`[CACP] Registered handler: ${config.name} (priority: ${priority})`);
+    this.log.info('Site handler registered', {
+      name: config.name,
+      priority,
+      patterns: config.urlPatterns,
+      totalHandlers: this.registeredHandlers.size
+    });
+    
     return true;
   }
 
@@ -42,8 +68,18 @@ export class SiteDetector {
    * @returns {Object[]} Array of matching handler info
    */
   detectSites(url) {
+    const previousUrl = this.currentUrl;
+    const urlChanged = previousUrl !== url;
+    
     this.currentUrl = url;
     this.matchedHandlers = [];
+
+    this.log.debug('Detecting sites for URL', {
+      url,
+      urlChanged,
+      previousUrl,
+      registeredHandlers: this.registeredHandlers.size
+    });
 
     // Check each registered handler against current URL
     for (const [HandlerClass, info] of this.registeredHandlers.entries()) {
@@ -54,14 +90,29 @@ export class SiteDetector {
           priority: info.priority,
           isActive: this.activeSites.has(info.name)
         });
+        
+        this.log.trace('Site pattern matched', {
+          siteName: info.name,
+          priority: info.priority,
+          patterns: info.patterns,
+          isActive: this.activeSites.has(info.name)
+        });
       }
     }
 
     // Sort by priority (lower number = higher priority)
     this.matchedHandlers.sort((a, b) => a.priority - b.priority);
 
-    console.log(`[CACP] Detected sites for ${url}:`, 
-                this.matchedHandlers.map(h => `${h.name} (priority: ${h.priority})`));
+    this.log.info('Site detection complete', {
+      url,
+      matchedSites: this.matchedHandlers.map(h => ({
+        name: h.name,
+        priority: h.priority,
+        isActive: h.isActive
+      })),
+      totalMatches: this.matchedHandlers.length,
+      primarySite: this.matchedHandlers[0]?.name || null
+    });
 
     return this.matchedHandlers;
   }

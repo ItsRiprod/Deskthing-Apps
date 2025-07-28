@@ -1,4 +1,5 @@
 import { SiteHandler } from './base-handler.js';
+import { logger } from '../logger.js';
 
 /**
  * YouTube Site Handler for CACP
@@ -38,30 +39,52 @@ export class YouTubeHandler extends SiteHandler {
 
   constructor() {
     super();
+    this.log = logger.youtube;
     this.isYouTubeMusic = window.location.hostname.includes('music.youtube.com');
     this.currentVideoElement = null;
+    
+    this.log.debug('YouTube handler constructed', {
+      isYouTubeMusic: this.isYouTubeMusic,
+      hostname: window.location.hostname,
+      config: YouTubeHandler.config
+    });
   }
 
   /**
    * Initialize YouTube-specific functionality
    */
   async initialize() {
-    console.log(`[YouTube${this.isYouTubeMusic ? ' Music' : ''}] Initializing handler...`);
+    this.log.info('Initializing YouTube handler', {
+      isYouTubeMusic: this.isYouTubeMusic,
+      hostname: window.location.hostname,
+      currentUrl: window.location.href
+    });
     
     try {
       // Find and monitor video element
+      this.log.debug('Setting up video element monitoring');
       this.setupVideoElementMonitoring();
       
       // Set up MediaSession monitoring (YouTube uses this)
+      this.log.debug('Setting up MediaSession monitoring');
       this.setupMediaSessionMonitoring();
       
       // Monitor for YouTube's dynamic content changes
+      this.log.debug('Setting up DOM observer for dynamic content');
       this.setupDOMObserver();
       
-      console.log(`[YouTube${this.isYouTubeMusic ? ' Music' : ''}] Handler initialized successfully`);
+      this.log.info('YouTube handler initialized successfully', {
+        hasVideoElement: !!this.currentVideoElement,
+        hasMediaSession: !!(navigator.mediaSession && navigator.mediaSession.metadata),
+        playerReady: this.isReady()
+      });
       return true;
     } catch (error) {
-      console.error(`[YouTube${this.isYouTubeMusic ? ' Music' : ''}] Initialization failed:`, error);
+      this.log.error('YouTube handler initialization failed', {
+        error: error.message,
+        stack: error.stack,
+        isYouTubeMusic: this.isYouTubeMusic
+      });
       return false;
     }
   }
