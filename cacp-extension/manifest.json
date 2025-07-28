@@ -25,6 +25,8 @@
         "https://music.apple.com/*"
       ],
       "js": [
+        "logger-config.js",
+        "logger.js",
         "sites/base-handler.js",
         "sites/soundcloud.js",
         "sites/youtube.js",

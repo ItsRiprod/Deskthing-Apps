@@ -37,6 +37,7 @@
   "dependencies": {
     "express": "^5.1.0",
     "node-fetch": "^3.3.2",
+    "pino": "^9.7.0",
     "ws": "^8.18.3"
   },
   "workspaces": [
@@ -45,7 +46,7 @@
   ],
   "keywords": [
     "deskthing",
-    "chrome-extension", 
+    "chrome-extension",
     "audio-control",
     "soundcloud",
     "music",

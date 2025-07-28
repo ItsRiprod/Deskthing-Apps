@@ -1,4 +1,5 @@
 import { SiteHandler } from './base-handler.js';
+import { logger } from '../logger.js';
 
 /**
  * SoundCloud Site Handler for CACP
@@ -23,6 +24,11 @@ export class SoundCloudHandler extends SiteHandler {
 
   constructor() {
     super();
+    
+    // Initialize logger
+    this.log = logger.soundcloud;
+    
+    // State initialization
     this.isStreamingActive = false;
     this.currentTrack = null;
     this.mediaSessionData = {};
@@ -31,28 +37,42 @@ export class SoundCloudHandler extends SiteHandler {
     this.lastLoggedTime = 0;
     this.segmentLogged = false;
     this.mseElement = null;
+    
+    this.log.debug('SoundCloud handler constructed', {
+      config: SoundCloudHandler.config,
+      initialState: {
+        isStreamingActive: this.isStreamingActive,
+        currentTrack: this.currentTrack
+      }
+    });
   }
 
   /**
    * Initialize SoundCloud-specific functionality
    */
   async initialize() {
-    console.log('[SoundCloud] Initializing handler...');
+    this.log.info('Initializing SoundCloud handler...');
     
     try {
+      this.log.debug('Setting up monitoring systems');
+      
       // Set up MediaSession monitoring
       this.setupMediaSessionMonitoring();
+      this.log.trace('MediaSession monitoring setup complete');
       
       // Set up MSE detection
       this.setupMSEDetection();
+      this.log.trace('MSE detection setup complete');
       
       // Set up fetch interception for audio segments
       this.setupFetchInterception();
+      this.log.trace('Fetch interception setup complete');
       
       // Set up timeline scrub detection
       this.setupTimelineScrubDetection();
+      this.log.trace('Timeline scrub detection setup complete');
       
-      console.log('[SoundCloud] Handler initialized successfully');
+      this.log.info('SoundCloud handler initialized successfully');
       return true;
     } catch (error) {
       console.error('[SoundCloud] Initialization failed:', error);
@@ -86,6 +106,8 @@ export class SoundCloudHandler extends SiteHandler {
    * Get current track information
    */
   getTrackInfo() {
+    this.log.trace('Extracting track information');
+    
     const info = {
       title: 'Unknown Track',
       artist: 'Unknown Artist', 
@@ -105,10 +127,23 @@ export class SoundCloudHandler extends SiteHandler {
       
       // Get playing state from MediaSession
       info.isPlaying = navigator.mediaSession.playbackState === 'playing';
+      
+      this.log.debug('MediaSession data extracted', {
+        hasMetadata: !!metadata,
+        title: info.title,
+        artist: info.artist,
+        album: info.album,
+        artworkCount: info.artwork.length,
+        playbackState: navigator.mediaSession.playbackState
+      });
+    } else {
+      this.log.debug('MediaSession not available or missing metadata');
     }
 
     // Enhance with DOM elements if MediaSession is incomplete
     if (info.title === 'Unknown Track') {
+      this.log.debug('Falling back to DOM for title extraction');
+      
       // Try to get title from DOM
       const titleElements = [
         '.playbackSoundBadge__titleLink',
@@ -121,12 +156,22 @@ export class SoundCloudHandler extends SiteHandler {
         const element = document.querySelector(selector);
         if (element && element.textContent.trim()) {
           info.title = element.textContent.trim();
+          this.log.debug('Title extracted from DOM', { 
+            selector, 
+            title: info.title 
+          });
           break;
         }
+      }
+      
+      if (info.title === 'Unknown Track') {
+        this.log.warn('Could not extract title from any DOM selectors');
       }
     }
 
     if (info.artist === 'Unknown Artist') {
+      this.log.debug('Falling back to DOM for artist extraction');
+      
       // Try to get artist from DOM
       const artistElements = [
         '.playbackSoundBadge__lightLink',
@@ -138,8 +183,16 @@ export class SoundCloudHandler extends SiteHandler {
         const element = document.querySelector(selector);
         if (element && element.textContent.trim()) {
           info.artist = element.textContent.trim();
+          this.log.debug('Artist extracted from DOM', { 
+            selector, 
+            artist: info.artist 
+          });
           break;
         }
+      }
+      
+      if (info.artist === 'Unknown Artist') {
+        this.log.warn('Could not extract artist from any DOM selectors');
       }
     }
 
@@ -161,6 +214,15 @@ export class SoundCloudHandler extends SiteHandler {
     }
 
     this.currentTrack = info;
+    
+    this.log.debugObject('Track info extraction complete', {
+      finalTrackInfo: info,
+      extractionMethods: {
+        mediaSessionUsed: !!(navigator.mediaSession && navigator.mediaSession.metadata),
+        domFallbackUsed: info.title !== 'Unknown Track' || info.artist !== 'Unknown Artist'
+      }
+    });
+    
     return info;
   }
 
