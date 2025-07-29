@@ -10,7 +10,7 @@ import logger from './logger.js';
 const EXTENSION_VERSION = chrome.runtime.getManifest().version;
 let logs = [];
 
-// Initialize structured logger
+// Initialize popup logger
 const popupLogger = logger.popup;
 
 class CACPPopup {
@@ -394,14 +394,26 @@ class CACPPopup {
 // Initialize popup when DOM is ready
 let popupInstance = null;
 
-document.addEventListener('DOMContentLoaded', async () => {
+const initializePopup = async () => {
   try {
     popupInstance = new CACPPopup();
     await popupInstance.initialize();
   } catch (error) {
-    console.error('Failed to initialize CACP popup:', error);
+    popupLogger.error('Failed to initialize CACP popup', {
+      error: error.message,
+      stack: error.stack
+    });
   }
-});
+};
+
+// Initialize when DOM loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializePopup);
+} else {
+  initializePopup();
+}
+
+popupLogger.info('CACP popup script loaded');
 
 // Cleanup on window unload
 window.addEventListener('beforeunload', () => {
@@ -419,5 +431,3 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   }
 });
-
-console.log('[CACP Popup] Global media controller popup loaded');

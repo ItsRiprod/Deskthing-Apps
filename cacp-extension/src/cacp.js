@@ -221,78 +221,81 @@ class CACPMediaSource {
    */
   async activateHandler(siteName) {
     try {
-      this.log.debug('Starting handler activation', { siteName });
-      
-      const HandlerClass = this.siteDetector.getHandler(siteName);
-      
-      this.log.debug('Handler class lookup completed', {
+      this.log.debug('Starting handler activation', {
         siteName,
-        handlerFound: !!HandlerClass,
-        handlerName: HandlerClass ? HandlerClass.name : null,
-        handlerType: typeof HandlerClass
+        hasSiteDetector: !!this.siteDetector,
+        siteHandlers: this.siteDetector ? Object.keys(this.siteDetector.siteHandlers || {}) : 'no site detector'
       });
-      
-      if (HandlerClass) {
-        this.log.debug('Creating handler instance', { handlerClass: HandlerClass.name });
+
+      if (!this.siteDetector) {
+        this.log.error('Handler activation failed', {
+          siteName,
+          reason: 'No site detector available'
+        });
+        return false;
+      }
+
+      if (!siteName) {
+        this.log.error('Handler activation failed', {
+          reason: 'No site name provided'
+        });
+        return false;
+      }
+
+      try {
+        this.log.info('Attempting to activate handler', {
+          siteName,
+          availableHandlers: Object.keys(this.siteDetector.siteHandlers || {})
+        });
+
+        this.activeHandler = this.siteDetector.createHandler(siteName);
         
-        try {
-          this.currentHandler = new HandlerClass();
-          this.log.debug('Handler instance created successfully', {
-            handlerType: HandlerClass.name,
-            hasInitialize: !!this.currentHandler.initialize
-          });
-        } catch (constructorError) {
-          this.log.error('Handler constructor failed', {
+        if (this.activeHandler) {
+          this.log.info('Handler created successfully', {
             siteName,
-            handlerClass: HandlerClass.name,
-            error: constructorError.message,
-            stack: constructorError.stack
+            handlerType: this.activeHandler.constructor.name,
+            hasInitialize: typeof this.activeHandler.initialize === 'function'
           });
-          throw new Error(`Handler constructor failed: ${constructorError.message}`);
-        }
-        
-        // Initialize the handler
-        if (this.currentHandler.initialize) {
-          this.log.debug('Calling handler initialize method', { siteName });
+
+          const initialized = await this.activeHandler.initialize();
           
-          try {
-            const initResult = await this.currentHandler.initialize();
-            this.log.debug('Handler initialization completed', {
+          if (initialized) {
+            this.log.info('Handler activated successfully', {
               siteName,
-              success: initResult,
-              resultType: typeof initResult
+              handlerReady: true
             });
-          } catch (initError) {
+            return true;
+          } else {
             this.log.error('Handler initialization failed', {
               siteName,
-              error: initError.message,
-              stack: initError.stack
+              initialized,
+              initializeResult: initialized
             });
-            throw new Error(`Handler initialization failed: ${initError.message}`);
+            this.activeHandler = null;
+            return false;
           }
         } else {
-          this.log.debug('Handler has no initialize method', { siteName });
+          this.log.error('Handler creation failed', {
+            siteName,
+            availableHandlers: Object.keys(this.siteDetector.siteHandlers || {}),
+            reason: 'createHandler returned null/undefined'
+          });
+          return false;
         }
-        
-        this.log.info('Handler activated successfully', {
+      } catch (error) {
+        this.log.error('Handler activation error', {
           siteName,
-          handlerType: HandlerClass.name,
-          hasInitialize: !!this.currentHandler.initialize
+          error: error.message,
+          stack: error.stack,
+          errorType: error.constructor.name
         });
-        
-        return true;
-      } else {
-        this.log.error('No handler class found', {
-          siteName,
-          availableHandlers: this.siteDetector.getRegisteredSites()
-        });
+        this.activeHandler = null;
         return false;
       }
     } catch (error) {
       this.log.error('Handler activation failed', {
         siteName,
         error: error.message,
-        errorType: error.constructor.name,
         stack: error.stack
       });
       return false;

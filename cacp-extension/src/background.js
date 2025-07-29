@@ -321,4 +321,4 @@ let keepAliveInterval = setInterval(() => {
 }, 25000);
 
 backgroundLogger.info('Global Media Controller ready');
-console.log('[CACP Background] Global Media Controller initialized'); 
+backgroundLogger.debug('CACP Background Global Media Controller initialized'); 

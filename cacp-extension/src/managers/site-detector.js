@@ -154,39 +154,25 @@ export class SiteDetector {
   }
 
   /**
-   * Mark a site as active (has audio playing)
+   * Mark a site as currently active (playing music)
    * @param {string} siteName Site name to mark as active
    */
   markSiteActive(siteName) {
-    this.activeSites.add(siteName);
-    
-    // Update active status in matched handlers
-    this.matchedHandlers.forEach(handler => {
-      if (handler.name === siteName) {
-        handler.isActive = true;
-      }
-    });
-
-    console.log(`[CACP] Site marked as active: ${siteName}`);
-    this.logActiveStatus();
+    if (!this.activeSites.has(siteName)) {
+      this.activeSites.add(siteName);
+      this.log.info('Site marked as active', { siteName });
+    }
   }
 
   /**
-   * Mark a site as inactive (no audio playing)
+   * Mark a site as inactive (not playing music)
    * @param {string} siteName Site name to mark as inactive
    */
   markSiteInactive(siteName) {
-    this.activeSites.delete(siteName);
-    
-    // Update active status in matched handlers
-    this.matchedHandlers.forEach(handler => {
-      if (handler.name === siteName) {
-        handler.isActive = false;
-      }
-    });
-
-    console.log(`[CACP] Site marked as inactive: ${siteName}`);
-    this.logActiveStatus();
+    if (this.activeSites.has(siteName)) {
+      this.activeSites.delete(siteName);
+      this.log.info('Site marked as inactive', { siteName });
+    }
   }
 
   /**
@@ -254,9 +240,22 @@ export class SiteDetector {
     const HandlerClass = this.getHandlerClass(siteName);
     if (HandlerClass) {
       try {
-        return new HandlerClass();
+        const handler = new HandlerClass();
+        
+        this.log.debug('Handler instance created', {
+          siteName,
+          handlerType: HandlerClass.name
+        });
+        
+        return handler;
       } catch (error) {
-        console.error(`[CACP] Failed to create handler for ${siteName}:`, error);
+        this.log.error('Failed to create handler instance', {
+          siteName,
+          handlerClass: HandlerClass.name,
+          error: error.message,
+          stack: error.stack
+        });
+        return null;
       }
     }
     return null;

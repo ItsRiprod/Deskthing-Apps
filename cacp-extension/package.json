@@ -1,6 +1,6 @@
 {
   "name": "cacp-extension",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -8,7 +8,13 @@
     "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["chrome-extension", "audio-control", "deskthing", "pino", "logging"],
+  "keywords": [
+    "chrome-extension",
+    "audio-control",
+    "deskthing",
+    "pino",
+    "logging"
+  ],
   "author": "",
   "license": "ISC",
   "description": "CACP - Chrome Audio Control Platform with Pino logging",
@@ -16,6 +22,7 @@
     "pino": "^9.7.0"
   },
   "devDependencies": {
+    "pino-colada": "^2.2.2",
     "vite": "^6.3.5",
     "vite-plugin-chrome-extension": "^0.0.7"
   }

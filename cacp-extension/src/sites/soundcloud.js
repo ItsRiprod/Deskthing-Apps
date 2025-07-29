@@ -94,7 +94,11 @@ export class SoundCloudHandler extends SiteHandler {
       this.log.info('SoundCloud handler initialized successfully');
       return true;
     } catch (error) {
-      console.error('[SoundCloud] Initialization failed:', error);
+      this.log.error('SoundCloud handler initialization failed', {
+        error: error.message,
+        stack: error.stack,
+        url: window.location.href
+      });
       return false;
     }
   }
@@ -625,7 +629,10 @@ export class SoundCloudHandler extends SiteHandler {
       
       return { position, duration };
     } catch (error) {
-      console.warn('[SoundCloud] Failed to extract timing:', error);
+      this.log.warn('Failed to extract timing', {
+        error: error.message,
+        context: 'extractSoundCloudTiming'
+      });
       return { position: 0, duration: 0 };
     }
   }
@@ -696,11 +703,17 @@ export class SoundCloudHandler extends SiteHandler {
    */
   setupMediaSessionMonitoring() {
     if (!navigator.mediaSession) {
-      console.warn('[SoundCloud] MediaSession API not available');
+      this.log.warn('MediaSession API not available', {
+        userAgent: navigator.userAgent,
+        fallback: 'DOM-only detection'
+      });
       return;
     }
 
-    console.log('[SoundCloud] Setting up MediaSession monitoring...');
+    this.log.debug('Setting up MediaSession monitoring', {
+      hasMetadata: !!navigator.mediaSession.metadata,
+      playbackState: navigator.mediaSession.playbackState
+    });
     
     const checkMediaSession = () => {
       if (navigator.mediaSession.metadata) {
@@ -713,9 +726,14 @@ export class SoundCloudHandler extends SiteHandler {
         };
 
         // Check if track changed
-        if (!this.currentTrack || this.currentTrack.title !== newTrack.title) {
-          console.log('[SoundCloud] New track detected:', newTrack.title);
+        if (newTrack.title !== this.currentTrack?.title) {
           this.currentTrack = newTrack;
+          
+          this.log.debug('MediaSession track change detected', {
+            title: newTrack.title,
+            artist: newTrack.artist,
+            hasArtwork: newTrack.artwork?.length > 0
+          });
         }
       }
     };
@@ -728,29 +746,82 @@ export class SoundCloudHandler extends SiteHandler {
    * Set up MSE (MediaSource Extensions) detection
    */
   setupMSEDetection() {
-    console.log('[SoundCloud] Setting up MSE detection...');
+    this.log.debug('Setting up MSE detection for streaming audio');
+
+    // Override MediaSource constructor
+    const originalMediaSource = window.MediaSource;
+    const self = this;
     
-    // Hook MediaSource constructor
-    const OriginalMediaSource = window.MediaSource;
-    if (OriginalMediaSource) {
-      const self = this;
+    if (originalMediaSource) {
       window.MediaSource = function(...args) {
-        console.log('[SoundCloud] MediaSource created');
-        const ms = new OriginalMediaSource(...args);
+        const instance = new originalMediaSource(...args);
         
-        ms.addEventListener('sourceopen', () => {
-          console.log('[SoundCloud] MSE source opened - streaming active');
+        self.log.debug('MediaSource instance created', {
+          readyState: instance.readyState,
+          sourceBuffers: instance.sourceBuffers.length
+        });
+
+        // Store reference for later use
+        self.mseElement = instance;
+
+        // Listen for source opening (streaming starts)
+        instance.addEventListener('sourceopen', () => {
+          self.log.debug('MSE source opened - streaming active', {
+            duration: instance.duration,
+            readyState: instance.readyState
+          });
           self.isStreamingActive = true;
         });
 
-        ms.addEventListener('sourceclose', () => {
-          console.log('[SoundCloud] MSE source closed');
+        // Listen for source closing (streaming ends)
+        instance.addEventListener('sourceclose', () => {
+          self.log.debug('MSE source closed', {
+            duration: instance.duration,
+            endTime: Date.now()
+          });
           self.isStreamingActive = false;
         });
 
-        return ms;
+        return instance;
       };
     }
+
+    // Detect when MediaSource is attached to media elements
+    Object.defineProperty(HTMLMediaElement.prototype, 'src', {
+      set: function(value) {
+        if (value && value.startsWith('blob:') && value.includes('media-source')) {
+          const elementName = this.tagName.toLowerCase() + (this.id ? `#${this.id}` : '') + 
+                            (this.className ? `.${this.className.split(' ').join('.')}` : '');
+          
+          self.log.debug('MediaSource attached to media element', {
+            element: elementName,
+            src: value,
+            currentTime: this.currentTime,
+            duration: this.duration
+          });
+        }
+        this._src = value;
+      },
+      get: function() {
+        return this._src;
+      }
+    });
+
+    // Monitor audio segment requests
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+      const url = args[0];
+      if (typeof url === 'string' && url.includes('media-streaming.soundcloud.cloud')) {
+        if (!self.segmentLogged) {
+          self.log.debug('Audio segment streaming detected', {
+            url: url.substring(0, 100) + '...',
+            timestamp: Date.now()
+          });
+          self.segmentLogged = true;
+        }
+      }
+      return originalFetch.apply(this, args);
+    };
 
     // Hook HTMLMediaElement.srcObject
     this.hookMediaElementSrcObject();
@@ -772,7 +843,6 @@ export class SoundCloudHandler extends SiteHandler {
           Object.defineProperty(ElementClass.prototype, 'srcObject', {
             set: function(value) {
               if (value instanceof MediaSource) {
-                console.log('[SoundCloud] MediaSource attached to', elementName);
                 self.mseElement = this;
               }
               return originalDescriptor.set.call(this, value);
@@ -802,7 +872,6 @@ export class SoundCloudHandler extends SiteHandler {
           (urlString.includes('.m4s') || urlString.includes('aac_'))) {
         
         if (!self.segmentLogged) {
-          console.log('[SoundCloud] Audio segment streaming detected');
           self.segmentLogged = true;
           self.isStreamingActive = true;
         }
@@ -816,43 +885,24 @@ export class SoundCloudHandler extends SiteHandler {
    * Set up timeline scrub detection for seeking
    */
   setupTimelineScrubDetection() {
-    console.log('[SoundCloud] Setting up timeline scrub detection...');
-    
-    let scrubTimeout;
-    const self = this;
-    
-    const debouncedUpdate = () => {
-      clearTimeout(scrubTimeout);
-      scrubTimeout = setTimeout(() => {
-        // Force timing update after scrubbing
-        const timing = self.extractSoundCloudTiming();
-        console.log(`[SoundCloud] Scrub update: ${timing.position}s / ${timing.duration}s`);
-      }, 200);
-    };
-    
-    const observeTimeline = () => {
-      const timelineElements = document.querySelectorAll(this.constructor.config.selectors.timeline);
-      
-      timelineElements.forEach(element => {
-        if (element.dataset.scrubDetected) return;
-        element.dataset.scrubDetected = 'true';
-        
-        const scrubHandler = () => debouncedUpdate();
-        
-        element.addEventListener('mousedown', scrubHandler);
-        element.addEventListener('mouseup', scrubHandler);
-        element.addEventListener('click', scrubHandler);
-        element.addEventListener('input', scrubHandler);
-        element.addEventListener('change', scrubHandler);
+    this.log.debug('Setting up timeline scrub detection');
+
+    // Listen for scrub events on timeline elements
+    const timelineSelectors = this.constructor.config.selectors.timeline.split(', ');
+    timelineSelectors.forEach(selector => {
+      document.addEventListener('click', (event) => {
+        if (event.target.matches(selector.trim())) {
+          setTimeout(() => {
+            const timing = this.extractSoundCloudTiming();
+            this.log.debug('Timeline scrub detected', {
+              position: timing.position,
+              duration: timing.duration,
+              percentage: timing.duration > 0 ? (timing.position / timing.duration * 100).toFixed(1) + '%' : '0%'
+            });
+          }, 100);
+        }
       });
-    };
-    
-    // Initial setup
-    observeTimeline();
-    
-    // Re-observe when DOM changes (SoundCloud is an SPA)
-    const observer = new MutationObserver(() => observeTimeline());
-    observer.observe(document.body, { childList: true, subtree: true });
+    });
   }
 
   /**
@@ -860,31 +910,32 @@ export class SoundCloudHandler extends SiteHandler {
    */
   parseTimeString(timeStr) {
     try {
-      // Try "MM:SS" format first
-      const timeMatch = timeStr.match(/(\d+):(\d+)/);
-      if (timeMatch) {
-        return (parseInt(timeMatch[1], 10) * 60) + parseInt(timeMatch[2], 10);
+      if (!timeStr || typeof timeStr !== 'string') return 0;
+      
+      // Handle common time formats: "1:23", "12:34", "1:23:45"
+      const parts = timeStr.trim().split(':').map(p => parseInt(p, 10));
+      
+      if (parts.length === 2) {
+        // mm:ss format
+        return (parts[0] * 60) + parts[1];
+      } else if (parts.length === 3) {
+        // hh:mm:ss format
+        return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
       }
       
-      // Try "X minutes Y seconds" format
-      const minutesMatch = timeStr.match(/(\d+)\s+minutes?/);
-      const secondsMatch = timeStr.match(/(\d+)\s+seconds?/);
-      
-      let totalSeconds = 0;
-      if (minutesMatch) totalSeconds += parseInt(minutesMatch[1], 10) * 60;
-      if (secondsMatch) totalSeconds += parseInt(secondsMatch[1], 10);
-      
-      if (totalSeconds > 0) return totalSeconds;
-      
-      // Try just seconds
-      const justSeconds = timeStr.match(/(\d+)/);
-      if (justSeconds) {
-        return parseInt(justSeconds[1], 10);
+      // Try to extract numbers from string
+      const numbers = timeStr.match(/\d+/g);
+      if (numbers && numbers.length >= 2) {
+        return (parseInt(numbers[0]) * 60) + parseInt(numbers[1]);
       }
       
       return 0;
     } catch (error) {
-      console.warn('[SoundCloud] Failed to parse time string:', timeStr, error);
+      this.log.warn('Failed to parse time string', {
+        timeStr,
+        error: error.message,
+        fallback: 0
+      });
       return 0;
     }
   }
