@@ -1,626 +1,423 @@
 /**
- * CACP Popup Script
+ * CACP Popup Script - Global Media Controller Interface
+ * 
+ * Shows all active media sources across all tabs and provides centralized control
  */
 
 import logger from './logger.js';
 
 // Get version dynamically from manifest
 const EXTENSION_VERSION = chrome.runtime.getManifest().version;
-let currentMedia = null;
-let isPlaying = false;
 let logs = [];
-let ws = null;
-let reconnectTimer = null;
-let currentTab = null;
-let cacpStatus = null;
 
 // Initialize structured logger
 const popupLogger = logger.popup;
 
-function log(message, level = 'info', data = null) {
-  const timestamp = new Date().toLocaleTimeString();
-  logs.unshift(`[${timestamp}] ${message}`);
-  if (logs.length > 100) logs.pop();
-  
-  // Also log to structured logger
-  if (data) {
-    popupLogger[level](message, data);
-  } else {
-    popupLogger[level](message);
-  }
-  
-  const logsEl = document.getElementById('logs');
-  if (logsEl) {
-    const copyButton = '<button class="copy-button" id="copyLogsBtn" title="Copy all logs">📋</button>';
-    logsEl.innerHTML = copyButton + logs.slice(0, 20).join('\n');
-    logsEl.scrollTop = 0;
+class CACPPopup {
+  constructor() {
+    this.globalState = null;
+    this.updateInterval = null;
+    this.isRefreshing = false;
     
-    // Re-attach copy button listener after updating innerHTML
-    const copyBtn = document.getElementById('copyLogsBtn');
-    if (copyBtn) {
-      copyBtn.addEventListener('click', copyLogs);
+    popupLogger.info('CACP Popup initialized');
+  }
+
+  /**
+   * Initialize popup interface
+   */
+  async initialize() {
+    popupLogger.debug('Initializing popup interface');
+    
+    // Set up UI event listeners
+    this.setupEventListeners();
+    
+    // Set version in UI
+    this.updateVersionDisplay();
+    
+    // Start periodic updates
+    this.startPeriodicUpdates();
+    
+    // Load initial state
+    await this.refreshGlobalState();
+    
+    popupLogger.info('Popup interface ready');
+  }
+
+  /**
+   * Set up event listeners for UI elements
+   */
+  setupEventListeners() {
+    // Global control buttons
+    const globalPlayBtn = document.getElementById('globalPlay');
+    const globalPauseBtn = document.getElementById('globalPause');
+    const globalNextBtn = document.getElementById('globalNext');
+    const globalPrevBtn = document.getElementById('globalPrev');
+
+    if (globalPlayBtn) globalPlayBtn.addEventListener('click', () => this.sendGlobalCommand('play'));
+    if (globalPauseBtn) globalPauseBtn.addEventListener('click', () => this.sendGlobalCommand('pause'));
+    if (globalNextBtn) globalNextBtn.addEventListener('click', () => this.sendGlobalCommand('next'));
+    if (globalPrevBtn) globalPrevBtn.addEventListener('click', () => this.sendGlobalCommand('previous'));
+
+    // Refresh button
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) refreshBtn.addEventListener('click', () => this.refreshGlobalState());
+
+    // Copy logs button
+    const copyLogsBtn = document.getElementById('copyLogsBtn');
+    if (copyLogsBtn) copyLogsBtn.addEventListener('click', () => this.copyLogs());
+
+    // Debug toggle functionality
+    const debugToggle = document.getElementById('debugToggle');
+    const debugInfo = document.getElementById('debugInfo');
+    if (debugToggle && debugInfo) {
+      debugToggle.addEventListener('click', () => {
+        debugInfo.classList.toggle('hidden');
+      });
+    }
+
+    popupLogger.debug('Event listeners set up');
+  }
+
+  /**
+   * Update version display
+   */
+  updateVersionDisplay() {
+    const versionEl = document.getElementById('version');
+    if (versionEl) {
+      versionEl.textContent = `v${EXTENSION_VERSION}`;
     }
   }
-}
 
-function formatTime(seconds) {
-  if (!seconds || isNaN(seconds)) return '0:00';
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-function showCommandResult(message, isSuccess = true) {
-  const resultEl = document.getElementById('commandResult');
-  if (resultEl) {
-    resultEl.textContent = message;
-    resultEl.className = `command-result ${isSuccess ? 'success' : 'error'}`;
-    
-    setTimeout(() => {
-      resultEl.style.display = 'none';
-    }, 3000);
+  /**
+   * Start periodic updates
+   */
+  startPeriodicUpdates() {
+    this.updateInterval = setInterval(() => {
+      this.refreshGlobalState();
+    }, 3000); // Update every 3 seconds
   }
-}
 
-function connectToDeskThing() {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    log('✅ Already connected to DeskThing');
-    return;
-  }
-  
-  try {
-    log('🔌 Connecting to DeskThing app (localhost:8081)...');
-    ws = new WebSocket('ws://localhost:8081');
-    
-    ws.onopen = function() {
-      log('✅ Connected to DeskThing app WebSocket');
-      updateWebSocketStatus('Connected', 'connected');
+  /**
+   * Get global media state from background script
+   */
+  async refreshGlobalState() {
+    if (this.isRefreshing) return;
+    this.isRefreshing = true;
+
+    try {
+      const response = await chrome.runtime.sendMessage({ type: 'get-global-state' });
       
-      // Send connection message (CACP version)
-      const connectionMessage = {
-        type: 'connection',
-        source: 'cacp-extension-popup',
-        version: EXTENSION_VERSION,
-        message: 'CACP Popup connected',
-        timestamp: Date.now()
-      };
-      ws.send(JSON.stringify(connectionMessage));
-      
-      if (reconnectTimer) {
-        clearTimeout(reconnectTimer);
-        reconnectTimer = null;
-      }
-    };
-    
-    ws.onmessage = function(event) {
-      try {
-        const message = JSON.parse(event.data);
-        log(`📨 DeskThing: ${message.type || 'unknown message'}`);
+      if (response) {
+        this.globalState = response;
+        this.updateUI();
         
-        if (message.type === 'media-command') {
-          log(`🎮 Command from DeskThing: ${message.action}`);
-          showCommandResult(`Command received: ${message.action}`, true);
+        popupLogger.trace('Global state updated', {
+          sourceCount: response.sources?.length || 0,
+          currentPriority: response.currentPriority?.site
+        });
+      }
+    } catch (error) {
+      this.log('Failed to get global state: ' + error.message, 'error');
+      popupLogger.error('Failed to refresh global state', { error: error.message });
+    } finally {
+      this.isRefreshing = false;
+    }
+  }
+
+  /**
+   * Update the entire UI based on current global state
+   */
+  updateUI() {
+    if (!this.globalState) {
+      this.showNoSources();
+      return;
+    }
+
+    const { sources, currentPriority, totalSources } = this.globalState;
+    
+    // Update status
+    this.updateStatus(totalSources, currentPriority);
+    
+    // Update sources list
+    this.updateSourcesList(sources);
+    
+    // Update global controls
+    this.updateGlobalControls(currentPriority);
+  }
+
+  /**
+   * Show no sources message
+   */
+  showNoSources() {
+    const statusEl = document.getElementById('status');
+    const sourcesListEl = document.getElementById('sourcesList');
+    
+    if (statusEl) {
+      statusEl.innerHTML = '<div class="status-item"><span class="status-label">Status:</span><span class="status-value">No active media sources</span></div>';
+    }
+    
+    if (sourcesListEl) {
+      sourcesListEl.innerHTML = '<div class="no-sources"><p>🎵 No media detected</p><p>Open a supported music site in any tab to get started!</p><div class="supported-sites"><small>Supported: SoundCloud, YouTube, Spotify, Apple Music</small></div></div>';
+    }
+
+    // Disable global controls
+    this.setGlobalControlsEnabled(false);
+  }
+
+  /**
+   * Update status section
+   */
+  updateStatus(totalSources, currentPriority) {
+    const statusEl = document.getElementById('status');
+    if (!statusEl) return;
+
+    const prioritySite = currentPriority ? currentPriority.site : 'None';
+    const priorityTrack = currentPriority?.trackInfo?.title || 'No track';
+
+    statusEl.innerHTML = '<div class="status-item"><span class="status-label">Active Sources:</span><span class="status-value">' + totalSources + '</span></div><div class="status-item"><span class="status-label">Priority:</span><span class="status-value">' + prioritySite + '</span></div><div class="status-item"><span class="status-label">Now Playing:</span><span class="status-value">' + priorityTrack + '</span></div>';
+  }
+
+  /**
+   * Update sources list
+   */
+  updateSourcesList(sources) {
+    const sourcesListEl = document.getElementById('sourcesList');
+    if (!sourcesListEl) return;
+
+    if (sources.length === 0) {
+      this.showNoSources();
+      return;
+    }
+
+    sourcesListEl.innerHTML = sources.map(source => this.createSourceItem(source)).join('');
+
+    // Add event listeners to source controls
+    sources.forEach(source => {
+      this.attachSourceEventListeners(source.tabId);
+    });
+  }
+
+  /**
+   * Create HTML for a single source item
+   */
+  createSourceItem(source) {
+    const isPriority = source.isPriority;
+    const trackTitle = source.trackInfo?.title || 'Unknown Track';
+    const trackArtist = source.trackInfo?.artist || 'Unknown Artist';
+    const isPlaying = source.isPlaying;
+    const canControl = source.canControl;
+    const isActive = source.isActive;
+    
+    const priorityBadge = isPriority ? '<span class="priority-badge">★ Priority</span>' : '';
+    const statusIcon = isActive ? (isPlaying ? '▶️' : '⏸️') : '⏹️';
+    const statusText = isActive ? (isPlaying ? 'Playing' : 'Paused') : 'Inactive';
+    
+    return '<div class="source-item ' + (isPriority ? 'priority' : '') + ' ' + (isActive ? 'active' : 'inactive') + '" data-tab-id="' + source.tabId + '"><div class="source-header"><div class="source-info"><div class="source-site">' + source.site + ' ' + priorityBadge + '</div><div class="source-status">' + statusIcon + ' ' + statusText + '</div></div><div class="source-controls">' + (canControl && isActive ? '<button class="control-btn prev-btn" data-command="previous" data-tab-id="' + source.tabId + '" title="Previous">⏮️</button><button class="control-btn ' + (isPlaying ? 'pause-btn' : 'play-btn') + '" data-command="' + (isPlaying ? 'pause' : 'play') + '" data-tab-id="' + source.tabId + '" title="' + (isPlaying ? 'Pause' : 'Play') + '">' + (isPlaying ? '⏸️' : '▶️') + '</button><button class="control-btn next-btn" data-command="next" data-tab-id="' + source.tabId + '" title="Next">⏭️</button>' : '<span class="no-controls">' + (!canControl ? 'No controls' : 'Not ready') + '</span>') + '</div></div><div class="source-track"><div class="track-title">' + trackTitle + '</div><div class="track-artist">' + trackArtist + '</div></div>' + (!isPriority && isActive ? '<button class="set-priority-btn" data-tab-id="' + source.tabId + '">Set as Priority</button>' : '') + '</div>';
+  }
+
+  /**
+   * Attach event listeners to source controls
+   */
+  attachSourceEventListeners(tabId) {
+    // Control buttons
+    const controlBtns = document.querySelectorAll('[data-tab-id="' + tabId + '"][data-command]');
+    controlBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const command = e.target.dataset.command;
+        const targetTabId = parseInt(e.target.dataset.tabId);
+        this.sendSourceCommand(command, targetTabId);
+      });
+    });
+
+    // Set priority button
+    const priorityBtn = document.querySelector('.set-priority-btn[data-tab-id="' + tabId + '"]');
+    if (priorityBtn) {
+      priorityBtn.addEventListener('click', (e) => {
+        const targetTabId = parseInt(e.target.dataset.tabId);
+        this.setPriority(targetTabId);
+      });
+    }
+  }
+
+  /**
+   * Update global controls based on priority source
+   */
+  updateGlobalControls(currentPriority) {
+    const hasActivePriority = currentPriority && currentPriority.isActive;
+    this.setGlobalControlsEnabled(hasActivePriority);
+
+    if (hasActivePriority) {
+      // Update play/pause button state
+      const globalPlayBtn = document.getElementById('globalPlay');
+      const globalPauseBtn = document.getElementById('globalPause');
+      
+      if (globalPlayBtn && globalPauseBtn) {
+        if (currentPriority.isPlaying) {
+          globalPlayBtn.style.display = 'none';
+          globalPauseBtn.style.display = 'inline-block';
+        } else {
+          globalPlayBtn.style.display = 'inline-block';
+          globalPauseBtn.style.display = 'none';
         }
-      } catch (error) {
-        log(`❌ Message parse error: ${error.message}`);
       }
-    };
-    
-    ws.onclose = function() {
-      log('❌ DeskThing connection closed');
-      updateWebSocketStatus('Disconnected', 'disconnected');
-      
-      // Auto-reconnect after 3 seconds
-      if (!reconnectTimer) {
-        reconnectTimer = setTimeout(() => {
-          log('🔄 Attempting to reconnect...');
-          connectToDeskThing();
-        }, 3000);
+    }
+  }
+
+  /**
+   * Enable/disable global control buttons
+   */
+  setGlobalControlsEnabled(enabled) {
+    const globalControls = document.querySelectorAll('.global-controls button');
+    globalControls.forEach(btn => {
+      btn.disabled = !enabled;
+    });
+  }
+
+  /**
+   * Send command to highest priority source
+   */
+  async sendGlobalCommand(command) {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'control-media',
+        command: command
+      });
+
+      if (response.success) {
+        this.log('Global ' + command + ' command sent successfully');
+        // Refresh state to see changes
+        setTimeout(() => this.refreshGlobalState(), 100);
+      } else {
+        this.log('Global ' + command + ' command failed: ' + response.error, 'error');
       }
-    };
-    
-    ws.onerror = function(error) {
-      log(`❌ WebSocket error: ${error.message || 'Connection failed'}`);
-      showCommandResult('Connection to DeskThing failed', false);
-      updateWebSocketStatus('Error', 'disconnected');
-    };
-    
-  } catch (error) {
-    log(`❌ Connection failed: ${error.message}`);
-    showCommandResult('Failed to connect to DeskThing', false);
-    updateWebSocketStatus('Failed', 'disconnected');
-  }
-}
-
-async function getCurrentTab() {
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    currentTab = tab;
-    return tab;
-  } catch (error) {
-    log(`❌ Failed to get current tab: ${error.message}`);
-    return null;
-  }
-}
-
-async function sendMessageToContentScript(message) {
-  try {
-    const tab = await getCurrentTab();
-    if (!tab) {
-      throw new Error('No active tab found');
+    } catch (error) {
+      this.log('Failed to send global ' + command + ' command: ' + error.message, 'error');
     }
-    
-    const response = await chrome.tabs.sendMessage(tab.id, message);
-    return response;
-  } catch (error) {
-    log(`❌ Content script message failed: ${error.message}`);
-    showCommandResult('Failed to communicate with page', false);
-    throw error;
   }
-}
 
-async function getCacpStatus() {
-  try {
-    // Try to get CACP status from content script
-    const response = await sendMessageToContentScript({
-      type: 'get-cacp-status',
-      timestamp: Date.now()
-    });
-    
-    if (response && response.status) {
-      return response.status;
+  /**
+   * Send command to specific source
+   */
+  async sendSourceCommand(command, tabId) {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'control-media',
+        command: command,
+        tabId: tabId
+      });
+
+      if (response.success) {
+        this.log(command + ' command sent to tab ' + tabId);
+        // Refresh state to see changes
+        setTimeout(() => this.refreshGlobalState(), 100);
+      } else {
+        this.log(command + ' command failed for tab ' + tabId + ': ' + response.error, 'error');
+      }
+    } catch (error) {
+      this.log('Failed to send ' + command + ' command to tab ' + tabId + ': ' + error.message, 'error');
     }
-    
-    // Fallback: try to get status from window.CACP if available
-    const cacpResponse = await sendMessageToContentScript({
-      type: 'get-status',
-      timestamp: Date.now()
-    });
-    
-    return cacpResponse;
-  } catch (error) {
-    log(`⚠️ CACP status unavailable: ${error.message}`);
-    return null;
   }
-}
 
-async function extractMediaNow() {
-  try {
-    log('🎵 Requesting immediate media extraction...');
-    const response = await sendMessageToContentScript({
-      type: 'extract-media',
-      timestamp: Date.now()
-    });
+  /**
+   * Set a source as priority
+   */
+  async setPriority(tabId) {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'set-priority-source',
+        tabId: tabId
+      });
+
+      if (response.success) {
+        this.log('Set tab ' + tabId + ' as priority source');
+        this.refreshGlobalState();
+      } else {
+        this.log('Failed to set priority: ' + response.error, 'error');
+      }
+    } catch (error) {
+      this.log('Failed to set priority for tab ' + tabId + ': ' + error.message, 'error');
+    }
+  }
+
+  /**
+   * Log message with timestamp
+   */
+  log(message, level = 'info', data = null) {
+    const timestamp = new Date().toLocaleTimeString();
+    logs.unshift('[' + timestamp + '] ' + message);
+    if (logs.length > 100) logs.pop();
     
-    if (response && response.success) {
-      log('✅ Media extraction triggered');
-      showCommandResult('Media extraction requested', true);
+    // Also log to structured logger
+    if (data) {
+      popupLogger[level](message, data);
     } else {
-      log('⚠️ No media found on page');
-      showCommandResult('No media detected on current page', false);
+      popupLogger[level](message);
     }
-  } catch (error) {
-    log(`❌ Media extraction failed: ${error.message}`);
-  }
-}
-
-async function sendControlCommand(action) {
-  try {
-    log(`🎮 Sending control command: ${action}`);
     
-    // Send to content script first
-    await sendMessageToContentScript({
-      type: 'media-control',
-      action: action,
-      timestamp: Date.now()
+    this.updateLogsDisplay();
+  }
+
+  /**
+   * Update logs display
+   */
+  updateLogsDisplay() {
+    const logsEl = document.getElementById('logs');
+    if (logsEl) {
+      logsEl.textContent = logs.slice(0, 20).join('\n');
+      logsEl.scrollTop = 0;
+    }
+  }
+
+  /**
+   * Copy all logs to clipboard
+   */
+  copyLogs() {
+    const allLogs = logs.join('\n');
+    navigator.clipboard.writeText(allLogs).then(() => {
+      this.log('Logs copied to clipboard');
+    }).catch(err => {
+      this.log('Failed to copy logs: ' + err.message, 'error');
     });
-    
-    // Also send via WebSocket if connected (for testing DeskThing response)
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      const command = {
-        type: 'media-command',
-        action: action,
-        timestamp: Date.now(),
-        source: 'cacp-popup-test'
-      };
-      ws.send(JSON.stringify(command));
+  }
+
+  /**
+   * Cleanup when popup closes
+   */
+  cleanup() {
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
     }
-    
-    log(`✅ Control command sent: ${action}`);
-    showCommandResult(`Command sent: ${action}`, true);
-  } catch (error) {
-    log(`❌ Control command failed: ${error.message}`);
-    showCommandResult(`Failed to send ${action} command`, false);
+    popupLogger.debug('Popup cleanup complete');
   }
 }
 
-function updateMediaDisplay(media) {
-  if (!media) {
-    document.getElementById('mediaInfo').className = 'media-info hidden';
-    return;
-  }
-  
-  document.getElementById('mediaInfo').className = 'media-info';
-  document.getElementById('trackTitle').textContent = media.title || 'Unknown Track';
-  document.getElementById('trackArtist').textContent = media.artist || 'Unknown Artist';
-  document.getElementById('trackAlbum').textContent = media.album || '';
-  
-  // Update site badge
-  const siteBadge = document.getElementById('site-badge');
-  const siteName = media.site || 'Unknown';
-  siteBadge.textContent = siteName;
-  siteBadge.className = `site-badge ${siteName.toLowerCase()}`;
-  
-  // Update artwork
-  const artworkEl = document.getElementById('artwork');
-  if (media.artwork && media.artwork.length > 0) {
-    artworkEl.src = media.artwork[0];
-    artworkEl.className = 'artwork';
-  } else {
-    artworkEl.className = 'artwork hidden';
-  }
-  
-  // Update time info
-  document.getElementById('currentTime').textContent = formatTime(media.currentTime || media.position);
-  document.getElementById('totalTime').textContent = formatTime(media.duration);
-  
-  // Update progress bar
-  const currentTime = media.currentTime || media.position || 0;
-  const progress = media.duration > 0 ? (currentTime / media.duration) * 100 : 0;
-  document.getElementById('progressFill').style.width = `${progress}%`;
-  
-  // Update play state
-  isPlaying = media.isPlaying;
-  document.getElementById('playState').textContent = isPlaying ? '✅' : '❌';
-  document.getElementById('playPauseBtn').textContent = isPlaying ? '⏸️' : '▶️';
-  
-  // Update source
-  document.getElementById('source').textContent = media.site || 'Page';
-  
-  currentMedia = media;
-}
+// Initialize popup when DOM is ready
+let popupInstance = null;
 
-function updateSystemStatus(status) {
-  if (!status) return;
-  
-  cacpStatus = status;
-  
-  // Update orchestrator status
-  if (status.isInitialized) {
-    updateOrchestratorStatus('Running', 'connected');
-  } else {
-    updateOrchestratorStatus('Not initialized', 'disconnected');
-  }
-  
-  // Update handler status
-  if (status.activeSiteName) {
-    updateHandlerStatus(status.activeSiteName, 'connected');
-  } else if (status.hasActiveHandler) {
-    updateHandlerStatus('Active', 'partial');
-  } else {
-    updateHandlerStatus('None', 'disconnected');
-  }
-  
-  // Update detection status
-  const matchedCount = status.siteDetector?.matchedHandlers?.length || 0;
-  const registeredCount = status.siteDetector?.registeredHandlers?.length || 0;
-  
-  if (matchedCount > 0) {
-    updateDetectionStatus(`${matchedCount} detected`, 'connected');
-  } else if (registeredCount > 0) {
-    updateDetectionStatus('No matches', 'partial');
-  } else {
-    updateDetectionStatus('No handlers', 'disconnected');
-  }
-  
-  // Update site detection panel
-  updateSiteDetectionPanel(status);
-  
-  // Update debug info
-  updateDebugInfo(status);
-}
-
-function updateSiteDetectionPanel(status) {
-  const detectedSitesEl = document.getElementById('detected-sites');
-  const autoSwitchEl = document.getElementById('auto-switch-status');
-  const conflictEl = document.getElementById('conflict-status');
-  
-  if (!status || !status.siteDetector) {
-    detectedSitesEl.innerHTML = `
-      <div class="site inactive">
-        <span>CACP not initialized</span>
-        <span class="site-priority">Refresh page</span>
-      </div>
-    `;
-    return;
-  }
-  
-  const matchedHandlers = status.siteDetector.matchedHandlers || [];
-  const activeSites = status.siteDetector.activeSites || [];
-  const registeredHandlers = status.siteDetector.registeredHandlers || [];
-  
-  if (matchedHandlers.length === 0) {
-    detectedSitesEl.innerHTML = `
-      <div class="site inactive">
-        <span>No supported sites detected</span>
-        <span class="site-priority">${registeredHandlers.length} handlers registered</span>
-      </div>
-    `;
-  } else {
-    const sitesHtml = matchedHandlers.map((handler, index) => {
-      const isActive = activeSites.includes(handler.name);
-      const isPrimary = index === 0;
-      const className = isActive ? 'active' : (isPrimary ? 'detected' : 'inactive');
-      
-      return `
-        <div class="site ${className}">
-          <span>${handler.name} ${isPrimary ? '(Primary)' : ''}</span>
-          <span class="site-priority">Priority: ${handler.priority}</span>
-        </div>
-      `;
-    }).join('');
-    
-    detectedSitesEl.innerHTML = sitesHtml;
-  }
-  
-  // Update auto-switch status
-  const autoSwitchEnabled = status.priorityManager?.autoSwitchEnabled ?? true;
-  autoSwitchEl.textContent = `Auto-Switch: ${autoSwitchEnabled ? 'ON' : 'OFF'}`;
-  
-  // Update conflict status
-  const activeCount = activeSites.length;
-  if (activeCount > 1) {
-    conflictEl.textContent = `Conflicts: ${activeCount} active sites`;
-    conflictEl.style.color = '#ff9800';
-  } else {
-    conflictEl.textContent = 'Conflicts: None';
-    conflictEl.style.color = '#ccc';
-  }
-}
-
-function updateWebSocketStatus(text, status) {
-  document.getElementById('websocket-value').textContent = text;
-  document.getElementById('websocket-status').className = `status ${status}`;
-}
-
-function updateOrchestratorStatus(text, status) {
-  document.getElementById('orchestrator-value').textContent = text;
-  document.getElementById('orchestrator-status').className = `status ${status}`;
-}
-
-function updateHandlerStatus(text, status) {
-  document.getElementById('handler-value').textContent = text;
-  document.getElementById('handler-status').className = `status ${status}`;
-}
-
-function updateDetectionStatus(text, status) {
-  document.getElementById('detection-value').textContent = text;
-  document.getElementById('detection-status').className = `status ${status}`;
-}
-
-function updateDebugInfo(status) {
-  const debugContent = document.getElementById('debugContent');
-  if (debugContent) {
-    const wsStatus = ws && ws.readyState === WebSocket.OPEN ? 'Connected' : 'Disconnected';
-    const mediaTitle = currentMedia?.title || 'N/A';
-    const mediaArtist = currentMedia?.artist || 'N/A';
-    const mediaSite = currentMedia?.site || 'N/A';
-    
-    let cacpInfo = '';
-    if (status) {
-      cacpInfo = `
-        <strong>CACP System:</strong><br>
-        • Initialized: ${status.isInitialized ? 'Yes' : 'No'}<br>
-        • Active Site: ${status.activeSiteName || 'None'}<br>
-        • Registered Handlers: ${status.siteDetector?.registeredHandlers?.length || 0}<br>
-        • Matched Handlers: ${status.siteDetector?.matchedHandlers?.length || 0}<br>
-        • Active Sites: ${status.siteDetector?.activeSites?.length || 0}<br>
-        • Auto-Switch: ${status.priorityManager?.autoSwitchEnabled ? 'Yes' : 'No'}<br><br>
-      `;
-    }
-    
-    debugContent.innerHTML = `
-      <strong>Extension:</strong> CACP v${EXTENSION_VERSION}<br>
-      <strong>WebSocket:</strong> ${wsStatus}<br>
-      <strong>Tab URL:</strong> ${currentTab?.url?.substring(0, 50) || 'N/A'}...<br><br>
-      ${cacpInfo}
-      <strong>Current Media:</strong><br>
-      • Title: ${mediaTitle}<br>
-      • Artist: ${mediaArtist}<br>
-      • Site: ${mediaSite}<br>
-      • Playing: ${currentMedia?.isPlaying ? 'Yes' : 'No'}<br>
-      • Duration: ${currentMedia?.duration || 0}s<br>
-      • Position: ${currentMedia?.currentTime || currentMedia?.position || 0}s<br>
-      • Has Artwork: ${currentMedia?.artwork?.length > 0 ? 'Yes' : 'No'}<br><br>
-      <strong>Timestamp:</strong> ${new Date().toLocaleTimeString()}
-    `;
-  }
-}
-
-async function loadStatus() {
+document.addEventListener('DOMContentLoaded', async () => {
   try {
-    const tab = await getCurrentTab();
-    if (!tab || !tab.url) {
-      showError('No active tab found');
-      return;
-    }
-    
-    // Check if current tab is a supported site
-    const supportedSites = [
-      'soundcloud.com',
-      'youtube.com', 
-      'music.youtube.com',
-      'open.spotify.com',
-      'music.apple.com'
-    ];
-    
-    const isSupported = supportedSites.some(site => tab.url.includes(site));
-    
-    if (!isSupported) {
-      updateDetectionStatus('Unsupported site', 'disconnected');
-      updateOrchestratorStatus('N/A', 'disconnected');
-      updateHandlerStatus('N/A', 'disconnected');
-      log(`ℹ️ Current site not supported: ${tab.url}`);
-      return;
-    }
-    
-    // Get CACP system status
-    const status = await getCacpStatus();
-    if (status) {
-      log('✅ CACP status received');
-      updateSystemStatus(status);
-      
-      // Update media display if available
-      if (status.lastMediaData) {
-        updateMediaDisplay(status.lastMediaData);
-      }
-    } else {
-      log('⚠️ CACP not responding - may need initialization');
-      updateOrchestratorStatus('Not responding', 'disconnected');
-      showCommandResult('CACP not responding. Try refreshing the page.', false);
-    }
-    
+    popupInstance = new CACPPopup();
+    await popupInstance.initialize();
   } catch (error) {
-    log(`❌ Failed to load status: ${error.message}`);
-    showError('Failed to load status: ' + error.message);
+    console.error('Failed to initialize CACP popup:', error);
   }
-}
+});
 
-function toggleDebug() {
-  const debugInfo = document.getElementById('debugInfo');
-  if (debugInfo.style.display === 'none') {
-    debugInfo.style.display = 'block';
-    log('📊 Debug panel opened');
-  } else {
-    debugInfo.style.display = 'none';
+// Cleanup on window unload
+window.addEventListener('beforeunload', () => {
+  if (popupInstance) {
+    popupInstance.cleanup();
   }
-}
+});
 
-function clearLogs() {
-  logs = [];
-  const logsEl = document.getElementById('logs');
-  logsEl.innerHTML = '<button class="copy-button" id="copyLogsBtn" title="Copy all logs">📋</button>';
-  // Re-attach copy button listener
-  document.getElementById('copyLogsBtn').addEventListener('click', copyLogs);
-  log('🗑️ Logs cleared');
-}
-
-function copyLogs() {
-  const logText = logs.join('\n');
-  navigator.clipboard.writeText(logText).then(() => {
-    const copyBtn = document.getElementById('copyLogsBtn');
-    const originalText = copyBtn.textContent;
-    copyBtn.textContent = '✅';
-    copyBtn.style.background = '#28a745';
-    
-    setTimeout(() => {
-      copyBtn.textContent = originalText;
-      copyBtn.style.background = '#444';
-    }, 1000);
-    
-    log('📋 Logs copied to clipboard');
-  }).catch(err => {
-    log('❌ Failed to copy logs: ' + err.message);
-  });
-}
-
-function showError(message) {
-  const errorElement = document.getElementById('error');
-  errorElement.textContent = message;
-  errorElement.style.display = 'block';
-  
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('content').style.display = 'block';
-}
-
-function clearError() {
-  const errorElement = document.getElementById('error');
-  errorElement.style.display = 'none';
-}
-
-function cleanup() {
-  if (ws) {
-    ws.close();
-    ws = null;
-  }
-  if (reconnectTimer) {
-    clearTimeout(reconnectTimer);
-    reconnectTimer = null;
-  }
-}
-
-// Listen for content script messages
+// Listen for background script updates
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'media-update') {
-    log(`🎵 Media update: ${message.data?.title || 'Unknown'}`);
-    updateMediaDisplay(message.data);
-  } else if (message.type === 'cacp-status-update') {
-    log(`🎯 CACP status update`);
-    updateSystemStatus(message.status);
-  } else if (message.type === 'websocket-status') {
-    log(`🔌 WebSocket status: ${message.status}`);
+  if (message.type.startsWith('popup-')) {
+    // Handle real-time updates from background script
+    if (popupInstance) {
+      popupInstance.refreshGlobalState();
+    }
   }
 });
 
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-  log(`🎯 CACP Popup v${EXTENSION_VERSION} opened`);
-  
-  // Update version display
-  document.getElementById('version').textContent = `v${EXTENSION_VERSION} - Universal Platform`;
-  
-  // Set up event listeners
-  
-  // Media controls
-  document.getElementById('prevBtn')?.addEventListener('click', () => sendControlCommand('previoustrack'));
-  document.getElementById('playPauseBtn')?.addEventListener('click', () => sendControlCommand(isPlaying ? 'pause' : 'play'));
-  document.getElementById('nextBtn')?.addEventListener('click', () => sendControlCommand('nexttrack'));
-  
-  // Test controls
-  document.getElementById('testPlayBtn')?.addEventListener('click', () => sendControlCommand('play'));
-  document.getElementById('testPauseBtn')?.addEventListener('click', () => sendControlCommand('pause'));
-  document.getElementById('testPrevBtn')?.addEventListener('click', () => sendControlCommand('previoustrack'));
-  document.getElementById('testNextBtn')?.addEventListener('click', () => sendControlCommand('nexttrack'));
-  
-  // CACP controls
-  document.getElementById('refreshBtn')?.addEventListener('click', loadStatus);
-  document.getElementById('connectBtn')?.addEventListener('click', connectToDeskThing);
-  document.getElementById('settingsBtn')?.addEventListener('click', () => {
-    chrome.runtime.openOptionsPage();
-  });
-  
-  // Main controls
-  document.getElementById('extractBtn')?.addEventListener('click', extractMediaNow);
-  document.getElementById('clearLogsBtn')?.addEventListener('click', clearLogs);
-  
-  // Debug controls
-  document.getElementById('debugToggle')?.addEventListener('click', toggleDebug);
-  document.getElementById('copyLogsBtn')?.addEventListener('click', copyLogs);
-  
-  // Initialize
-  clearError();
-  
-  // Auto-connect to DeskThing
-  connectToDeskThing();
-  
-  // Load initial status
-  setTimeout(async () => {
-    await loadStatus();
-    
-    // Hide loading, show content
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('content').style.display = 'block';
-    
-    log('✅ CACP Popup initialized - ready for multi-site control');
-  }, 1000);
-  
-  // Cleanup when popup closes
-  window.addEventListener('beforeunload', cleanup);
-});
-
-// Auto-refresh status every 3 seconds
-setInterval(() => {
-  if (document.getElementById('content').style.display !== 'none') {
-    loadStatus();
-  }
-}, 3000); 
+console.log('[CACP Popup] Global media controller popup loaded');

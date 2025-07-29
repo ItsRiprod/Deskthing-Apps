@@ -1,7 +1,7 @@
 /**
  * CACP Chrome Extension - Background Script
  * 
- * Handles extension lifecycle and background tasks.
+ * Global Media Controller - Tracks and manages media across all tabs
  */
 
 import logger from './logger.js';
@@ -9,153 +9,316 @@ import logger from './logger.js';
 // Initialize logger
 const backgroundLogger = logger.cacp.child({ component: 'background' });
 
+/**
+ * Global Media State Manager
+ * Tracks all active media sources across all browser tabs
+ */
+class GlobalMediaManager {
+  constructor() {
+    this.activeSources = new Map(); // tabId -> MediaSource
+    this.currentPriority = null; // Currently highest priority source
+    this.siteHandlers = new Map(); // tabId -> handler info
+    this.updateInterval = null;
+    
+    backgroundLogger.info('GlobalMediaManager initialized');
+    this.startPeriodicUpdates();
+  }
+
+  /**
+   * Register a media source from a tab
+   */
+  registerSource(tabId, sourceData) {
+    const source = {
+      tabId,
+      site: sourceData.site,
+      isActive: sourceData.isActive,
+      trackInfo: sourceData.trackInfo,
+      isPlaying: sourceData.isPlaying,
+      canControl: sourceData.canControl,
+      lastUpdate: Date.now(),
+      priority: sourceData.priority || 1
+    };
+
+    this.activeSources.set(tabId, source);
+    this.updatePriority();
+    
+    backgroundLogger.debug('Media source registered', {
+      tabId,
+      site: source.site,
+      isActive: source.isActive,
+      trackTitle: source.trackInfo?.title
+    });
+
+    // Notify popup if open
+    this.notifyPopup('sources-updated', this.getSourcesList());
+  }
+
+  /**
+   * Update existing source
+   */
+  updateSource(tabId, updates) {
+    const source = this.activeSources.get(tabId);
+    if (source) {
+      Object.assign(source, updates, { lastUpdate: Date.now() });
+      this.updatePriority();
+      
+      backgroundLogger.trace('Media source updated', {
+        tabId,
+        updates: Object.keys(updates)
+      });
+
+      this.notifyPopup('sources-updated', this.getSourcesList());
+    }
+  }
+
+  /**
+   * Remove a media source (tab closed or no longer has media)
+   */
+  removeSource(tabId) {
+    const source = this.activeSources.get(tabId);
+    if (source) {
+      this.activeSources.delete(tabId);
+      this.updatePriority();
+      
+      backgroundLogger.debug('Media source removed', {
+        tabId,
+        site: source.site
+      });
+
+      this.notifyPopup('sources-updated', this.getSourcesList());
+    }
+  }
+
+  /**
+   * Update priority ranking - determine which source should be the primary
+   */
+  updatePriority() {
+    let highestPriority = null;
+    let highestScore = -1;
+
+    for (const source of this.activeSources.values()) {
+      // Calculate priority score
+      let score = source.priority || 1;
+      
+      // Boost score for actively playing media
+      if (source.isPlaying) score += 10;
+      
+      // Boost score for sources that can be controlled
+      if (source.canControl) score += 5;
+      
+      // Boost score for active/ready sources
+      if (source.isActive) score += 2;
+
+      if (score > highestScore) {
+        highestScore = score;
+        highestPriority = source;
+      }
+    }
+
+    const previousPriority = this.currentPriority?.tabId;
+    this.currentPriority = highestPriority;
+
+    if (previousPriority !== highestPriority?.tabId) {
+      backgroundLogger.info('Priority changed', {
+        previousTab: previousPriority,
+        newTab: highestPriority?.tabId,
+        newSite: highestPriority?.site,
+        score: highestScore
+      });
+
+      this.notifyPopup('priority-changed', {
+        currentPriority: highestPriority,
+        allSources: this.getSourcesList()
+      });
+    }
+  }
+
+  /**
+   * Get formatted list of all sources for popup display
+   */
+  getSourcesList() {
+    return Array.from(this.activeSources.values()).map(source => ({
+      tabId: source.tabId,
+      site: source.site,
+      trackInfo: source.trackInfo,
+      isPlaying: source.isPlaying,
+      canControl: source.canControl,
+      isActive: source.isActive,
+      isPriority: source.tabId === this.currentPriority?.tabId,
+      priority: source.priority,
+      lastUpdate: source.lastUpdate
+    }));
+  }
+
+  /**
+   * Send control command to specific source or current priority
+   */
+  async sendControlCommand(command, tabId = null) {
+    const targetTabId = tabId || this.currentPriority?.tabId;
+    
+    if (!targetTabId) {
+      backgroundLogger.warn('No target tab for control command', { command });
+      return { success: false, error: 'No active media source' };
+    }
+
+    try {
+      const response = await chrome.tabs.sendMessage(targetTabId, {
+        type: 'media-control',
+        command: command
+      });
+
+      backgroundLogger.debug('Control command sent', {
+        command,
+        targetTabId,
+        success: response?.success
+      });
+
+      return response;
+    } catch (error) {
+      backgroundLogger.error('Failed to send control command', {
+        command,
+        targetTabId,
+        error: error.message
+      });
+      
+      // Remove source if tab is unreachable
+      this.removeSource(targetTabId);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Notify popup of changes
+   */
+  notifyPopup(type, data) {
+    chrome.runtime.sendMessage({
+      type: `popup-${type}`,
+      data: data
+    }).catch(() => {
+      // Popup might not be open, which is fine
+    });
+  }
+
+  /**
+   * Clean up stale sources periodically
+   */
+  startPeriodicUpdates() {
+    this.updateInterval = setInterval(() => {
+      const now = Date.now();
+      const staleThreshold = 30000; // 30 seconds
+
+      for (const [tabId, source] of this.activeSources.entries()) {
+        if (now - source.lastUpdate > staleThreshold) {
+          backgroundLogger.debug('Removing stale source', { tabId, site: source.site });
+          this.removeSource(tabId);
+        }
+      }
+    }, 10000); // Check every 10 seconds
+  }
+
+  /**
+   * Get current state for popup
+   */
+  getCurrentState() {
+    return {
+      sources: this.getSourcesList(),
+      currentPriority: this.currentPriority,
+      totalSources: this.activeSources.size
+    };
+  }
+}
+
+// Initialize global media manager
+const mediaManager = new GlobalMediaManager();
+
+// Extension lifecycle handlers
 backgroundLogger.info('CACP Background service worker started', {
   version: chrome.runtime.getManifest().version,
   timestamp: Date.now()
 });
 
-// Handle extension installation and updates
 chrome.runtime.onInstalled.addListener((details) => {
   backgroundLogger.info('Extension lifecycle event', {
     reason: details.reason,
-    previousVersion: details.previousVersion,
-    id: details.id
+    previousVersion: details.previousVersion
   });
-  
-  if (details.reason === 'install') {
-    backgroundLogger.info('First-time CACP installation detected');
-    // Set default settings if needed
-  } else if (details.reason === 'update') {
-    backgroundLogger.info('CACP extension updated', {
-      fromVersion: details.previousVersion,
-      toVersion: chrome.runtime.getManifest().version
-    });
-    // Handle updates if needed
-  }
 });
 
-// Handle tab updates to inject content scripts if needed
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url) {
-    // Check if this is a supported streaming site
-    const supportedDomains = [
-      'soundcloud.com',
-      'youtube.com',
-      'music.youtube.com',
-      'open.spotify.com',
-      'music.apple.com'
-    ];
-    
-    const isSupported = supportedDomains.some(domain => tab.url.includes(domain));
-    
-    if (isSupported) {
-      const matchedDomain = supportedDomains.find(domain => tab.url.includes(domain));
-      backgroundLogger.debug('Supported streaming site detected', {
-        tabId,
-        url: tab.url,
-        domain: matchedDomain,
-        title: tab.title
-      });
-      // Content scripts are automatically injected via manifest
-    }
-  }
+// Handle tab removal
+chrome.tabs.onRemoved.addListener((tabId) => {
+  mediaManager.removeSource(tabId);
+  backgroundLogger.debug('Tab removed, cleaning up media source', { tabId });
 });
 
-// Handle messages from content scripts
+// Enhanced message handling for global media control
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  backgroundLogger.debug('Message received from content script', {
-    messageType: message.type,
-    tabUrl: sender.tab?.url,
-    tabId: sender.tab?.id,
+  const tabId = sender.tab?.id;
+  
+  backgroundLogger.debug('Message received', {
+    type: message.type,
+    tabId,
     hasData: !!message.data
   });
-  
+
   switch (message.type) {
+    case 'register-media-source':
+      mediaManager.registerSource(tabId, message.data);
+      sendResponse({ success: true });
+      break;
+
+    case 'update-media-source':
+      mediaManager.updateSource(tabId, message.data);
+      sendResponse({ success: true });
+      break;
+
+    case 'remove-media-source':
+      mediaManager.removeSource(tabId);
+      sendResponse({ success: true });
+      break;
+
+    case 'get-global-state':
+      // Popup requesting current state
+      sendResponse(mediaManager.getCurrentState());
+      break;
+
+    case 'control-media':
+      // Popup sending control command
+      mediaManager.sendControlCommand(message.command, message.tabId)
+        .then(result => sendResponse(result));
+      return true; // Async response
+
+    case 'set-priority-source':
+      // Popup manually setting priority
+      const source = mediaManager.activeSources.get(message.tabId);
+      if (source) {
+        source.priority = 100; // Boost priority
+        mediaManager.updatePriority();
+        sendResponse({ success: true });
+      } else {
+        sendResponse({ success: false, error: 'Source not found' });
+      }
+      break;
+
     case 'get-status':
-      // Return extension status
-      backgroundLogger.trace('Status request handled');
       sendResponse({
         status: 'active',
-        version: chrome.runtime.getManifest().version
+        version: chrome.runtime.getManifest().version,
+        activeSources: mediaManager.activeSources.size
       });
       break;
-      
-    case 'site-detected':
-      backgroundLogger.info('Site detection notification', {
-        siteName: message.siteName,
-        tabUrl: sender.tab?.url,
-        tabId: sender.tab?.id
-      });
-      break;
-      
-    case 'error':
-      backgroundLogger.error('Content script error reported', {
-        error: message.error,
-        tabUrl: sender.tab?.url,
-        tabId: sender.tab?.id,
-        context: message.context
-      });
-      break;
-      
+
     default:
-      backgroundLogger.warn('Unknown message type received', {
-        messageType: message.type,
-        tabUrl: sender.tab?.url,
-        fullMessage: message
-      });
+      backgroundLogger.warn('Unknown message type', { type: message.type });
+      sendResponse({ success: false, error: 'Unknown message type' });
   }
-  
-  return true; // Keep message channel open for async responses
+
+  return true; // Keep message channel open
 });
 
-// Handle extension startup
-chrome.runtime.onStartup.addListener(() => {
-  backgroundLogger.info('CACP extension startup event', {
-    version: chrome.runtime.getManifest().version
-  });
-});
+// Keep service worker alive
+let keepAliveInterval = setInterval(() => {
+  chrome.runtime.getPlatformInfo(() => {});
+}, 25000);
 
-// Monitor storage changes (for settings sync)
-chrome.storage.onChanged.addListener((changes, namespace) => {
-  backgroundLogger.debug('Chrome storage changed', {
-    namespace,
-    changedKeys: Object.keys(changes),
-    changes: Object.fromEntries(
-      Object.entries(changes).map(([key, change]) => [
-        key,
-        { hasOldValue: 'oldValue' in change, hasNewValue: 'newValue' in change }
-      ])
-    )
-  });
-  
-  if (changes['cacp-site-priorities']) {
-    backgroundLogger.info('Site priorities configuration updated', {
-      oldValue: changes['cacp-site-priorities'].oldValue,
-      newValue: changes['cacp-site-priorities'].newValue
-    });
-    // Notify content scripts of priority changes if needed
-  }
-});
-
-// Keep service worker alive (if needed)
-let keepAliveInterval = null;
-
-function keepServiceWorkerAlive() {
-  keepAliveInterval = setInterval(() => {
-    chrome.runtime.getPlatformInfo(() => {
-      // Simple operation to keep service worker active
-    });
-  }, 25000); // Every 25 seconds
-}
-
-function stopKeepAlive() {
-  if (keepAliveInterval) {
-    clearInterval(keepAliveInterval);
-    keepAliveInterval = null;
-  }
-}
-
-// Start keep-alive mechanism
-keepServiceWorkerAlive();
-
-console.log('[CACP Background] Background script initialized'); 
+backgroundLogger.info('Global Media Controller ready');
+console.log('[CACP Background] Global Media Controller initialized'); 

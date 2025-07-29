@@ -56,6 +56,11 @@ export class SoundCloudHandler extends SiteHandler {
     try {
       this.log.debug('Setting up monitoring systems');
       
+      // Debug page elements immediately after initialization
+      setTimeout(() => {
+        this.debugPageElements();
+      }, 1000);
+      
       // Set up MediaSession monitoring
       this.setupMediaSessionMonitoring();
       this.log.trace('MediaSession monitoring setup complete');
@@ -72,6 +77,20 @@ export class SoundCloudHandler extends SiteHandler {
       this.setupTimelineScrubDetection();
       this.log.trace('Timeline scrub detection setup complete');
       
+      // Debug again after all monitoring is set up
+      setTimeout(() => {
+        this.log.debug('Post-initialization debug check');
+        this.debugPageElements();
+        
+        // Test basic functionality
+        this.log.debug('Testing basic handler methods...');
+        this.log.debug('isReady():', this.isReady());
+        this.log.debug('isLoggedIn():', this.isLoggedIn());
+        
+        const trackInfo = this.getTrackInfo();
+        this.log.debugObject('getTrackInfo() result', trackInfo);
+      }, 3000);
+      
       this.log.info('SoundCloud handler initialized successfully');
       return true;
     } catch (error) {
@@ -84,11 +103,27 @@ export class SoundCloudHandler extends SiteHandler {
    * Check if SoundCloud player is ready
    */
   isReady() {
+    this.log.debug('Checking if SoundCloud handler is ready...');
+    
     // Check if we have player controls or MediaSession
     const hasControls = !!this.getElement(this.constructor.config.selectors.playerContainer);
     const hasMediaSession = navigator.mediaSession && navigator.mediaSession.metadata;
+    const isReady = hasControls || hasMediaSession || this.isStreamingActive;
     
-    return hasControls || hasMediaSession || this.isStreamingActive;
+    this.log.debug('Ready check results', {
+      hasControls,
+      hasMediaSession: !!hasMediaSession,
+      mediaSessionMetadata: hasMediaSession ? {
+        title: navigator.mediaSession.metadata?.title,
+        artist: navigator.mediaSession.metadata?.artist
+      } : null,
+      isStreamingActive: this.isStreamingActive,
+      finalResult: isReady,
+      playerContainerSelector: this.constructor.config.selectors.playerContainer,
+      playerContainerFound: !!document.querySelector(this.constructor.config.selectors.playerContainer)
+    });
+    
+    return isReady;
   }
 
   /**
@@ -100,6 +135,87 @@ export class SoundCloudHandler extends SiteHandler {
     const uploadButton = document.querySelector('.header__upload, [href="/upload"]');
     
     return !!(userMenu || uploadButton);
+  }
+
+  /**
+   * Debug method to check what elements are available on the page
+   */
+  debugPageElements() {
+    this.log.debug('=== SoundCloud Page Debug ===');
+    
+    // Check all configured selectors
+    const config = this.constructor.config.selectors;
+    const elementCheck = {};
+    
+    for (const [key, selector] of Object.entries(config)) {
+      const element = document.querySelector(selector);
+      elementCheck[key] = {
+        selector,
+        found: !!element,
+        element: element ? {
+          tagName: element.tagName,
+          className: element.className,
+          id: element.id,
+          textContent: element.textContent?.slice(0, 50)
+        } : null
+      };
+    }
+    
+    this.log.debugObject('Selector availability', elementCheck);
+    
+    // Check MediaSession
+    const mediaSessionInfo = {
+      available: !!navigator.mediaSession,
+      metadata: navigator.mediaSession?.metadata ? {
+        title: navigator.mediaSession.metadata.title,
+        artist: navigator.mediaSession.metadata.artist,
+        album: navigator.mediaSession.metadata.album,
+        artworkCount: navigator.mediaSession.metadata.artwork?.length || 0
+      } : null,
+      playbackState: navigator.mediaSession?.playbackState
+    };
+    
+    this.log.debugObject('MediaSession status', mediaSessionInfo);
+    
+    // Check for common SoundCloud elements
+    const commonElements = [
+      '.playControls',
+      '.playbackSoundBadge',
+      '.soundTitle',
+      '.playButton',
+      '.pauseButton',
+      '.playbackTimeline',
+      '.header__userNav'
+    ];
+    
+    const foundElements = {};
+    commonElements.forEach(selector => {
+      const elements = document.querySelectorAll(selector);
+      foundElements[selector] = {
+        count: elements.length,
+        firstElement: elements[0] ? {
+          className: elements[0].className,
+          textContent: elements[0].textContent?.slice(0, 30)
+        } : null
+      };
+    });
+    
+    this.log.debugObject('Common SoundCloud elements', foundElements);
+    
+    // Check page URL and title
+    this.log.debug('Page info', {
+      url: window.location.href,
+      title: document.title,
+      readyState: document.readyState
+    });
+    
+    this.log.debug('=== End Page Debug ===');
+    
+    return {
+      elementCheck,
+      mediaSessionInfo,
+      foundElements
+    };
   }
 
   /**

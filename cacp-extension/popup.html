@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <style>
     body {
-      width: 380px;
+      width: 420px;
       padding: 16px;
       font-family: system-ui, -apple-system, sans-serif;
       background: #1a1a1a;
@@ -37,318 +37,300 @@
       color: #888;
       margin-top: 4px;
     }
-    
-    /* System Status Grid */
-    .system-status {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-    
-    .status {
-      padding: 10px;
+
+    /* Global Status */
+    .global-status {
       background: #2a2a2a;
-      border-radius: 6px;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
       border: 1px solid #333;
-      text-align: center;
     }
-    
-    .status.connected {
-      background: #2d5a3d;
-      border: 1px solid #4caf50;
+
+    .status-header {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    
-    .status.disconnected {
-      background: #5a2d2d;
-      border: 1px solid #f44336;
+
+    #status {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
-    
-    .status.partial {
-      background: #5a4d2d;
-      border: 1px solid #ff9800;
+
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #333;
     }
-    
+
+    .status-item:last-child {
+      border-bottom: none;
+    }
+
     .status-label {
       font-size: 11px;
       color: #aaa;
-      margin-bottom: 4px;
     }
-    
+
     .status-value {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: bold;
-    }
-    
-    /* Site Detection Panel */
-    .site-detection {
-      background: #2a2a2a;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 12px;
-      border: 1px solid #333;
-    }
-    
-    .detection-header {
-      font-size: 12px;
-      font-weight: bold;
-      margin-bottom: 8px;
       color: #fff;
     }
-    
-    .detected-sites {
-      margin-bottom: 8px;
-    }
-    
-    .site {
+
+    /* Global Controls */
+    .global-controls {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 8px;
-      margin-bottom: 4px;
-      border-radius: 4px;
-      font-size: 11px;
-    }
-    
-    .site.active {
-      background: #2d5a3d;
-      border: 1px solid #4caf50;
-      color: #4caf50;
-    }
-    
-    .site.detected {
-      background: #404040;
-      border: 1px solid #666;
-      color: #ccc;
-    }
-    
-    .site.inactive {
-      background: #333;
-      border: 1px solid #555;
-      color: #888;
-    }
-    
-    .site-priority {
-      font-size: 10px;
-      color: #aaa;
-    }
-    
-    .site-controls {
-      display: flex;
-      gap: 4px;
-      font-size: 10px;
-    }
-    
-    .site-controls span {
-      padding: 2px 6px;
-      border-radius: 3px;
-      background: #444;
-      color: #ccc;
-    }
-    
-    /* Media Info (preserved from SoundCloud) */
-    .media-info {
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 16px;
       padding: 12px;
       background: #2a2a2a;
       border-radius: 8px;
-      margin-bottom: 12px;
       border: 1px solid #333;
     }
-    
-    .media-controls {
-      display: flex;
-      gap: 6px;
-      justify-content: center;
-      margin: 12px 0;
-    }
-    
-    .media-controls button {
-      padding: 8px 12px;
-      background: #333;
-      color: white;
-      border: 1px solid #555;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 11px;
-      min-width: 40px;
-    }
-    
-    .media-controls button:hover {
-      background: #444;
-    }
-    
-    .media-controls button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    
-    .progress-bar {
-      width: 100%;
-      height: 4px;
-      background: #333;
-      border-radius: 2px;
-      margin: 8px 0;
-      overflow: hidden;
-    }
-    
-    .progress-fill {
-      height: 100%;
-      background: #007aff;
-      width: 0%;
-      transition: width 0.3s ease;
-    }
-    
-    .time-info {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: #aaa;
-      margin-bottom: 8px;
-    }
-    
-    .artwork {
-      width: 60px;
-      height: 60px;
-      border-radius: 4px;
-      object-fit: cover;
-      float: right;
-      margin-left: 12px;
-    }
-    
-    .track-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    
-    .site-badge {
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-size: 10px;
-      font-weight: bold;
-      margin-right: 8px;
-    }
-    
-    .site-badge.soundcloud {
-      background: #ff5500;
-      color: white;
-    }
-    
-    .site-badge.youtube {
-      background: #ff0000;
-      color: white;
-    }
-    
-    .site-badge.spotify {
-      background: #1db954;
-      color: white;
-    }
-    
-    .site-badge.generic {
-      background: #666;
-      color: white;
-    }
-    
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin: 8px 0;
-    }
-    
-    .info-item {
-      background: #2a2a2a;
-      padding: 8px;
-      border-radius: 4px;
-      text-align: center;
-    }
-    
-    .info-value {
-      font-weight: bold;
-      color: #4caf50;
-    }
-    
-    /* Controls */
-    .controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-    
-    button {
+
+    .global-controls button {
       padding: 8px 12px;
       background: #007aff;
       color: white;
       border: none;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 14px;
+      min-width: 40px;
     }
-    
-    button:hover {
+
+    .global-controls button:hover:not(:disabled) {
       background: #0056b3;
     }
-    
-    button:disabled {
+
+    .global-controls button:disabled {
       background: #333;
+      color: #666;
       cursor: not-allowed;
     }
-    
-    .cacp-controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 6px;
+
+    /* Sources List */
+    .sources-section {
+      margin-bottom: 16px;
+    }
+
+    .sources-header {
+      font-size: 12px;
+      font-weight: bold;
       margin-bottom: 12px;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    
-    .cacp-controls button {
-      font-size: 11px;
-      padding: 6px 8px;
+
+    #sourcesList {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
-    
-    .test-controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-    
-    .test-controls button {
-      background: #28a745;
-      font-size: 11px;
-      padding: 6px 8px;
-    }
-    
-    .test-controls button:hover {
-      background: #218838;
-    }
-    
-    /* Debug Section (preserved from SoundCloud) */
-    .debug-section {
-      margin-top: 12px;
-      padding: 8px;
-      background: #222;
-      border-radius: 4px;
+
+    .source-item {
+      background: #2a2a2a;
+      border-radius: 8px;
+      padding: 12px;
       border: 1px solid #333;
+      transition: all 0.2s ease;
     }
-    
-    .debug-toggle {
-      background: #333;
-      padding: 4px 8px;
-      font-size: 10px;
+
+    .source-item.priority {
+      border-color: #007aff;
+      background: #1a2332;
+    }
+
+    .source-item.active {
+      opacity: 1;
+    }
+
+    .source-item.inactive {
+      opacity: 0.6;
+    }
+
+    .source-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 8px;
+    }
+
+    .source-info {
+      flex: 1;
+    }
+
+    .source-site {
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .priority-badge {
+      background: #007aff;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      margin-left: 8px;
+    }
+
+    .source-status {
+      font-size: 11px;
+      color: #aaa;
+    }
+
+    .source-controls {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .control-btn {
+      padding: 6px 8px;
+      background: #333;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      min-width: 32px;
+    }
+
+    .control-btn:hover {
+      background: #444;
+    }
+
+    .control-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .no-controls {
+      font-size: 10px;
+      color: #666;
+    }
+
+    .source-track {
+      margin-top: 8px;
+    }
+
+    .track-title {
+      font-size: 11px;
+      font-weight: bold;
+      color: #fff;
+      margin-bottom: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .track-artist {
+      font-size: 10px;
+      color: #aaa;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .set-priority-btn {
+      margin-top: 8px;
+      padding: 4px 8px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 10px;
       width: 100%;
     }
-    
-    .debug-info {
-      display: block;
-      font-size: 10px;
-      color: #ccc;
-      font-family: monospace;
+
+    .set-priority-btn:hover {
+      background: #218838;
     }
-    
-    .logs {
+
+    /* No Sources State */
+    .no-sources {
+      text-align: center;
+      padding: 24px;
+      color: #666;
+    }
+
+    .no-sources p {
+      margin: 8px 0;
+    }
+
+    .supported-sites {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #333;
+    }
+
+    .supported-sites small {
+      color: #888;
+    }
+
+    /* Utility Controls */
+    .utility-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .utility-controls button {
+      flex: 1;
+      padding: 8px 12px;
+      background: #333;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    .utility-controls button:hover {
+      background: #444;
+    }
+
+    /* Debug Section */
+    .debug-section {
+      margin-top: 16px;
+      padding: 12px;
+      background: #222;
+      border-radius: 8px;
+      border: 1px solid #333;
+    }
+
+    .debug-toggle {
+      background: #333;
+      padding: 6px 12px;
+      font-size: 11px;
+      margin-bottom: 12px;
+      width: 100%;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .debug-toggle:hover {
+      background: #444;
+    }
+
+    #logs {
       background: #111;
       padding: 8px;
       border-radius: 4px;
@@ -357,11 +339,10 @@
       font-size: 10px;
       font-family: monospace;
       color: #ccc;
-      margin-top: 8px;
       border: 1px solid #333;
-      position: relative;
+      white-space: pre-wrap;
     }
-    
+
     .copy-button {
       position: absolute;
       top: 4px;
@@ -375,202 +356,93 @@
       cursor: pointer;
       z-index: 10;
     }
-    
+
     .copy-button:hover {
       background: #555;
     }
-    
-    .copy-button:active {
-      background: #333;
-    }
-    
-    .small {
+
+    /* Footer Info */
+    .footer-info {
       font-size: 11px;
-      color: #aaa;
-      margin-top: 12px;
+      color: #666;
+      margin-top: 16px;
+      padding-top: 12px;
       border-top: 1px solid #333;
-      padding-top: 8px;
+      text-align: center;
     }
-    
+
+    .footer-info strong {
+      color: #888;
+    }
+
     .hidden {
       display: none;
-    }
-    
-    .command-result {
-      margin-top: 8px;
-      padding: 6px;
-      border-radius: 4px;
-      font-size: 10px;
-      display: none;
-    }
-    
-    .command-result.success {
-      background: #2d5a3d;
-      color: #4caf50;
-      display: block;
-    }
-    
-    .command-result.error {
-      background: #5a2d2d;
-      color: #f44336;
-      display: block;
-    }
-    
-    .loading {
-      text-align: center;
-      color: #666;
-      font-size: 14px;
-      padding: 20px;
-    }
-    
-    .error {
-      background: #f8d7da;
-      color: #721c24;
-      padding: 8px 12px;
-      border-radius: 4px;
-      font-size: 12px;
-      margin-bottom: 16px;
     }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="logo">🎯 CACP</div>
-    <div class="subtitle">Chrome Audio Control Platform</div>
+    <div class="subtitle">Global Media Controller</div>
     <div id="version" class="version">Loading version...</div>
   </div>
 
-  <div id="loading" class="loading">Initializing CACP...</div>
-
-  <div id="content" style="display: none;">
-    <div id="error" class="error" style="display: none;"></div>
-    
-    <!-- System Status Grid -->
-    <div class="system-status">
-      <div id="websocket-status" class="status disconnected">
-        <div class="status-label">DeskThing</div>
-        <div id="websocket-value" class="status-value">Checking...</div>
-      </div>
-      <div id="orchestrator-status" class="status disconnected">
-        <div class="status-label">CACP System</div>
-        <div id="orchestrator-value" class="status-value">Starting...</div>
-      </div>
-      <div id="handler-status" class="status disconnected">
-        <div class="status-label">Site Handler</div>
-        <div id="handler-value" class="status-value">None</div>
-      </div>
-      <div id="detection-status" class="status disconnected">
-        <div class="status-label">Site Detection</div>
-        <div id="detection-value" class="status-value">Scanning...</div>
-      </div>
+  <!-- Global Status -->
+  <div class="global-status">
+    <div class="status-header">
+      📊 System Status
+      <button id="refreshBtn" style="padding: 4px 8px; font-size: 10px; background: #333; color: white; border: 1px solid #555; border-radius: 3px; cursor: pointer;">🔄 Refresh</button>
     </div>
-
-    <!-- Site Detection Panel -->
-    <div class="site-detection">
-      <div class="detection-header">🎵 Detected Sites</div>
-      <div id="detected-sites" class="detected-sites">
-        <div class="site inactive">
-          <span>No sites detected</span>
-          <span class="site-priority">Refresh page</span>
-        </div>
+    <div id="status">
+      <div class="status-item">
+        <span class="status-label">Status:</span>
+        <span class="status-value">Initializing...</span>
       </div>
-      <div class="site-controls">
-        <span id="auto-switch-status">Auto-Switch: Unknown</span>
-        <span id="conflict-status">Conflicts: None</span>
-      </div>
-    </div>
-
-    <!-- Media Info (Enhanced from SoundCloud) -->
-    <div id="mediaInfo" class="media-info hidden">
-      <div class="track-header">
-        <div id="site-badge" class="site-badge generic">Unknown</div>
-        <div style="flex: 1; overflow: hidden;">
-          <img id="artwork" class="artwork hidden" />
-          <strong id="trackTitle">No media detected</strong><br>
-          <small id="trackArtist" style="color: #aaa;"></small><br>
-          <small id="trackAlbum" style="color: #888;"></small>
-        </div>
-      </div>
-      
-      <div class="time-info">
-        <span id="currentTime">0:00</span>
-        <span id="totalTime">0:00</span>
-      </div>
-      
-      <div class="progress-bar">
-        <div id="progressFill" class="progress-fill"></div>
-      </div>
-      
-      <div class="info-grid">
-        <div class="info-item">
-          <div>Playing</div>
-          <div id="playState" class="info-value">❌</div>
-        </div>
-        <div class="info-item">
-          <div>Source</div>
-          <div id="source" class="info-value">N/A</div>
-        </div>
-      </div>
-      
-      <div class="media-controls">
-        <button id="prevBtn" title="Previous Track">⏮️</button>
-        <button id="playPauseBtn" title="Play/Pause">⏯️</button>
-        <button id="nextBtn" title="Next Track">⏭️</button>
-      </div>
-      
-      <div id="commandResult" class="command-result"></div>
-    </div>
-
-    <!-- CACP Controls -->
-    <div class="cacp-controls">
-      <button id="refreshBtn">🔄 Refresh</button>
-      <button id="connectBtn">🔌 Connect</button>
-      <button id="settingsBtn">⚙️ Settings</button>
-    </div>
-
-    <!-- Main Controls -->
-    <div class="controls">
-      <button id="extractBtn">🎵 Extract Now</button>
-      <button id="clearLogsBtn">🗑️ Clear Logs</button>
-    </div>
-    
-    <!-- Test Controls -->
-    <div class="test-controls">
-      <button id="testPlayBtn">▶️ Test Play</button>
-      <button id="testPauseBtn">⏸️ Test Pause</button>
-      <button id="testPrevBtn">⏮️ Test Prev</button>
-      <button id="testNextBtn">⏭️ Test Next</button>
-    </div>
-
-    <!-- Debug Section (Preserved from SoundCloud) -->
-    <div class="debug-section">
-      <button class="debug-toggle" id="debugToggle">🔧 Debug Info & Logs</button>
-      <div id="debugInfo" class="debug-info">
-        <div id="debugContent"></div>
-        <div id="logs" class="logs">
-          <button class="copy-button" id="copyLogsBtn" title="Copy all logs">📋</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Info Section -->
-    <div class="small">
-      <strong>CACP - Universal Audio Control:</strong><br>
-      • Multi-site detection and priority management<br>
-      • Smart conflict resolution and auto-switching<br>
-      • Direct WebSocket to DeskThing (localhost:8081)<br><br>
-      
-      <strong>Supported Sites:</strong><br>
-      • SoundCloud, YouTube, YouTube Music<br>
-      • Spotify Web, Apple Music (extensible architecture)<br><br>
-      
-      <strong>Priority Management:</strong><br>
-      • User-configurable site ranking<br>
-      • Automatic switching to higher priority sites<br>
-      • Manual override and conflict resolution
     </div>
   </div>
 
-  <script type="module" src="src/popup.js"></script>
+  <!-- Global Controls -->
+  <div class="global-controls">
+    <button id="globalPrev" title="Previous (Priority Source)">⏮️</button>
+    <button id="globalPlay" title="Play (Priority Source)">▶️</button>
+    <button id="globalPause" title="Pause (Priority Source)" style="display: none;">⏸️</button>
+    <button id="globalNext" title="Next (Priority Source)">⏭️</button>
+  </div>
+
+  <!-- Sources List -->
+  <div class="sources-section">
+    <div class="sources-header">
+      🎵 Active Media Sources
+    </div>
+    <div id="sourcesList">
+      <div class="no-sources">
+        <p>🎵 No media detected</p>
+        <p>Open a supported music site in any tab to get started!</p>
+        <div class="supported-sites">
+          <small>Supported: SoundCloud, YouTube, Spotify, Apple Music</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Debug Section -->
+  <div class="debug-section">
+    <button class="debug-toggle" id="debugToggle">🔧 Debug Logs</button>
+    <div id="debugInfo" class="hidden">
+      <div style="position: relative;">
+        <div id="logs">No logs yet...</div>
+        <button class="copy-button" id="copyLogsBtn" title="Copy all logs">📋</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Info -->
+  <div class="footer-info">
+    <strong>CACP - Universal Audio Control</strong><br>
+    Multi-tab media detection and priority management<br>
+    <small>Supports SoundCloud, YouTube, Spotify, Apple Music</small>
+  </div>
+
+  <script type="module" src="./src/popup.js"></script>
 </body>
 </html> 

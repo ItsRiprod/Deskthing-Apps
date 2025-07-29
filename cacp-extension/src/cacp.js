@@ -1,118 +1,100 @@
 /**
- * CACP (Chrome Audio Control Platform) - Main Orchestrator
+ * CACP (Chrome Audio Control Platform) - Content Script
  * 
- * Coordinates all CACP components:
- * - Site Detection & Handler Management  
- * - Priority Resolution & Site Selection
- * - WebSocket Communication with DeskThing
- * - Popup Communication & Status Updates
+ * Global Media Source Reporter - Each tab registers with background script
+ * and reports media status for centralized control
  */
 
 import logger from './logger.js';
 
 // Import site handlers
 import { SiteDetector } from './managers/site-detector.js';
-import { PriorityManager } from './managers/priority-manager.js';
-import { WebSocketManager } from './managers/websocket-manager.js';
-
 import { SoundCloudHandler } from './sites/soundcloud.js';
 import { YouTubeHandler } from './sites/youtube.js';
 
-class CACP {
+class CACPMediaSource {
   constructor() {
     // Initialize logger
     this.log = logger.cacp;
     
-    // Core managers
+    // Core components
     this.siteDetector = new SiteDetector();
-    this.priorityManager = new PriorityManager();
-    this.websocketManager = new WebSocketManager();
-    
-    // State
-    this.isInitialized = false;
     this.currentHandler = null;
     this.activeSiteName = null;
-    this.mediaUpdateInterval = null;
-    this.timeUpdateInterval = null;
-    this.lastMediaData = null;
-    this.lastTimeData = null;
+    
+    // State tracking
+    this.isRegistered = false;
+    this.lastReportedState = null;
+    this.reportingInterval = null;
+    this.tabId = null;
     
     // Configuration
-    this.mediaUpdateIntervalMs = 1000; // 1 second
-    this.timeUpdateIntervalMs = 1000; // 1 second
+    this.reportIntervalMs = 2000; // Report every 2 seconds
     this.maxRetries = 3;
-    this.retryDelay = 1000;
     
-    this.log.debug('CACP Orchestrator created', {
-      config: {
-        mediaUpdateInterval: this.mediaUpdateIntervalMs,
-        timeUpdateInterval: this.timeUpdateIntervalMs,
-        maxRetries: this.maxRetries,
-        retryDelay: this.retryDelay
-      }
+    this.log.debug('CACP Media Source created', {
+      url: window.location.href,
+      title: document.title
     });
   }
 
   /**
-   * Initialize CACP system
+   * Initialize this media source
    */
   async initialize() {
-    if (this.isInitialized) {
-      this.log.debug('CACP already initialized, skipping');
-      return;
-    }
-
-    this.log.info('Initializing CACP system...');
-    const startTime = performance.now();
+    this.log.info('Initializing CACP Media Source...', {
+      url: window.location.href
+    });
 
     try {
-      // Register site handlers
-      this.log.debug('Registering site handlers');
-      await this.registerSiteHandlers();
-
-      // Set up WebSocket event handlers
-      this.log.debug('Setting up WebSocket handlers');
-      this.setupWebSocketHandlers();
-
-      // Set up popup communication
-      this.log.debug('Setting up popup communication');
-      this.setupPopupCommunication();
-
-      // Detect current site
-      this.log.debug('Detecting current site');
-      await this.detectCurrentSite();
-
-      // Connect to DeskThing
-      this.log.debug('Connecting to DeskThing');
-      await this.connectToDeskThing();
-
-      // Start monitoring intervals
-      this.log.debug('Starting monitoring intervals');
-      this.startMonitoring();
-
-      // Listen for URL changes
-      this.log.debug('Setting up URL change listener');
-      this.setupURLChangeListener();
-
-      this.isInitialized = true;
-      const initTime = performance.now() - startTime;
+      // Get tab ID from background script
+      await this.getTabId();
       
-      this.log.info('CACP initialization complete', {
-        initializationTime: `${initTime.toFixed(2)}ms`,
-        activeSite: this.activeSiteName,
-        hasHandler: !!this.currentHandler
+      // Register site handlers
+      await this.registerSiteHandlers();
+      
+      // Detect if this site is supported
+      await this.detectSite();
+      
+      // Set up message listener for control commands
+      this.setupMessageListener();
+      
+      // Register with background script if we have a handler
+      if (this.currentHandler) {
+        await this.registerWithBackground();
+        this.startReporting();
+      }
+      
+      // Listen for URL changes (SPA navigation)
+      this.setupURLChangeListener();
+      
+      // Clean up on page unload
+      this.setupUnloadHandler();
+      
+      this.log.info('CACP Media Source initialized', {
+        siteName: this.activeSiteName,
+        hasHandler: !!this.currentHandler,
+        tabId: this.tabId
       });
-
-      // Notify popup of status change
-      this.notifyPopupStatusUpdate();
 
     } catch (error) {
-      this.log.error('CACP initialization failed', {
+      this.log.error('CACP Media Source initialization failed', {
         error: error.message,
-        stack: error.stack,
-        initializationStep: 'unknown'
+        stack: error.stack
       });
-      throw error;
+    }
+  }
+
+  /**
+   * Get tab ID from background script
+   */
+  async getTabId() {
+    try {
+      const response = await chrome.runtime.sendMessage({ type: 'get-status' });
+      // Tab ID will be set by background script context
+      this.tabId = 'current'; // Placeholder - background script knows which tab sent the message
+    } catch (error) {
+      this.log.warn('Could not get tab ID', { error: error.message });
     }
   }
 
@@ -120,7 +102,7 @@ class CACP {
    * Register all available site handlers
    */
   async registerSiteHandlers() {
-    console.log('[CACP] Registering site handlers...');
+    this.log.debug('Registering site handlers...');
 
     // Register SoundCloud handler with high priority (10 = highest)
     this.siteDetector.registerHandler(SoundCloudHandler, 10);
@@ -129,528 +111,344 @@ class CACP {
     this.siteDetector.registerHandler(YouTubeHandler, 20);
 
     const registeredCount = this.siteDetector.getRegisteredSites().length;
-    console.log(`[CACP] Registered ${registeredCount} site handlers`);
+    this.log.info(`Registered ${registeredCount} site handlers`);
   }
 
   /**
-   * Set up WebSocket event handlers
+   * Detect current site and activate appropriate handler
    */
-  setupWebSocketHandlers() {
-    // Handle incoming messages from DeskThing
-    this.websocketManager.setMessageHandler((message) => {
-      this.handleDeskThingMessage(message);
-    });
+  async detectSite() {
+    this.log.debug('Detecting site for URL:', window.location.href);
+    
+    const detectedSite = this.siteDetector.detectSite(window.location.href);
+    
+    if (detectedSite) {
+      this.activeSiteName = detectedSite.name;
+      this.log.info('Site detection complete', {
+        siteName: this.activeSiteName,
+        priority: detectedSite.priority
+      });
+      
+      // Activate the handler
+      await this.activateHandler(detectedSite.name);
+    } else {
+      this.log.debug('No supported site detected', {
+        url: window.location.href,
+        hostname: window.location.hostname
+      });
+    }
+  }
 
-    // Handle connection state changes
-    this.websocketManager.setConnectionHandlers(
-      () => this.onWebSocketConnected(),
-      () => this.onWebSocketDisconnected(),
-      (error) => this.onWebSocketError(error)
+  /**
+   * Activate site handler
+   */
+  async activateHandler(siteName) {
+    try {
+      this.log.debug(`Activating handler: ${siteName}`);
+      
+      const HandlerClass = this.siteDetector.getHandler(siteName);
+      if (HandlerClass) {
+        this.currentHandler = new HandlerClass();
+        
+        // Initialize the handler
+        if (this.currentHandler.initialize) {
+          await this.currentHandler.initialize();
+        }
+        
+        this.log.info(`Handler activated: ${siteName}`);
+        
+        return true;
+      } else {
+        this.log.error(`No handler found for site: ${siteName}`);
+        return false;
+      }
+    } catch (error) {
+      this.log.error(`Failed to activate handler for ${siteName}`, {
+        error: error.message,
+        stack: error.stack
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Register this media source with background script
+   */
+  async registerWithBackground() {
+    try {
+      const mediaState = this.getCurrentMediaState();
+      
+      await chrome.runtime.sendMessage({
+        type: 'register-media-source',
+        data: {
+          site: this.activeSiteName,
+          isActive: this.currentHandler?.isReady ? this.currentHandler.isReady() : false,
+          trackInfo: mediaState.trackInfo,
+          isPlaying: mediaState.isPlaying,
+          canControl: this.currentHandler?.canControl || true,
+          priority: this.siteDetector.getSitePriority(this.activeSiteName) || 1
+        }
+      });
+      
+      this.isRegistered = true;
+      this.log.debug('Registered with background script', {
+        site: this.activeSiteName,
+        isActive: mediaState.isActive
+      });
+      
+    } catch (error) {
+      this.log.error('Failed to register with background script', {
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Get current media state from handler
+   */
+  getCurrentMediaState() {
+    if (!this.currentHandler) {
+      return {
+        isActive: false,
+        trackInfo: null,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 0
+      };
+    }
+
+    try {
+      const trackInfo = this.currentHandler.getTrackInfo ? this.currentHandler.getTrackInfo() : null;
+      const isPlaying = this.currentHandler.isPlaying ? this.currentHandler.isPlaying() : false;
+      const currentTime = this.currentHandler.getCurrentTime ? this.currentHandler.getCurrentTime() : 0;
+      const duration = this.currentHandler.getDuration ? this.currentHandler.getDuration() : 0;
+      const isActive = this.currentHandler.isReady ? this.currentHandler.isReady() : false;
+
+      return {
+        isActive,
+        trackInfo,
+        isPlaying,
+        currentTime,
+        duration,
+        site: this.activeSiteName
+      };
+    } catch (error) {
+      this.log.warn('Error getting media state', { error: error.message });
+      return {
+        isActive: false,
+        trackInfo: null,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 0
+      };
+    }
+  }
+
+  /**
+   * Start periodic reporting to background script
+   */
+  startReporting() {
+    if (this.reportingInterval) {
+      clearInterval(this.reportingInterval);
+    }
+
+    this.reportingInterval = setInterval(() => {
+      this.reportMediaState();
+    }, this.reportIntervalMs);
+
+    this.log.debug('Started media state reporting', {
+      intervalMs: this.reportIntervalMs
+    });
+  }
+
+  /**
+   * Report current media state to background script
+   */
+  async reportMediaState() {
+    if (!this.isRegistered || !this.currentHandler) {
+      return;
+    }
+
+    try {
+      const currentState = this.getCurrentMediaState();
+      
+      // Only send update if state has changed significantly
+      if (this.hasStateChanged(currentState)) {
+        await chrome.runtime.sendMessage({
+          type: 'update-media-source',
+          data: currentState
+        });
+        
+        this.lastReportedState = { ...currentState };
+        
+        this.log.trace('Media state reported', {
+          site: this.activeSiteName,
+          isPlaying: currentState.isPlaying,
+          trackTitle: currentState.trackInfo?.title
+        });
+      }
+    } catch (error) {
+      this.log.warn('Failed to report media state', {
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Check if media state has changed significantly
+   */
+  hasStateChanged(newState) {
+    if (!this.lastReportedState) return true;
+    
+    const prev = this.lastReportedState;
+    
+    // Check significant changes
+    return (
+      prev.isActive !== newState.isActive ||
+      prev.isPlaying !== newState.isPlaying ||
+      prev.trackInfo?.title !== newState.trackInfo?.title ||
+      prev.trackInfo?.artist !== newState.trackInfo?.artist ||
+      Math.abs(prev.currentTime - newState.currentTime) > 5 // 5 second threshold
     );
   }
 
   /**
-   * Set up communication with popup
+   * Handle control commands from background script
    */
-  setupPopupCommunication() {
-    // Listen for messages from popup and other extension components
+  setupMessageListener() {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      console.log('[CACP] Received message:', message.type, 'from:', sender);
-      
-      switch (message.type) {
-        case 'get-cacp-status':
-        case 'get-status':
-          // Send current CACP status to popup
-          sendResponse(this.getStatus());
-          break;
-          
-        case 'extract-media':
-          // Force media extraction
-          this.updateMediaData();
-          sendResponse({ success: true, message: 'Media extraction triggered' });
-          break;
-          
-        case 'media-control':
-          // Handle media control commands
-          this.handleMediaCommand(message).then(result => {
-            sendResponse({ success: true, result });
-          }).catch(error => {
-            sendResponse({ success: false, error: error.message });
-          });
-          return true; // Keep message channel open for async response
-          
-        default:
-          console.log(`[CACP] Unknown message type: ${message.type}`);
-          sendResponse({ success: false, error: 'Unknown message type' });
+      if (message.type === 'media-control') {
+        this.handleControlCommand(message.command)
+          .then(result => sendResponse(result))
+          .catch(error => sendResponse({ 
+            success: false, 
+            error: error.message 
+          }));
+        return true; // Async response
       }
-      
-      return true; // Keep message channel open
     });
   }
 
   /**
-   * Detect current site and initialize appropriate handler
-   */
-  async detectCurrentSite() {
-    const currentUrl = window.location.href;
-    console.log(`[CACP] Detecting site for URL: ${currentUrl}`);
-
-    // Detect matching handlers
-    const matchedHandlers = this.siteDetector.detectSites(currentUrl);
-    
-    if (matchedHandlers.length === 0) {
-      console.log('[CACP] No matching site handlers for current URL');
-      this.notifyPopupStatusUpdate();
-      return;
-    }
-
-    // Get primary handler (highest priority)
-    const primaryHandler = this.siteDetector.getPrimaryHandler();
-    if (primaryHandler) {
-      await this.activateHandler(primaryHandler);
-    }
-  }
-
-  /**
-   * Activate a site handler
-   * @param {Object} handlerInfo Handler information from site detector
-   */
-  async activateHandler(handlerInfo) {
-    try {
-      console.log(`[CACP] Activating handler: ${handlerInfo.name}`);
-
-      // Create handler instance
-      this.currentHandler = this.siteDetector.createHandlerInstance(handlerInfo.name);
-      if (!this.currentHandler) {
-        throw new Error(`Failed to create handler instance for ${handlerInfo.name}`);
-      }
-
-      // Initialize handler
-      const initialized = await this.currentHandler.initialize();
-      if (!initialized) {
-        throw new Error(`Handler initialization failed for ${handlerInfo.name}`);
-      }
-
-      this.activeSiteName = handlerInfo.name;
-      console.log(`[CACP] Handler activated: ${handlerInfo.name}`);
-
-      // Send connection handshake
-      this.sendConnectionHandshake();
-
-      // Notify popup of status change
-      this.notifyPopupStatusUpdate();
-
-    } catch (error) {
-      console.error(`[CACP] Failed to activate handler ${handlerInfo.name}:`, error);
-      this.currentHandler = null;
-      this.activeSiteName = null;
-      this.notifyPopupStatusUpdate();
-    }
-  }
-
-  /**
-   * Connect to DeskThing WebSocket server
-   */
-  async connectToDeskThing() {
-    console.log('[CACP] Connecting to DeskThing...');
-    
-    const connected = await this.websocketManager.connect();
-    if (connected) {
-      console.log('[CACP] Connected to DeskThing');
-    } else {
-      console.warn('[CACP] Failed to connect to DeskThing');
-    }
-  }
-
-  /**
-   * Start monitoring intervals for media and time updates
-   */
-  startMonitoring() {
-    // Media data monitoring
-    this.mediaUpdateInterval = setInterval(() => {
-      this.updateMediaData();
-    }, this.mediaUpdateIntervalMs);
-
-    // Time progress monitoring
-    this.timeUpdateInterval = setInterval(() => {
-      this.updateTimeData();
-    }, this.timeUpdateIntervalMs);
-
-    console.log('[CACP] Started monitoring intervals');
-  }
-
-  /**
-   * Stop monitoring intervals
-   */
-  stopMonitoring() {
-    if (this.mediaUpdateInterval) {
-      clearInterval(this.mediaUpdateInterval);
-      this.mediaUpdateInterval = null;
-    }
-
-    if (this.timeUpdateInterval) {
-      clearInterval(this.timeUpdateInterval);
-      this.timeUpdateInterval = null;
-    }
-
-    console.log('[CACP] Stopped monitoring intervals');
-  }
-
-  /**
-   * Update media data and send to DeskThing if changed
-   */
-  updateMediaData() {
-    if (!this.currentHandler || !this.activeSiteName || !this.websocketManager.isConnected) {
-      return;
-    }
-
-    try {
-      const mediaData = this.currentHandler.getTrackInfo();
-      
-      // Check if data has changed
-      if (this.hasMediaDataChanged(mediaData)) {
-        this.lastMediaData = mediaData;
-        this.websocketManager.sendMediaData(mediaData, this.activeSiteName);
-        
-        // Update site active status based on playing state
-        if (mediaData.isPlaying) {
-          this.siteDetector.markSiteActive(this.activeSiteName);
-        } else {
-          this.siteDetector.markSiteInactive(this.activeSiteName);
-        }
-
-        // Notify popup of media update
-        this.notifyPopupMediaUpdate(mediaData);
-      }
-    } catch (error) {
-      console.warn('[CACP] Failed to update media data:', error);
-    }
-  }
-
-  /**
-   * Update time data and send to DeskThing if changed
-   */
-  updateTimeData() {
-    if (!this.currentHandler || !this.activeSiteName || !this.websocketManager.isConnected) {
-      return;
-    }
-
-    try {
-      const currentTime = this.currentHandler.getCurrentTime();
-      const duration = this.currentHandler.getDuration();
-      const isPlaying = this.currentHandler.getPlayingState();
-
-      const timeData = { currentTime, duration, isPlaying };
-
-      // Check if data has changed significantly
-      if (this.hasTimeDataChanged(timeData)) {
-        this.lastTimeData = timeData;
-        this.websocketManager.sendTimeUpdate(currentTime, duration, isPlaying, this.activeSiteName);
-      }
-    } catch (error) {
-      console.warn('[CACP] Failed to update time data:', error);
-    }
-  }
-
-  /**
-   * Check if media data has changed significantly
-   * @param {Object} newData New media data
-   * @returns {boolean} True if data has changed
-   */
-  hasMediaDataChanged(newData) {
-    if (!this.lastMediaData) return true;
-
-    const fields = ['title', 'artist', 'album', 'isPlaying'];
-    return fields.some(field => this.lastMediaData[field] !== newData[field]);
-  }
-
-  /**
-   * Check if time data has changed significantly
-   * @param {Object} newData New time data
-   * @returns {boolean} True if data has changed
-   */
-  hasTimeDataChanged(newData) {
-    if (!this.lastTimeData) return true;
-
-    // Only update if time changed by more than 0.5 seconds or playing state changed
-    const timeDiff = Math.abs(this.lastTimeData.currentTime - newData.currentTime);
-    const playingChanged = this.lastTimeData.isPlaying !== newData.isPlaying;
-
-    return timeDiff > 0.5 || playingChanged;
-  }
-
-  /**
-   * Handle messages from DeskThing
-   * @param {Object} message Incoming message
-   */
-  async handleDeskThingMessage(message) {
-    console.log('[CACP] Handling DeskThing message:', message);
-
-    try {
-      switch (message.type) {
-        case 'media-command':
-          await this.handleMediaCommand(message);
-          break;
-        case 'seek':
-          await this.handleSeekCommand(message);
-          break;
-        case 'ping':
-          // Respond to ping
-          this.websocketManager.sendMessage({ type: 'pong' }, this.activeSiteName || 'system');
-          break;
-        default:
-          console.log(`[CACP] Unknown message type: ${message.type}`);
-      }
-    } catch (error) {
-      console.error('[CACP] Error handling DeskThing message:', error);
-    }
-  }
-
-  /**
    * Handle media control commands
-   * @param {Object} command Media command
    */
-  async handleMediaCommand(command) {
-    if (!this.currentHandler || !this.activeSiteName) {
-      console.warn('[CACP] No active handler for media command');
+  async handleControlCommand(command) {
+    if (!this.currentHandler) {
       return { success: false, error: 'No active handler' };
     }
 
-    const { action, id } = command;
-    let result;
+    this.log.info('Handling control command', { command, site: this.activeSiteName });
 
     try {
-      switch (action) {
+      let result = false;
+      
+      switch (command) {
         case 'play':
           result = await this.currentHandler.play();
           break;
         case 'pause':
           result = await this.currentHandler.pause();
           break;
-        case 'nexttrack':
+        case 'next':
           result = await this.currentHandler.next();
           break;
-        case 'previoustrack':
+        case 'previous':
           result = await this.currentHandler.previous();
           break;
+        case 'toggle':
+          const isPlaying = this.currentHandler.isPlaying ? this.currentHandler.isPlaying() : false;
+          result = isPlaying ? await this.currentHandler.pause() : await this.currentHandler.play();
+          break;
         default:
-          throw new Error(`Unknown media action: ${action}`);
+          return { success: false, error: `Unknown command: ${command}` };
       }
 
-      // Send command result via WebSocket if ID provided
-      if (id && this.websocketManager.isConnected) {
-        this.websocketManager.sendCommandResult(id, result.success, result, this.activeSiteName);
-      }
+      // Force immediate state report after control
+      setTimeout(() => this.reportMediaState(), 100);
 
-      return result;
-
+      return { 
+        success: !!result, 
+        action: command,
+        site: this.activeSiteName 
+      };
+      
     } catch (error) {
-      console.error(`[CACP] Media command failed:`, error);
-      const errorResult = { success: false, error: error.message };
-      
-      if (id && this.websocketManager.isConnected) {
-        this.websocketManager.sendCommandResult(id, false, errorResult, this.activeSiteName);
-      }
-      
-      return errorResult;
+      this.log.error('Control command failed', {
+        command,
+        error: error.message
+      });
+      return { success: false, error: error.message };
     }
   }
 
   /**
-   * Handle seek commands
-   * @param {Object} command Seek command
-   */
-  async handleSeekCommand(command) {
-    if (!this.currentHandler || !this.activeSiteName) {
-      console.warn('[CACP] No active handler for seek command');
-      return;
-    }
-
-    const { time, id } = command;
-    
-    try {
-      const result = await this.currentHandler.seek(time);
-      
-      if (id) {
-        this.websocketManager.sendCommandResult(id, result.success, result, this.activeSiteName);
-      }
-    } catch (error) {
-      console.error('[CACP] Seek command failed:', error);
-      if (id) {
-        this.websocketManager.sendCommandResult(id, false, { error: error.message }, this.activeSiteName);
-      }
-    }
-  }
-
-  /**
-   * Send connection handshake to DeskThing
-   */
-  sendConnectionHandshake() {
-    if (this.activeSiteName && this.websocketManager.isConnected) {
-      this.websocketManager.sendConnectionHandshake(this.activeSiteName);
-    }
-  }
-
-  /**
-   * Set up URL change listener for single-page applications
+   * Handle URL changes for SPA navigation
    */
   setupURLChangeListener() {
-    // Listen for pushState/replaceState changes
-    const originalPushState = history.pushState;
-    const originalReplaceState = history.replaceState;
+    let lastUrl = window.location.href;
+    
+    // Monitor for URL changes
+    const urlCheckInterval = setInterval(() => {
+      if (window.location.href !== lastUrl) {
+        lastUrl = window.location.href;
+        this.log.debug('URL changed, re-detecting site', { newUrl: lastUrl });
+        
+        // Re-detect site after URL change
+        setTimeout(() => {
+          this.detectSite();
+        }, 1000);
+      }
+    }, 1000);
 
-    history.pushState = (...args) => {
-      originalPushState.apply(history, args);
-      this.handleURLChange();
-    };
-
-    history.replaceState = (...args) => {
-      originalReplaceState.apply(history, args);
-      this.handleURLChange();
-    };
-
-    // Listen for popstate events
-    window.addEventListener('popstate', () => {
-      this.handleURLChange();
+    // Clean up on unload
+    window.addEventListener('beforeunload', () => {
+      clearInterval(urlCheckInterval);
     });
   }
 
   /**
-   * Handle URL changes
+   * Clean up when page unloads
    */
-  async handleURLChange() {
-    console.log('[CACP] URL changed, re-detecting site');
-    await this.detectCurrentSite();
+  setupUnloadHandler() {
+    window.addEventListener('beforeunload', () => {
+      this.cleanup();
+    });
   }
 
   /**
-   * WebSocket connection established
+   * Clean up resources and unregister
    */
-  onWebSocketConnected() {
-    console.log('[CACP] WebSocket connected');
-    this.sendConnectionHandshake();
-    this.notifyPopupStatusUpdate();
-  }
-
-  /**
-   * WebSocket connection lost
-   */
-  onWebSocketDisconnected() {
-    console.log('[CACP] WebSocket disconnected');
-    this.notifyPopupStatusUpdate();
-    // Connection will auto-reconnect via WebSocketManager
-  }
-
-  /**
-   * WebSocket error occurred
-   */
-  onWebSocketError(error) {
-    console.error('[CACP] WebSocket error:', error);
-    this.notifyPopupStatusUpdate();
-  }
-
-  /**
-   * Notify popup of status update
-   */
-  notifyPopupStatusUpdate() {
-    try {
-      chrome.runtime.sendMessage({
-        type: 'cacp-status-update',
-        status: this.getStatus()
-      }).catch(() => {
-        // Popup may not be open, ignore error
-      });
-    } catch (error) {
-      // Popup communication not available, ignore
-    }
-  }
-
-  /**
-   * Notify popup of media update
-   */
-  notifyPopupMediaUpdate(mediaData) {
-    try {
-      chrome.runtime.sendMessage({
-        type: 'media-update',
-        data: mediaData
-      }).catch(() => {
-        // Popup may not be open, ignore error
-      });
-    } catch (error) {
-      // Popup communication not available, ignore
-    }
-  }
-
-  /**
-   * Get current system status
-   * @returns {Object} System status information
-   */
-  getStatus() {
-    return {
-      isInitialized: this.isInitialized,
-      activeSiteName: this.activeSiteName,
-      hasActiveHandler: !!this.currentHandler,
-      lastMediaData: this.lastMediaData,
-      lastTimeData: this.lastTimeData,
-      siteDetector: this.siteDetector.getStatus(),
-      priorityManager: this.priorityManager.getStatus(),
-      websocketManager: this.websocketManager.getStatus(),
-      monitoring: {
-        mediaInterval: !!this.mediaUpdateInterval,
-        timeInterval: !!this.timeUpdateInterval
-      }
-    };
-  }
-
-  /**
-   * Shutdown CACP system
-   */
-  shutdown() {
-    console.log('[CACP] Shutting down...');
+  cleanup() {
+    this.log.debug('Cleaning up media source');
     
-    this.stopMonitoring();
-    this.websocketManager.disconnect();
-    this.currentHandler = null;
-    this.activeSiteName = null;
-    this.isInitialized = false;
-    
-    console.log('[CACP] Shutdown complete');
+    if (this.reportingInterval) {
+      clearInterval(this.reportingInterval);
+    }
+
+    if (this.isRegistered) {
+      chrome.runtime.sendMessage({
+        type: 'remove-media-source'
+      }).catch(() => {
+        // Background script might be unavailable during cleanup
+      });
+    }
   }
 }
 
-// Initialize CACP when script loads
-let cacpInstance = null;
+// Initialize CACP Media Source when script loads
+const cacpMediaSource = new CACPMediaSource();
 
-async function initializeCACP() {
-  try {
-    if (cacpInstance) {
-      console.log('[CACP] Already initialized');
-      return;
-    }
-
-    cacpInstance = new CACP();
-    await cacpInstance.initialize();
-
-    // Make CACP available globally for debugging
-    window.CACP = cacpInstance;
-
-  } catch (error) {
-    console.error('[CACP] Failed to initialize:', error);
-  }
-}
-
-// Auto-initialize when DOM is ready
+// Wait for DOM to be ready, then initialize
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeCACP);
+  document.addEventListener('DOMContentLoaded', () => {
+    cacpMediaSource.initialize();
+  });
 } else {
-  initializeCACP();
+  // DOM already loaded
+  cacpMediaSource.initialize();
 }
 
-// Handle page unload
-window.addEventListener('beforeunload', () => {
-  if (cacpInstance) {
-    cacpInstance.shutdown();
-  }
-});
+// Export for potential external access
+window.cacpMediaSource = cacpMediaSource;
 
-export default CACP;
+console.log('[CACP] Media Source content script loaded');

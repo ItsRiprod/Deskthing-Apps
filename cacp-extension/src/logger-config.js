@@ -26,7 +26,7 @@ export const loggerConfig = {
         info: true,    // General information
         warn: true,    // Warnings
         error: true,   // Errors
-        trace: false,  // Very verbose tracing
+        trace: true,   // Very verbose tracing - TEMPORARILY ENABLED FOR DEBUGGING
       }
     },
 
@@ -48,7 +48,7 @@ export const loggerConfig = {
       prefix: '🔍 [SiteDetector]',
       color: '#00aa00',
       levels: {
-        debug: false,  // Usually too verbose
+        debug: true,   // Enable debug for troubleshooting
         info: true,
         warn: true,
         error: true,
