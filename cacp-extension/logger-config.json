@@ -1,7 +1,7 @@
 {
   "projectName": "CACP Extension",
   "globalLevel": "info",
-  "timestampMode": "absolute",
+  "timestampMode": "readable",
   "format": {
     "style": "brackets",
     "componentCase": "upper",

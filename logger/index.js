@@ -126,12 +126,8 @@ class CACPLogger {
         };
 
         if (isBrowser()) {
-            // Browser environment - use custom formatter with log store
-            stream = createBrowserFormatter(componentName, this.logStore);
-            config.browser = {
-                write: stream.write,
-                asObject: false
-            };
+            // Browser environment - bypass Pino, use direct console formatting
+            return this.createDirectBrowserLogger(componentName);
         } else if (isCLI()) {
             // CLI environment - use pino-colada or pino-pretty
             stream = createCLIFormatter();
@@ -199,6 +195,9 @@ class CACPLogger {
                 components: COMPONENT_SCHEME,
                 summary: configManager.getSummary()
             },
+
+            // Expose config manager for runtime configuration
+            configManager: configManager,
 
             // Log store for popup/debugging
             logStore: this.logStore,
@@ -295,6 +294,66 @@ class CACPLogger {
                 }
             }
         };
+    }
+
+    /**
+     * Create a direct browser logger that bypasses Pino for full control
+     * @param {string} componentName - Component identifier
+     * @returns {Object} Logger-like object with standard methods
+     * @private
+     */
+    createDirectBrowserLogger(componentName) {
+        const formatter = createBrowserFormatter(componentName, this.logStore);
+        const levels = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'];
+        const levelMap = { trace: 10, debug: 20, info: 30, warn: 40, error: 50, fatal: 60 };
+        
+        const logger = {};
+        
+        levels.forEach(level => {
+            logger[level] = (first, ...args) => {
+                const logLevel = levelMap[level];
+                
+                // Check if level should be logged
+                const effectiveLevel = configManager.getEffectiveLevel(componentName);
+                const minLevel = levelMap[effectiveLevel] || 30;
+                if (logLevel < minLevel) return;
+                
+                // Create log data object
+                let logData = {
+                    level: logLevel,
+                    time: Date.now(),
+                    name: componentName,
+                    v: 1
+                };
+                
+                // Handle different argument patterns
+                if (typeof first === 'string') {
+                    logData.msg = first;
+                    // Add additional args as context
+                    if (args.length === 1 && typeof args[0] === 'object') {
+                        Object.assign(logData, args[0]);
+                    } else if (args.length > 0) {
+                        logData.args = args;
+                    }
+                } else if (typeof first === 'object') {
+                    Object.assign(logData, first);
+                    if (args.length > 0 && typeof args[0] === 'string') {
+                        logData.msg = args[0];
+                    }
+                }
+                
+                // Use our beautiful formatter
+                formatter.write(JSON.stringify(logData));
+            };
+        });
+        
+        // Add Pino-compatible properties
+        logger._componentEmoji = configManager.getComponentConfig(componentName).emoji;
+        logger._componentName = componentName;
+        logger._effectiveLevel = configManager.getEffectiveLevel(componentName);
+        logger.level = configManager.getEffectiveLevel(componentName);
+        
+        return logger;
     }
 
     /**

@@ -88,7 +88,7 @@ export class SoundCloudHandler extends SiteHandler {
         this.log.debug('isLoggedIn():', this.isLoggedIn());
         
         const trackInfo = this.getTrackInfo();
-        this.log.debugObject('getTrackInfo() result', trackInfo);
+        this.log.debug('getTrackInfo() result', trackInfo);
       }, 3000);
       
       this.log.info('SoundCloud handler initialized successfully');
@@ -165,7 +165,7 @@ export class SoundCloudHandler extends SiteHandler {
       };
     }
     
-    this.log.debugObject('Selector availability', elementCheck);
+            this.log.debug('Selector availability', elementCheck);
     
     // Check MediaSession
     const mediaSessionInfo = {
@@ -179,7 +179,7 @@ export class SoundCloudHandler extends SiteHandler {
       playbackState: navigator.mediaSession?.playbackState
     };
     
-    this.log.debugObject('MediaSession status', mediaSessionInfo);
+            this.log.debug('MediaSession status', mediaSessionInfo);
     
     // Check for common SoundCloud elements
     const commonElements = [
@@ -204,7 +204,7 @@ export class SoundCloudHandler extends SiteHandler {
       };
     });
     
-    this.log.debugObject('Common SoundCloud elements', foundElements);
+            this.log.debug('Common SoundCloud elements', foundElements);
     
     // Check page URL and title
     this.log.debug('Page info', {
@@ -335,7 +335,7 @@ export class SoundCloudHandler extends SiteHandler {
 
     this.currentTrack = info;
     
-    this.log.debugObject('Track info extraction complete', {
+            this.log.debug('Track info extraction complete', {
       finalTrackInfo: info,
       extractionMethods: {
         mediaSessionUsed: !!(navigator.mediaSession && navigator.mediaSession.metadata),
