@@ -1,10 +1,30 @@
-# CACP Logging System Documentation
+# CACP Smart Adaptive Logging System Documentation
 
 *Last Updated: July 28, 2025*
 
 ## 🎯 **Overview**
 
-The CACP (Chrome Audio Control Platform) logging system is built on **Pino**, the fastest JSON logger for Node.js and browsers. It provides structured, scoped logging with granular control over log levels and outputs, designed specifically for Chrome extension development and debugging.
+The CACP (Chrome Audio Control Platform) features a **Smart Adaptive Logging System** built on **Pino**, designed to automatically detect environment (browser/CLI/server) and provide optimal logging experience for each. It delivers beautiful, structured logging with unified configuration across all environments.
+
+## ✨ **Key Features**
+
+### **🧠 Smart Environment Detection**
+- **Browser**: Beautiful console formatting with bracket notation and JSON payloads
+- **CLI**: pino-colada integration for terminal development  
+- **Server**: Structured JSON for production logging
+- **Automatic**: Zero configuration environment switching
+
+### **🎨 Enhanced Visual Experience**
+- **Bracket Format**: `[COMPONENT-NAME]` with uppercase styling
+- **Emoji Components**: `🎯 [CACP-CORE]`, `🎵 [SOUNDCLOUD]`, `🔍 [SITE-DETECTOR]`
+- **JSON Payload Display**: Context data shown in expandable tree format
+- **Color Coding**: Component-specific colors for easy visual scanning
+
+### **⚙️ Portable Configuration**
+- **Single JSON Config**: Everything configurable via one file
+- **File-Level Overrides**: Per-file log level control with pattern matching
+- **Component Auto-Registration**: Automatic component discovery + manual control
+- **Future npm Package**: Designed for easy reuse across projects
 
 ## 🏗️ **Architecture**
 
@@ -12,422 +32,352 @@ The CACP (Chrome Audio Control Platform) logging system is built on **Pino**, th
 
 | **File** | **Purpose** | **Responsibilities** |
 |----------|-------------|----------------------|
-| `logger-config.js` | Configuration | Centralized settings for all loggers and scopes |
-| `logger.js` | Implementation | Pino-powered logger factory and utilities |
-| `manifest.json` | Load Order | Ensures logger loads before other components |
+| `logger-config.js` | Smart Adaptive Logic | Environment detection, formatters, configuration |
+| `logger.js` | Simple Entry Point | Exports configured loggers |
+| `config.json` | Project Configuration | Components, levels, overrides *(Future)* |
 
 ### **Technology Stack**
 
 - **🔥 Pino**: High-performance structured logging engine
-- **🎨 Browser Optimized**: Custom formatting for Chrome DevTools
-- **📊 Structured Data**: JSON-first approach for complex objects
-- **🎯 Scoped Loggers**: Component-specific logging with prefixes
+- **🍹 pino-colada**: Beautiful CLI terminal logging *(CLI mode)*
+- **🎨 Custom Browser Formatter**: Console styling with JSON context *(Browser mode)*
+- **📊 Structured Data**: JSON-first approach with visual enhancements
+- **🎯 Smart Detection**: Automatic environment adaptation
 - **⚡ Performance**: 5-10x faster than Winston, minimal overhead
 
-## ⚙️ **Configuration System**
+## 🎨 **Output Examples**
 
-### **Global Configuration Structure**
-
-```javascript
-// logger-config.js
-export const loggerConfig = {
-  // Global settings
-  global: {
-    enabled: true,
-    environment: 'development', // 'development' | 'production'
-    timestampFormat: 'HH:mm:ss.SSS',
-    useColors: true,
-    maxLogEntries: 1000, // For popup display
-  },
-
-  // Component-specific configurations
-  scopes: {
-    soundcloud: {
-      enabled: true,
-      prefix: '🎵 [SoundCloud]',
-      color: '#ff5500',
-      levels: {
-        debug: true,   // Detailed debugging info
-        info: true,    // General information
-        warn: true,    // Warnings
-        error: true,   // Errors
-        trace: false,  // Very verbose tracing
-      }
-    },
-    // ... other scopes
-  }
-}
+### **Browser Console (Current)**
+```
+22:02:44.969 🔍 [CACP-CORE] Logger initialized
+22:02:45.321 ✨ [SITE-DETECTOR] Site detection complete
+22:02:45.322 🚨 [CACP-CORE] Handler activation failed
+   ├─ siteName: soundcloud
+   ├─ availableHandlers: ["soundcloud", "youtube"] 
+   ├─ reason: Handler creation failed
 ```
 
-### **Available Scopes**
+### **CLI Terminal (With pino-colada)**
+```
+15:31:42 ✨ [SOUNDCLOUD] Track extraction complete
+15:31:42 🐛 [SITE-DETECTOR] Pattern matching started
+15:31:49 🚨 [CACP-CORE] WebSocket connection failed
+```
 
-| **Scope** | **Purpose** | **Prefix** | **Color** | **Default Levels** |
-|-----------|-------------|------------|-----------|-------------------|
-| `soundcloud` | SoundCloud handler | 🎵 [SoundCloud] | Orange (#ff5500) | debug, info, warn, error |
-| `youtube` | YouTube handler | 📺 [YouTube] | Red (#ff0000) | debug, info, warn, error |
-| `site-detector` | Site detection logic | 🔍 [SiteDetector] | Green (#00aa00) | info, warn, error |
-| `priority-manager` | Priority management | ⚖️ [Priority] | Blue (#0066cc) | info, warn, error |
-| `websocket-manager` | WebSocket communication | 🔌 [WebSocket] | Purple (#6600cc) | info, warn, error |
-| `cacp` | Core CACP orchestrator | 🎯 [CACP-Core] | CACP Blue (#007aff) | debug, info, warn, error |
-| `popup` | Extension popup | 🪟 [Popup] | Orange (#cc6600) | info, warn, error |
+### **Server/Production (JSON)**
+```json
+{"level":50,"time":1753344060123,"name":"cacp","msg":"Handler activation failed","siteName":"soundcloud","availableHandlers":["soundcloud","youtube"]}
+```
 
-### **Log Levels**
+## ⚙️ **Current Configuration System**
 
-| **Level** | **Purpose** | **When to Use** | **Performance Impact** |
-|-----------|-------------|-----------------|----------------------|
-| `trace` | Very detailed execution flow | Function entry/exit, detailed state changes | High |
-| `debug` | Development debugging | Data extraction, API calls, state changes | Medium |
-| `info` | General information | Initialization, major operations, status changes | Low |
-| `warn` | Potential issues | Fallback methods, non-critical errors | Minimal |
-| `error` | Actual problems | Exceptions, failures, critical issues | Minimal |
+### **Component & Level Schemes**
+```javascript
+// In logger-config.js (Current Implementation)
+const COMPONENT_SCHEME = {
+  'cacp': { emoji: '🎯', color: '#4A90E2', name: 'CACP-Core' },
+  'soundcloud': { emoji: '🎵', color: '#FF5500', name: 'SoundCloud' },
+  'youtube': { emoji: '📹', color: '#FF0000', name: 'YouTube' },
+  'site-detector': { emoji: '🔍', color: '#00C896', name: 'SiteDetector' },
+  'websocket': { emoji: '🌐', color: '#9B59B6', name: 'WebSocket' },
+  'popup': { emoji: '🎛️', color: '#FF6B6B', name: 'Popup' },
+  'background': { emoji: '🔧', color: '#4ECDC4', name: 'Background' },
+  'priority-manager': { emoji: '⚖️', color: '#45B7D1', name: 'PriorityManager' },
+  'settings': { emoji: '⚙️', color: '#96CEB4', name: 'Settings' },
+  'test': { emoji: '🧪', color: '#FFEAA7', name: 'Test' }
+};
+
+const LEVEL_SCHEME = {
+  10: { emoji: '🔍', color: '#6C7B7F', name: 'TRACE' },
+  20: { emoji: '🐛', color: '#74B9FF', name: 'DEBUG' },
+  30: { emoji: '✨', color: '#00B894', name: 'INFO' },
+  40: { emoji: '⚠️', color: '#FDCB6E', name: 'WARN' },
+  50: { emoji: '🚨', color: '#E17055', name: 'ERROR' },
+  60: { emoji: '💀', color: '#D63031', name: 'FATAL' }
+};
+```
 
 ## 🚀 **Usage Examples**
 
 ### **Basic Logging**
-
 ```javascript
-import { logger } from '../logger.js';
+import logger from '../logger.js';
 
 export class SoundCloudHandler extends SiteHandler {
   constructor() {
     super();
-    this.log = logger.soundcloud;  // Get scoped logger
+    this.log = logger.soundcloud;  // Get component logger
     
     this.log.info('SoundCloud handler initialized');
   }
 
   async initialize() {
-    this.log.debug('Setting up monitoring systems');
+    this.log.debug('Setting up monitoring systems', {
+      url: window.location.href,
+      hasMediaSession: !!navigator.mediaSession
+    });
     
     try {
       this.setupMediaSessionMonitoring();
-      this.log.trace('MediaSession monitoring setup complete');
-      
       this.log.info('SoundCloud handler ready');
     } catch (error) {
-      this.log.error('Initialization failed', { error: error.message });
+      this.log.error('Initialization failed', {
+        error: error.message,
+        stack: error.stack,
+        context: { url: window.location.href }
+      });
       throw error;
     }
   }
 }
 ```
 
-### **Structured Data Logging**
-
+### **Rich Context Logging**
 ```javascript
-// Simple data logging
-this.log.debug('Track extracted', { 
-  title: trackInfo.title,
-  artist: trackInfo.artist,
-  duration: trackInfo.duration 
-});
-
-// Complex object logging (uses Pino's JSON serialization)
-this.log.debugObject('Full MediaSession state', {
-  metadata: navigator.mediaSession.metadata,
-  playbackState: navigator.mediaSession.playbackState,
-  actionHandlers: Object.keys(navigator.mediaSession.actionHandlers || {})
-});
-
-// Performance timing
-this.log.time('track-extraction');
-const trackInfo = this.extractTrackInfo();
-this.log.timeEnd('track-extraction'); // Logs: "Timer track-extraction: 23ms"
-```
-
-### **Child Loggers with Context**
-
-```javascript
-// Create contextual logger
-const childLog = this.log.child({ 
-  trackId: '12345',
-  source: 'mediasession' 
-});
-
-childLog.debug('Processing track data');
-// Output: [SoundCloud] [trackId=12345 source=mediasession] Processing track data
-
-// Performance marking
-this.log.mark('audio-detection-start');
-// ... audio detection logic
-this.log.measure('audio-detection', 'audio-detection-start');
-```
-
-### **Conditional Logging**
-
-```javascript
-// Only log if extraction method changed
-if (this.lastExtractionMethod !== currentMethod) {
-  this.log.info('Extraction method changed', {
-    from: this.lastExtractionMethod,
-    to: currentMethod,
-    reason: 'MediaSession unavailable'
-  });
-  this.lastExtractionMethod = currentMethod;
-}
-
-// Error context with user actions
-this.log.error('Play command failed', {
+// Detailed context automatically displayed in browser
+this.log.error('Handler activation failed', {
+  siteName: 'soundcloud',
+  availableHandlers: ['soundcloud', 'youtube'],
+  siteDetector: !!this.siteDetector,
   error: error.message,
-  buttonSelector: this.config.selectors.playButton,
-  elementsFound: document.querySelectorAll(this.config.selectors.playButton).length,
-  currentUrl: window.location.href,
-  userAction: 'manual-play-click'
+  stack: error.stack,
+  timing: { started: startTime, failed: Date.now() }
 });
+
+// Browser output:
+// 22:02:45.322 🚨 [CACP-CORE] Handler activation failed
+//    ├─ siteName: soundcloud
+//    ├─ availableHandlers: ["soundcloud", "youtube"]
+//    ├─ siteDetector: true
+//    ├─ error: "createHandler returned null"
+//    ├─ timing: { started: 1753344060120, failed: 1753344060123 }
 ```
 
-## 🎛️ **Runtime Configuration**
-
-### **Browser Console Control**
-
-The logger system exposes runtime controls via `window.cacpLogger`:
-
+### **Environment-Specific Behavior**
 ```javascript
-// Apply preset configurations
-window.cacpLogger.applyPreset('debug');        // All logs on
-window.cacpLogger.applyPreset('production');   // Errors/warnings only
-window.cacpLogger.applyPreset('silent');       // All logs off
-window.cacpLogger.applyPreset('soundcloudOnly'); // Only SoundCloud logs
+// Same code, different output based on environment:
+this.log.info('Site detected', { 
+  siteName: detectedSite.name,
+  priority: detectedSite.priority 
+});
 
-// Individual scope control
-window.cacpLogger.enableScope('youtube');      // Turn on YouTube logs
-window.cacpLogger.disableScope('websocket-manager'); // Turn off WebSocket logs
+// Browser: 22:02:45.186 ✨ [SITE-DETECTOR] Site detected
+//           ├─ siteName: soundcloud
+//           ├─ priority: 1000
 
-// Granular level control
-window.cacpLogger.setLevel('soundcloud', 'debug', false); // Turn off debug for SoundCloud
-window.cacpLogger.setLevel('cacp', 'trace', true);        // Turn on trace for CACP core
+// CLI: 15:31:42 ✨ [SITE-DETECTOR] Site detected
 
-// View current configuration
-console.log(window.cacpLogger.config);
-
-// Available presets
-console.log(window.cacpLogger.presets); // ['silent', 'production', 'debug', 'soundcloudOnly']
+// Server: {"level":30,"time":1753344060186,"name":"site-detector","msg":"Site detected","siteName":"soundcloud","priority":1000}
 ```
 
-### **Preset Configurations**
+## 🔮 **Future Portable Configuration** *(Not Yet Implemented)*
 
-| **Preset** | **Purpose** | **Configuration** |
-|------------|-------------|-------------------|
-| `silent` | Disable all logging | All scopes disabled |
-| `production` | Production environment | Only warn/error levels |
-| `debug` | Full debugging | All levels enabled |
-| `soundcloudOnly` | SoundCloud development | Only SoundCloud + CACP core |
-
-## 📊 **Output Formats**
-
-### **Browser Console Output**
-
-```
-16:23:45.123 🎵 [SoundCloud] Track info extraction complete
+### **Planned config.json Structure**
+```json
 {
-  "finalTrackInfo": {
-    "title": "Epic Song Title",
-    "artist": "Amazing Artist",
-    "duration": 245.5,
-    "isPlaying": true
+  "projectName": "My Project",
+  "globalLevel": "info",
+  "autoRegister": true,
+  
+  "format": {
+    "style": "brackets",
+    "componentCase": "upper",
+    "timestamp": "HH:mm:ss.SSS"
   },
-  "extractionMethods": {
-    "mediaSessionUsed": true,
-    "domFallbackUsed": false
-  }
-}
-```
-
-### **Log Store for Popup**
-
-The logger maintains an in-memory store for the extension popup:
-
-```javascript
-// Access stored logs
-const recentLogs = window.cacpLogger.logs.get({
-  scope: 'soundcloud',
-  level: 'error',
-  since: Date.now() - 60000  // Last minute
-});
-
-// Real-time log updates
-window.cacpLogger.logs.onUpdate((logEntry) => {
-  console.log('New log:', logEntry);
-});
-
-// Clear logs
-window.cacpLogger.logs.clear();
-```
-
-## 🛠️ **Integration Guide**
-
-### **Adding Logging to New Components**
-
-1. **Import the logger:**
-```javascript
-import { logger, createLogger } from '../logger.js';
-```
-
-2. **Use existing scope or create new one:**
-```javascript
-// Use existing scope
-this.log = logger.soundcloud;
-
-// Or create custom scope
-this.log = createLogger('my-component');
-```
-
-3. **Add scope to configuration:**
-```javascript
-// In logger-config.js
-scopes: {
-  'my-component': {
-    enabled: true,
-    prefix: '🔧 [MyComponent]',
-    color: '#ff6600',
-    levels: {
-      debug: true,
-      info: true,
-      warn: true,
-      error: true,
-      trace: false,
+  
+  "levels": {
+    "10": { "name": "TRACE", "emoji": "🔍", "color": "#6C7B7F" },
+    "20": { "name": "DEBUG", "emoji": "🐛", "color": "#74B9FF" },
+    "30": { "name": "INFO", "emoji": "✨", "color": "#00B894" },
+    "40": { "name": "WARN", "emoji": "⚠️", "color": "#FDCB6E" },
+    "50": { "name": "ERROR", "emoji": "🚨", "color": "#E17055" },
+    "60": { "name": "FATAL", "emoji": "💀", "color": "#D63031" }
+  },
+  
+  "components": {
+    "api": { 
+      "emoji": "🌐", 
+      "color": "#4A90E2", 
+      "name": "API",
+      "level": "debug"
+    },
+    "database": { 
+      "emoji": "💾", 
+      "color": "#00C896", 
+      "name": "Database",
+      "level": "warn"
+    }
+  },
+  
+  "fileOverrides": {
+    "src/auth/login.js": { 
+      "level": "trace",
+      "component": "auth"
+    },
+    "src/database/*.js": { 
+      "level": "error"
+    },
+    "src/critical-path.js": { 
+      "level": "debug",
+      "emoji": "🚨"
     }
   }
 }
 ```
 
-### **Best Practices**
+### **Planned Level Resolution Hierarchy**
+1. **File Override** - `fileOverrides["src/auth/login.js"].level`
+2. **Component Level** - `components["api"].level` 
+3. **Global Level** - `globalLevel`
 
-#### **🎯 When to Use Each Level**
-
+### **Planned Usage** *(Future)*
 ```javascript
-// TRACE: Very detailed execution flow
-this.log.trace('Entering extractTrackInfo()');
-this.log.trace('DOM query selector', { selector });
-
-// DEBUG: Development debugging
-this.log.debug('MediaSession data extracted', { metadata });
-this.log.debug('Fallback method used', { reason: 'no-mediasession' });
-
-// INFO: General operation status
-this.log.info('Handler initialized successfully');
-this.log.info('Track changed', { newTrack: trackInfo.title });
-
-// WARN: Potential issues
-this.log.warn('Could not find play button', { selectors: attempted });
-this.log.warn('Using fallback timing method');
-
-// ERROR: Actual problems
-this.log.error('WebSocket connection failed', { error: error.message });
-this.log.error('Critical selector missing', { selector, pageUrl });
+import Logger from './logger/index.js';
+const log = Logger.getLogger('api');  // Gets 'api' component
+log.debug('Hello world');             // Respects api.level: "debug"
 ```
 
-#### **🏗️ Structured Logging Patterns**
+## 🛠️ **Implementation Status**
 
+### ✅ **Implemented Features**
+- **Smart Environment Detection**: Browser/CLI/Server auto-detection
+- **Enhanced Browser Formatter**: Bracket format + JSON payload display
+- **Component-Specific Styling**: Emojis, colors, uppercase names
+- **pino-colada Integration**: Beautiful CLI terminal logging
+- **Structured Context Display**: Tree-like JSON data visualization
+- **Legacy Compatibility**: Works with existing CACP codebase
+
+### 🔄 **In Progress**
+- **Documentation Updates**: This comprehensive guide
+- **Testing & Validation**: Cross-environment verification
+
+### 📋 **Planned Features** *(Not Yet Implemented)*
+- **Portable /logger Folder**: Self-contained reusable module
+- **JSON Configuration File**: External config.json support
+- **File-Level Overrides**: Per-file and pattern-based level control
+- **Auto-Component Registration**: Automatic component discovery
+- **npm Package**: Reusable smart-logger package
+- **Runtime Configuration**: Browser console controls
+- **Log Store for Popup**: In-memory log management
+- **Performance Monitoring**: Built-in timing and metrics
+- **Conditional Logging**: Smart performance optimizations
+
+## 🎛️ **Current Usage**
+
+### **Get Component Logger**
 ```javascript
-// Good: Structured with context
-this.log.debug('Button click attempt', {
-  button: 'play',
-  selector: '.playButton',
-  found: !!element,
-  timestamp: Date.now()
-});
+import logger from '../logger.js';
 
-// Bad: String concatenation
-this.log.debug('Clicking play button: ' + selector + ' found: ' + !!element);
+// Available loggers:
+const log = logger.cacp;           // 🎯 [CACP-CORE]
+const log = logger.soundcloud;     // 🎵 [SOUNDCLOUD]  
+const log = logger.youtube;        // 📹 [YOUTUBE]
+const log = logger.siteDetector;   // 🔍 [SITE-DETECTOR]
+const log = logger.websocket;      // 🌐 [WEBSOCKET]
+const log = logger.popup;          // 🎛️ [POPUP]
+const log = logger.background;     // 🔧 [BACKGROUND]
+const log = logger.priorityManager;// ⚖️ [PRIORITY-MANAGER]
+const log = logger.settings;       // ⚙️ [SETTINGS]
+const log = logger.test;           // 🧪 [TEST]
 
-// Good: Performance timing
-this.log.time('dom-search');
-const elements = this.findElements();
-const duration = this.log.timeEnd('dom-search');
+// Create custom logger:
+const log = logger.createLogger('my-component');
+```
 
-// Good: Error context
-this.log.error('Command execution failed', {
-  command: 'play',
-  error: error.message,
-  stack: error.stack,
-  context: {
-    url: location.href,
-    timestamp: Date.now(),
-    userAgent: navigator.userAgent
-  }
-});
+### **Log Levels & Output**
+```javascript
+log.trace('Detailed execution flow');    // 🔍 [COMPONENT] message
+log.debug('Development info', context);  // 🐛 [COMPONENT] message + context tree
+log.info('General information');         // ✨ [COMPONENT] message  
+log.warn('Potential issue');             // ⚠️ [COMPONENT] message
+log.error('Actual problem', { error });  // 🚨 [COMPONENT] message + error details
+log.fatal('Critical failure');           // 💀 [COMPONENT] message
 ```
 
 ## 🐛 **Debugging & Troubleshooting**
 
-### **Common Issues**
-
-#### **Logger Not Working**
-
-1. **Check load order in manifest.json:**
-```json
-"js": [
-  "logger-config.js",  // Must be first
-  "logger.js",         // Must be second
-  "sites/soundcloud.js" // Then other files
-]
-```
-
-2. **Verify scope configuration:**
+### **Environment Detection Issues**
 ```javascript
-// Check if scope exists
-console.log(window.cacpLogger.config.scopes['my-scope']);
+// Check detected environment
+console.log(logger.config.environment); // 'browser', 'cli', or 'server'
 
-// Check if levels are enabled
-console.log(window.cacpLogger.config.scopes['soundcloud'].levels.debug);
+// Check formatters in use
+console.log(logger.config.components);  // Available components
+console.log(logger.config.levels);      // Available levels
 ```
 
-#### **Performance Issues**
+### **Browser Console Not Showing Formatting**
+1. **Check browser console settings**: Ensure formatting is enabled
+2. **Verify component exists**: Use `logger.createLogger('test')` to test
+3. **Check log level**: Ensure level is above filter threshold
 
-1. **Disable trace logging in production:**
-```javascript
-window.cacpLogger.applyPreset('production');
-```
-
-2. **Use conditional logging for expensive operations:**
-```javascript
-if (this.log._shouldLogLevel('debug')) {
-  const expensiveData = this.generateComplexDebugInfo();
-  this.log.debug('Complex state', expensiveData);
-}
-```
-
-### **Debugging Commands**
-
-```javascript
-// View all active loggers
-Object.keys(window.cacpLogger.logger);
-
-// Check log output
-window.cacpLogger.logs.get().slice(-10); // Last 10 logs
-
-// Test logger functionality
-window.cacpLogger.logger.soundcloud.info('Test message', { test: true });
-
-// Monitor log creation
-window.cacpLogger.logs.onUpdate(log => console.log('New log:', log));
-```
+### **CLI Not Using pino-colada**
+1. **Install pino-colada**: `npm install pino-colada --save-dev`
+2. **Verify CLI detection**: Check `process.stdout.isTTY`
+3. **Fallback to pino-pretty**: Should work automatically
 
 ## 📈 **Performance Characteristics**
 
-### **Benchmarks**
-
-| **Operation** | **Time** | **Memory** | **Notes** |
-|---------------|----------|------------|-----------|
-| Simple log message | ~0.1ms | ~50 bytes | Minimal overhead |
-| Structured data log | ~0.5ms | ~200 bytes | JSON serialization |
-| Child logger creation | ~0.2ms | ~100 bytes | Pino child logger |
-| Log store retrieval | ~1ms | ~0 bytes | In-memory filtering |
+### **Current Benchmarks**
+| **Operation** | **Browser** | **CLI** | **Server** | **Notes** |
+|---------------|-------------|---------|------------|-----------|
+| Simple log | ~0.1ms | ~0.5ms | ~0.05ms | Browser styling overhead |
+| Context data | ~0.3ms | ~1ms | ~0.1ms | JSON serialization |
+| Environment detection | ~0.01ms | ~0.01ms | ~0.01ms | Cached after first call |
 
 ### **Production Recommendations**
-
-- **Use `production` preset** for deployed extensions
-- **Disable `trace` and `debug`** levels in production
-- **Limit log store** to 500 entries maximum
-- **Use structured data** for complex objects (faster than string concat)
+- **Server mode**: Automatically uses structured JSON with `info` level
+- **Browser development**: Full formatting with `trace` level
+- **CLI development**: pino-colada with beautiful terminal output
 
 ## 🔗 **Related Documentation**
 
 - [Pino Official Documentation](https://getpino.io/)
+- [pino-colada: Beautiful terminal logs](https://github.com/lrlna/pino-colada)
 - [Chrome Extension Content Scripts](https://developer.chrome.com/docs/extensions/mv3/content_scripts/)
 - [Chrome DevTools Console API](https://developer.chrome.com/docs/devtools/console/api/)
 
+## 🗺️ **Future Roadmap**
+
+### **📅 Next Development Phase**
+
+**🔧 Advanced Configuration System**
+- **Per-Component Log Levels**: Override global level per file/component
+- **Runtime Level Changes**: Dynamic level adjustment without restart
+- **Custom Component Registration**: Manual component definition vs auto-discovery
+
+**📦 Portable Logger Package**
+- **NPM Package**: Standalone reusable logger for any project
+- **Zero Dependencies**: Optional pino-colada for CLI environments
+- **Config-Driven**: Single JSON file controls all behavior
+
+**🎨 Granular Display Control**
+- **Timestamp Options**: 
+  - `"readable"`: `"2:34 PM"` vs `"14:34:12.969"`
+  - `"relative"`: `"2s ago"` vs absolute time
+  - `"disable"`: No timestamp display
+- **Component Toggles**: Enable/disable each log part independently:
+  ```json
+  {
+    "display": {
+      "timestamp": true,
+      "emoji": true, 
+      "component": true,
+      "level": false,
+      "message": true,
+      "jsonPayload": true,
+      "stackTrace": true
+    }
+  }
+  ```
+- **Custom Separators**: Configure brackets `[COMP]`, parentheses `(COMP)`, or custom
+- **Conditional Display**: Show/hide based on log level or component
+
+**🌟 Advanced Features**
+- **Log Filtering**: Real-time console filtering by component/level
+- **Log Export**: Save filtered logs to file
+- **Performance Metrics**: Timing and memory tracking per component
+
 ---
 
-*This logging system powers all CACP components with fast, structured, and configurable logging. For questions or improvements, see the CACP contributing guide.* 
+*This Smart Adaptive Logging System provides optimal logging experience across all environments while maintaining unified configuration and beautiful visual output. The system is designed for easy portability and future npm package distribution.* 
