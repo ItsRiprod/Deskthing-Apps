@@ -30,15 +30,23 @@
     "formatters/",
     "stores/",
     "utils/",
+    "examples/",
     "README.md"
   ],
   "exports": {
     ".": "./index.js",
     "./config": "./config/config-manager.js",
-    "./stores": "./stores/log-store.js",
+    "./config/manager": "./config/config-manager.js",
+    "./config/schemes": "./config/component-schemes.js",
+    "./config/default": "./config/default-config.json",
     "./formatters/browser": "./formatters/browser-formatter.js",
     "./formatters/cli": "./formatters/cli-formatter.js",
-    "./formatters/server": "./formatters/server-formatter.js"
+    "./formatters/server": "./formatters/server-formatter.js",
+    "./stores": "./stores/log-store.js",
+    "./stores/log-store": "./stores/log-store.js",
+    "./utils": "./utils/environment-detector.js",
+    "./utils/environment": "./utils/environment-detector.js",
+    "./examples/*": "./examples/*"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

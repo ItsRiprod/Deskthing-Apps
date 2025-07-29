@@ -3,7 +3,7 @@
  * Uses pino-colada for beautiful terminal output with fallbacks
  */
 
-import { COMPONENT_SCHEME, LEVEL_SCHEME } from '../config/component-schemes.js';
+import { COMPONENT_SCHEME, LEVEL_SCHEME } from '@cacp/logger/config/schemes';
 
 /**
  * Create CLI formatter using pino-colada or pino-pretty

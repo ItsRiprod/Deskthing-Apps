@@ -1,8 +1,8 @@
 # CACP Portable Logger System
 
-**Smart Adaptive Logger with Multi-Environment Support**
+**Smart Adaptive Logger with Multi-Environment Support & Advanced Configuration**
 
-A sophisticated logging system that automatically detects its environment (browser, CLI, server) and provides optimal logging experience for each.
+A sophisticated logging system that automatically detects its environment (browser, CLI, server) and provides optimal logging experience for each, with powerful file-level overrides and granular control.
 
 ## ✨ Features
 
@@ -10,16 +10,20 @@ A sophisticated logging system that automatically detects its environment (brows
 - 🎨 **Beautiful Visual Output** - Emoji, colors, and structured context display
 - 📱 **Multi-Environment** - Browser console, terminal, and production JSON
 - 🏪 **Log Store** - In-memory storage for debugging and popup interfaces
-- ⚙️ **Runtime Controls** - Dynamic log level adjustment
+- ⚙️ **Runtime Controls** - Dynamic log level adjustment and configuration
 - 📊 **Component Organization** - Separate loggers for different system components
 - 🔧 **External Configuration** - JSON-based configuration system
+- 📁 **File-Level Overrides** - Per-file and pattern-based control
+- ⏰ **Timestamp Modes** - Absolute, readable, relative, or disabled
+- 🎛️ **Display Toggles** - Control every aspect of log output
+- 🎯 **Smart Level Resolution** - Hierarchical level determination
 
 ## 🚀 Quick Start
 
 ```javascript
 import logger from '@cacp/logger';
 
-// Use component-specific loggers
+// Use component-specific loggers with smart level resolution
 const log = logger.soundcloud;
 log.info('SoundCloud handler initialized', {
   url: window.location.href,
@@ -29,41 +33,194 @@ log.info('SoundCloud handler initialized', {
 // Runtime controls
 logger.controls.enableDebugMode(); // Enable debug for all components
 logger.controls.setLevel('websocket', 'trace'); // Set specific component level
+logger.controls.addFileOverride('src/popup.js', { level: 'trace' }); // File-specific control
+```
+
+## 🎯 **Level Resolution Hierarchy**
+
+The logger uses intelligent level resolution with the following priority:
+
+1. **File Override** - `fileOverrides["src/popup.js"].level`
+2. **Component Level** - `components["websocket"].level` 
+3. **Global Level** - `globalLevel`
+
+This allows surgical debugging - you can turn on trace logging for just one problematic file while keeping everything else quiet.
+
+## ⚙️ **Advanced Configuration**
+
+### **Full Configuration Example**
+
+```json
+{
+  "projectName": "My Advanced Project",
+  "globalLevel": "info",
+  "timestampMode": "absolute",
+  "display": {
+    "timestamp": true,
+    "emoji": true,
+    "component": true,
+    "level": false,
+    "message": true,
+    "jsonPayload": true,
+    "stackTrace": true
+  },
+  "components": {
+    "api": { 
+      "emoji": "🌐", 
+      "color": "#4A90E2", 
+      "name": "API",
+      "level": "debug"
+    },
+    "database": { 
+      "emoji": "💾", 
+      "color": "#00C896", 
+      "name": "Database",
+      "level": "warn"
+    }
+  },
+  "fileOverrides": {
+    "src/auth/login.js": { 
+      "level": "trace",
+      "emoji": "🔐",
+      "display": {
+        "level": true,
+        "jsonPayload": true
+      }
+    },
+    "src/managers/*.js": { 
+      "level": "warn",
+      "display": {
+        "jsonPayload": false
+      }
+    },
+    "src/popup.js": {
+      "level": "debug",
+      "timestampMode": "relative",
+      "display": {
+        "jsonPayload": false
+      }
+    }
+  }
+}
+```
+
+### **File Override Patterns**
+
+File overrides support powerful pattern matching:
+
+- **Exact files**: `"src/popup.js"`
+- **Wildcards**: `"src/managers/*.js"` 
+- **Patterns**: `"src/test-*.js"`
+- **Directories**: `"src/sites/*.js"`
+
+Each override can specify:
+- `level` - Log level for this file/pattern
+- `emoji` - Custom emoji override
+- `timestampMode` - File-specific timestamp mode
+- `display` - Individual display toggles
+
+## ⏰ **Timestamp Modes**
+
+Control how timestamps are displayed:
+
+- **`absolute`** - `22:15:30.123` (default)
+- **`readable`** - `10:15 PM`
+- **`relative`** - `2s ago`, `5m ago`
+- **`disable`** - No timestamp
+
+```javascript
+// Set globally
+logger.controls.setTimestampMode('relative');
+
+// Or per-file in config
+"fileOverrides": {
+  "src/popup.js": { "timestampMode": "relative" }
+}
+```
+
+## 🎛️ **Display Controls**
+
+Toggle individual parts of log output:
+
+```javascript
+// Available display options
+const displayConfig = {
+  timestamp: true,    // Show/hide timestamp
+  emoji: true,        // Show/hide level emoji
+  component: true,    // Show/hide [COMPONENT-NAME]
+  level: false,       // Show/hide level name (DEBUG, INFO, etc.)
+  message: true,      // Show/hide log message
+  jsonPayload: true,  // Show/hide context data trees
+  stackTrace: true    // Show/hide error stack traces
+};
+
+// Runtime control
+logger.controls.setDisplayOption('jsonPayload', false);
+logger.controls.toggleDisplayOption('level');
 ```
 
 ## 🏗️ Architecture
 
 ```
 logger/
-├── index.js                 # Main entry point
+├── index.js                    # Main entry point with smart initialization
 ├── config/
-│   ├── config-manager.js    # Configuration loading/management
-│   ├── default-config.json  # Default configuration
-│   └── component-schemes.js # Component styling definitions
+│   ├── config-manager.js       # Smart configuration system
+│   ├── default-config.json     # Default configuration
+│   └── component-schemes.js    # Component styling definitions
 ├── formatters/
-│   ├── browser-formatter.js # Beautiful browser console output
-│   ├── cli-formatter.js     # Terminal output with pino-colada
-│   └── server-formatter.js  # Production JSON logging
+│   ├── browser-formatter.js    # Advanced browser console output
+│   ├── cli-formatter.js        # Terminal output with pino-colada
+│   └── server-formatter.js     # Production JSON logging
 ├── stores/
-│   └── log-store.js         # In-memory log storage
-└── utils/
-    └── environment-detector.js # Environment detection
+│   └── log-store.js            # In-memory log storage with filtering
+├── utils/
+│   └── environment-detector.js # Environment detection
+└── examples/
+    └── advanced-config.json    # Full configuration example
 ```
 
-## 🎯 Usage Examples
+## 🎯 **Usage Examples**
 
-### Component Logging
+### **Per-Component Level Control**
 ```javascript
-// Available component loggers
-logger.cacp           // 🎯 [CACP-CORE]
-logger.soundcloud     // 🎵 [SOUNDCLOUD]
-logger.youtube        // 📹 [YOUTUBE]
-logger.websocket      // 🌐 [WEBSOCKET]
-logger.popup          // 🎛️ [POPUP]
-// ... and more
+// Different components at different levels
+logger.controls.setComponentLevel('websocket', 'warn');   // Quiet websocket
+logger.controls.setComponentLevel('soundcloud', 'trace'); // Verbose SoundCloud
+logger.controls.setComponentLevel('popup', 'debug');      // Debug popup
 ```
 
-### Context Data
+### **Surgical File Debugging**
+```javascript
+// Turn on trace logging for just one problematic file
+logger.controls.addFileOverride('src/sites/soundcloud.js', {
+  level: 'trace',
+  display: { level: true, jsonPayload: true }
+});
+
+// Quiet all manager files
+logger.controls.addFileOverride('src/managers/*.js', {
+  level: 'warn',
+  display: { jsonPayload: false }
+});
+```
+
+### **Dynamic Display Control**
+```javascript
+// Hide JSON payloads but keep error stacks
+logger.controls.setDisplayOption('jsonPayload', false);
+logger.controls.setDisplayOption('stackTrace', true);
+
+// Show level names for debugging
+logger.controls.setDisplayOption('level', true);
+
+// Use relative timestamps for popup
+logger.controls.addFileOverride('src/popup.js', {
+  timestampMode: 'relative'
+});
+```
+
+### **Context Data**
 ```javascript
 logger.soundcloud.error('Track extraction failed', {
   url: window.location.href,
@@ -72,129 +229,115 @@ logger.soundcloud.error('Track extraction failed', {
     artist: '.track-artist'
   },
   retryCount: 3,
-  lastError: error.message
+  lastError: error.message,
+  userAgent: navigator.userAgent
 });
 
-// Browser output:
+// With file override for src/sites/soundcloud.js level: "trace":
 // 22:15:30.123 🚨 [SOUNDCLOUD] Track extraction failed
 //    ├─ url: https://soundcloud.com/track/example
 //    ├─ selectors: {title: ".track-title", artist: ".track-artist"}
 //    ├─ retryCount: 3
 //    ├─ lastError: "Element not found"
+//    ├─ userAgent: "Mozilla/5.0..."
 ```
 
-### Runtime Controls
+## 🎛️ **Runtime Controls API**
+
+### **Level Controls**
 ```javascript
-// Available in browser as window.CACP_Logger
-logger.controls.setLevel('websocket', 'debug');
-logger.controls.enableTraceMode(); // All components to trace
-logger.controls.getStats(); // Log statistics
-logger.controls.listComponents(); // Available loggers
+logger.controls.setLevel(component, level)           // Set component level
+logger.controls.getLevel(component)                  // Get effective level
+logger.controls.setComponentLevel(component, level)  // Set in config
+logger.controls.enableDebugMode()                    // All components → debug
+logger.controls.enableTraceMode()                    // All components → trace
 ```
 
-### Log Store Access
+### **File Override Controls**
 ```javascript
-// Get recent logs (useful for extension popup)
+logger.controls.addFileOverride(path, config)       // Add file override
+logger.controls.removeFileOverride(path)             // Remove override
+logger.controls.listFileOverrides()                  // List all overrides
+```
+
+### **Display Controls**
+```javascript
+logger.controls.setDisplayOption(option, enabled)   // Set display option
+logger.controls.getDisplayConfig()                   // Get current config
+logger.controls.toggleDisplayOption(option)          // Toggle option
+```
+
+### **Timestamp Controls**
+```javascript
+logger.controls.setTimestampMode(mode)               // Set timestamp mode
+logger.controls.getTimestampMode()                   // Get current mode
+logger.controls.getTimestampModes()                  // List available modes
+```
+
+### **System Controls**
+```javascript
+logger.controls.refresh()                            // Refresh all loggers
+logger.controls.reset()                              // Reset to defaults
+logger.controls.getConfigSummary()                   // Get config summary
+logger.controls.getStats()                           // Get logging stats
+```
+
+## 📊 **Log Store & Statistics**
+
+### **Advanced Log Filtering**
+```javascript
+// Get recent logs with file context
 const recentLogs = logger.logStore.getRecent(20);
 const websocketLogs = logger.logStore.getByComponent('websocket', 10);
 const errorLogs = logger.logStore.getByLevel(50, 5); // Errors only
 
-// Subscribe to new logs
-const unsubscribe = logger.logStore.subscribe((newLog, allLogs) => {
-  console.log('New log:', newLog);
-});
+// Enhanced log entries include:
+// - filePath: 'src/sites/soundcloud.js'
+// - effectiveLevel: 'trace'
+// - component: 'soundcloud'
+// - displayConfig: { timestamp: true, ... }
 ```
 
-## ⚙️ Configuration
-
-### External Configuration File
-Create a `logger-config.json` file:
-
-```json
-{
-  "projectName": "My Project",
-  "globalLevel": "debug",
-  "format": {
-    "style": "brackets",
-    "componentCase": "upper",
-    "timestamp": "HH:mm:ss.SSS"
-  },
-  "components": {
-    "api": { 
-      "emoji": "🌐", 
-      "color": "#4A90E2", 
-      "name": "API" 
-    },
-    "database": { 
-      "emoji": "💾", 
-      "color": "#00C896", 
-      "name": "Database" 
-    }
-  }
-}
-```
-
-### Load Configuration
+### **Real-time Statistics**
 ```javascript
-import Logger from '@cacp/logger';
-
-// Auto-loads ./logger-config.json if present
-const logger = await Logger.init({
-  configPath: './my-logger-config.json'
-});
+const stats = logger.controls.getStats();
+// Returns:
+// {
+//   total: 156,
+//   byLevel: { debug: 45, info: 89, warn: 15, error: 7 },
+//   byComponent: { soundcloud: 67, websocket: 23, popup: 66 },
+//   timeRange: { start: 1627846260000, end: 1627846320000 }
+// }
 ```
 
-## 🎨 Output Examples
+## 🎨 **Output Examples**
 
-### Browser Console
+### **File Override in Action**
 ```
-22:15:30.123 ✨ [WEBSOCKET] Connection established
-   ├─ url: ws://localhost:8081
-   ├─ protocols: ["cacp-v1"]
-   ├─ readyState: 1
+// src/sites/soundcloud.js with level: "trace" override:
+22:15:30.123 🎵 TRACE [SOUNDCLOUD] Detailed selector matching
+   ├─ selector: ".playButton"
+   ├─ found: true
+   ├─ timing: 2.3ms
 
-22:15:31.456 🚨 [SOUNDCLOUD] Track extraction failed
-   ├─ error: "Selector not found"
-   ├─ selector: ".track-title"
-   ├─ retryAttempt: 3
-```
+// src/managers/websocket-manager.js with level: "warn" (quiet):
+(no debug/info logs shown)
 
-### CLI Terminal
-```
-15:31:42 ✨ [WEBSOCKET] Connection established
-15:31:43 🐛 [SITE-DETECTOR] Pattern matching started
-15:31:44 🚨 [SOUNDCLOUD] Track extraction failed
+// src/popup.js with timestampMode: "relative":
+2s ago 🎛️ [POPUP] User clicked debug button
+   ├─ component: "soundcloud"
 ```
 
-### Production Server
-```json
-{"level":50,"time":"2025-07-28T22:15:31.456Z","name":"soundcloud","msg":"Track extraction failed","error":"Selector not found","selector":".track-title","retryAttempt":3}
+### **Display Toggles in Action**
+```javascript
+// With display: { level: true, jsonPayload: false }:
+22:15:30.123 🚨 ERROR [SOUNDCLOUD] Track extraction failed
+
+// With display: { timestamp: false, level: true, jsonPayload: true }:
+🚨 ERROR [SOUNDCLOUD] Track extraction failed
+   ├─ url: https://soundcloud.com/track/example
+   ├─ retryCount: 3
 ```
-
-## 🔧 API Reference
-
-### Logger Methods
-- `logger.{component}.trace(msg, context?)` - Detailed execution flow
-- `logger.{component}.debug(msg, context?)` - Development information  
-- `logger.{component}.info(msg, context?)` - General information
-- `logger.{component}.warn(msg, context?)` - Potential issues
-- `logger.{component}.error(msg, context?)` - Actual problems
-- `logger.{component}.fatal(msg, context?)` - Critical failures
-
-### Control Methods
-- `logger.controls.setLevel(component, level)` - Set component log level
-- `logger.controls.getLevel(component)` - Get component log level
-- `logger.controls.enableDebugMode()` - Enable debug for all components
-- `logger.controls.enableTraceMode()` - Enable trace for all components
-- `logger.controls.listComponents()` - List available components
-- `logger.controls.getStats()` - Get logging statistics
-
-### Log Store Methods
-- `logger.logStore.getRecent(count)` - Get recent log entries
-- `logger.logStore.getByComponent(component, count)` - Filter by component
-- `logger.logStore.getByLevel(level, count)` - Filter by level
-- `logger.logStore.clear()` - Clear stored logs
-- `logger.logStore.subscribe(callback)` - Subscribe to new logs
 
 ## 📦 Installation
 
@@ -206,41 +349,55 @@ npm install @cacp/logger
 
 The logger automatically detects its environment:
 
-- **Browser**: Uses styled console output with emoji and colors
+- **Browser**: Uses styled console output with file path detection
 - **CLI**: Uses pino-colada for beautiful terminal output  
 - **Server**: Uses structured JSON for production logging
 
 ## 🚀 Advanced Features
 
-### Custom Components
+### **Automatic File Detection**
+The browser formatter automatically detects which file is logging by analyzing the call stack, enabling seamless file override functionality.
+
+### **Smart Level Resolution**
+The three-tier hierarchy (file → component → global) provides maximum flexibility with sensible defaults.
+
+### **Pattern Matching**
+File overrides support glob patterns with `*` and `?` wildcards for powerful bulk configuration.
+
+### **Runtime Reconfiguration**
+All settings can be changed at runtime without restarting, perfect for debugging complex issues.
+
+## 🎯 **Migration from Basic Logger**
+
+If you're upgrading from a basic logger:
+
 ```javascript
-// Add custom component at runtime
-logger.createLogger('my-component');
-logger['my-component'].info('Custom component ready');
+// Before: Simple global level
+logger.level = 'debug';
+
+// After: Granular control
+logger.controls.setComponentLevel('websocket', 'warn');     // Quiet websocket
+logger.controls.addFileOverride('src/popup.js', {           // Debug popup
+  level: 'debug',
+  timestampMode: 'relative'
+});
 ```
 
-### Performance Monitoring
-```javascript
-// Built-in timing (coming soon)
-logger.soundcloud.time('track-extraction');
-// ... extraction logic
-logger.soundcloud.timeEnd('track-extraction');
-```
+## 🔧 **Browser Developer Tools**
 
-### Error Tracking
+In browser environments, runtime controls are available globally:
+
 ```javascript
-try {
-  // risky operation
-} catch (error) {
-  logger.cacp.error('Operation failed', {
-    error: error.message,
-    stack: error.stack,
-    context: { userId, action }
-  });
-}
+// Available as window.CACP_Logger
+CACP_Logger.enableDebugMode();
+CACP_Logger.setDisplayOption('level', true);
+CACP_Logger.addFileOverride('src/popup.js', { level: 'trace' });
+CACP_Logger.getStats();
 ```
 
 ---
 
 **Built for CACP** - Chrome Audio Control Platform  
-**License**: ISC
+**License**: ISC  
+
+This logger system provides the foundation for sophisticated debugging and monitoring across complex multi-file applications with surgical precision and beautiful output.
