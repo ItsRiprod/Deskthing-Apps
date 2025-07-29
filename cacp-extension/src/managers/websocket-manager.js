@@ -1,11 +1,10 @@
 /**
- * WebSocket Manager for CACP (Chrome Audio Control Platform)
+ * CACP WebSocket Manager
  * 
- * Handles WebSocket communication between Chrome extension and DeskThing app.
- * Sends site-identified messages and routes commands to appropriate handlers.
+ * Handles WebSocket communication with the DeskThing app.
  */
 
-import { logger } from '../logger.js';
+import logger from '../logger.js';
 
 export class WebSocketManager {
   constructor() {

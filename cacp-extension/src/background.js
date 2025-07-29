@@ -4,7 +4,7 @@
  * Handles extension lifecycle and background tasks.
  */
 
-import { logger } from './logger.js';
+import logger from './logger.js';
 
 // Initialize logger
 const backgroundLogger = logger.cacp.child({ component: 'background' });

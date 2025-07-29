@@ -1,9 +1,8 @@
 /**
- * CACP (Chrome Audio Control Platform) - Popup Script
- * Enhanced from SoundCloud popup with multi-site capabilities
+ * CACP Popup Script
  */
 
-import { logger } from './logger.js';
+import logger from './logger.js';
 
 // Get version dynamically from manifest
 const EXTENSION_VERSION = chrome.runtime.getManifest().version;

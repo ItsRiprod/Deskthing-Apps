@@ -1,11 +1,10 @@
 /**
- * Priority Manager for CACP (Chrome Audio Control Platform)
+ * CACP Priority Manager
  * 
- * Manages user-configured site priorities and resolves conflicts when multiple sites have audio.
- * Provides the logic for determining which site should take precedence.
+ * Manages user-configured site priorities and resolves conflicts.
  */
 
-import { logger } from '../logger.js';
+import logger from '../logger.js';
 
 export class PriorityManager {
   constructor() {

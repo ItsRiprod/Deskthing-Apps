@@ -1,11 +1,10 @@
 /**
- * Site Detector for CACP (Chrome Audio Control Platform)
+ * CACP Site Detector
  * 
  * Handles URL-based site detection and active site management.
- * Determines which site handlers should be active based on current tab URL.
  */
 
-import { logger } from '../logger.js';
+import logger from '../logger.js';
 
 export class SiteDetector {
   constructor() {

@@ -1,5 +1,5 @@
 import { SiteHandler } from './base-handler.js';
-import { logger } from '../logger.js';
+import logger from '../logger.js';
 
 /**
  * YouTube Site Handler for CACP

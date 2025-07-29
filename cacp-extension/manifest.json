@@ -25,15 +25,7 @@
         "https://music.apple.com/*"
       ],
       "js": [
-        "logger-config.js",
-        "logger.js",
-        "sites/base-handler.js",
-        "sites/soundcloud.js",
-        "sites/youtube.js",
-        "managers/site-detector.js",
-        "managers/priority-manager.js",
-        "managers/websocket-manager.js",
-        "cacp.js"
+        "src/cacp.js"
       ],
       "run_at": "document_start"
     }
@@ -42,14 +34,8 @@
     "default_popup": "popup.html",
     "default_title": "CACP Status"
   },
-  "options_page": "settings/settings.html",
+  "options_page": "src/settings/settings.html",
   "background": {
-    "service_worker": "background.js"
-  },
-  "icons": {
-    "16": "icons/icon16.png",
-    "32": "icons/icon32.png", 
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
+    "service_worker": "src/background.js"
   }
 }

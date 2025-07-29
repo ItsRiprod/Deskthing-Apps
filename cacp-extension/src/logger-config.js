@@ -226,11 +226,13 @@ export function setLevel(scopeName, level, enabled) {
 }
 
 // Quick development shortcuts (can be called from console)
-window.cacpLogger = {
-  config: loggerConfig,
-  applyPreset,
-  enableScope,
-  disableScope,
-  setLevel,
-  presets: Object.keys(loggerConfig.presets)
-}; 
+if (typeof window !== 'undefined') {
+  window.cacpLogger = {
+    config: loggerConfig,
+    applyPreset,
+    enableScope,
+    disableScope,
+    setLevel,
+    presets: Object.keys(loggerConfig.presets)
+  };
+} 

@@ -1,16 +1,20 @@
 /**
  * CACP (Chrome Audio Control Platform) - Main Orchestrator
  * 
- * Coordinates all CACP components and manages the extension lifecycle.
- * Handles site detection, priority management, and communication with DeskThing.
+ * Coordinates all CACP components:
+ * - Site Detection & Handler Management  
+ * - Priority Resolution & Site Selection
+ * - WebSocket Communication with DeskThing
+ * - Popup Communication & Status Updates
  */
 
+import logger from './logger.js';
+
+// Import site handlers
 import { SiteDetector } from './managers/site-detector.js';
 import { PriorityManager } from './managers/priority-manager.js';
 import { WebSocketManager } from './managers/websocket-manager.js';
-import { logger } from './logger.js';
 
-// Import site handlers
 import { SoundCloudHandler } from './sites/soundcloud.js';
 import { YouTubeHandler } from './sites/youtube.js';
 
