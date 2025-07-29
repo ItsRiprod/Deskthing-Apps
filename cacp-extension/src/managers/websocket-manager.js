@@ -1,10 +1,9 @@
 /**
- * CACP WebSocket Manager
- * 
- * Handles WebSocket communication with the DeskThing app.
+ * WebSocket Manager for CACP
+ * Handles connection to DeskThing app with auto-reconnection and error handling
  */
 
-import logger from '../logger.js';
+import logger from '@logger';
 
 export class WebSocketManager {
   constructor() {

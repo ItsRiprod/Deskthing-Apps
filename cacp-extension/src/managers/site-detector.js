@@ -1,10 +1,9 @@
 /**
- * CACP Site Detector
- * 
- * Handles URL-based site detection and active site management.
+ * Site Detection Manager for CACP
+ * Handles URL pattern matching and site handler registration
  */
 
-import logger from '../logger.js';
+import logger from '@logger';
 
 export class SiteDetector {
   constructor() {

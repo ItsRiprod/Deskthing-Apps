@@ -1,10 +1,9 @@
 /**
- * CACP Chrome Extension - Background Script
- * 
- * Global Media Controller - Tracks and manages media across all tabs
+ * CACP Background Script - Global Media Manager
+ * Coordinates multi-tab media control across different music sites
  */
 
-import logger from './logger.js';
+import logger from '@logger';
 
 // Initialize logger
 const backgroundLogger = logger.cacp.child({ component: 'background' });

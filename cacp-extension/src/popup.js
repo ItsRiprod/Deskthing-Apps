@@ -1,10 +1,9 @@
 /**
- * CACP Popup Script - Global Media Controller Interface
- * 
- * Shows all active media sources across all tabs and provides centralized control
+ * CACP Extension Popup Interface
+ * Testing and monitoring interface for Chrome extension
  */
 
-import logger from './logger.js';
+import logger from '@logger';
 
 // Get version dynamically from manifest
 const EXTENSION_VERSION = chrome.runtime.getManifest().version;

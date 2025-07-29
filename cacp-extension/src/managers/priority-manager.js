@@ -1,10 +1,9 @@
 /**
- * CACP Priority Manager
- * 
- * Manages user-configured site priorities and resolves conflicts.
+ * Priority Manager for CACP
+ * Handles user-defined site priority rankings and conflict resolution
  */
 
-import logger from '../logger.js';
+import logger from '@logger';
 
 export class PriorityManager {
   constructor() {

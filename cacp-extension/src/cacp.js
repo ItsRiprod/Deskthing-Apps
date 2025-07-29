@@ -1,11 +1,9 @@
 /**
- * CACP (Chrome Audio Control Platform) - Content Script
- * 
- * Global Media Source Reporter - Each tab registers with background script
- * and reports media status for centralized control
+ * CACP (Chrome Audio Control Platform) Content Script
+ * Universal media source for multiple music streaming sites
  */
 
-import logger from './logger.js';
+import logger from '@logger';
 
 // Import site handlers
 import { SiteDetector } from './managers/site-detector.js';
