@@ -48,39 +48,84 @@ class CACPMediaSource {
 
     try {
       // Get tab ID from background script
+      this.log.debug('Step 1: Getting tab ID...');
       await this.getTabId();
+      this.log.debug('Step 1 complete: Tab ID obtained');
       
       // Register site handlers
+      this.log.debug('Step 2: Registering site handlers...');
       await this.registerSiteHandlers();
+      this.log.debug('Step 2 complete: Site handlers registered');
       
       // Detect if this site is supported
+      this.log.debug('Step 3: Detecting site...');
       await this.detectSite();
+      this.log.debug('Step 3 complete: Site detection finished', {
+        activeSiteName: this.activeSiteName,
+        hasHandler: !!this.currentHandler
+      });
       
       // Set up message listener for control commands
+      this.log.debug('Step 4: Setting up message listener...');
       this.setupMessageListener();
+      this.log.debug('Step 4 complete: Message listener setup');
       
       // Register with background script if we have a handler
       if (this.currentHandler) {
+        this.log.debug('Step 5: Registering with background script...');
         await this.registerWithBackground();
+        this.log.debug('Step 5 complete: Background registration successful');
+        
+        this.log.debug('Step 6: Starting reporting...');
         this.startReporting();
+        this.log.debug('Step 6 complete: Reporting started');
+      } else {
+        this.log.warn('No handler detected - skipping background registration and reporting');
       }
       
       // Listen for URL changes (SPA navigation)
+      this.log.debug('Step 7: Setting up URL change listener...');
       this.setupURLChangeListener();
+      this.log.debug('Step 7 complete: URL change listener setup');
       
       // Clean up on page unload
+      this.log.debug('Step 8: Setting up unload handler...');
       this.setupUnloadHandler();
+      this.log.debug('Step 8 complete: Unload handler setup');
       
-      this.log.info('CACP Media Source initialized', {
+      this.log.info('CACP Media Source initialized successfully', {
         siteName: this.activeSiteName,
         hasHandler: !!this.currentHandler,
-        tabId: this.tabId
+        tabId: this.tabId,
+        totalSteps: 8
       });
 
     } catch (error) {
       this.log.error('CACP Media Source initialization failed', {
         error: error.message,
-        stack: error.stack
+        errorType: error.constructor.name,
+        stack: error.stack,
+        context: {
+          url: window.location.href,
+          hostname: window.location.hostname,
+          pathname: window.location.pathname,
+          activeSiteName: this.activeSiteName,
+          hasHandler: !!this.currentHandler,
+          tabId: this.tabId,
+          documentReadyState: document.readyState
+        }
+      });
+      
+      // Additional debugging info
+      this.log.debug('Initialization failure debugging info', {
+        registeredHandlers: this.siteDetector ? this.siteDetector.getRegisteredSites() : null,
+        siteDetectorExists: !!this.siteDetector,
+        locationDetails: {
+          href: window.location.href,
+          hostname: window.location.hostname,
+          pathname: window.location.pathname,
+          protocol: window.location.protocol
+        }
       });
     }
   }
@@ -118,24 +163,56 @@ class CACPMediaSource {
    * Detect current site and activate appropriate handler
    */
   async detectSite() {
-    this.log.debug('Detecting site for URL:', window.location.href);
+    this.log.debug('Starting site detection', {
+      url: window.location.href,
+      hostname: window.location.hostname
+    });
     
-    const detectedSite = this.siteDetector.detectSite(window.location.href);
-    
-    if (detectedSite) {
-      this.activeSiteName = detectedSite.name;
-      this.log.info('Site detection complete', {
-        siteName: this.activeSiteName,
-        priority: detectedSite.priority
-      });
+    try {
+      const detectedSites = this.siteDetector.detectSites(window.location.href);
       
-      // Activate the handler
-      await this.activateHandler(detectedSite.name);
-    } else {
-      this.log.debug('No supported site detected', {
+      this.log.debug('Site detection completed', {
+        detectedSites,
+        totalMatches: detectedSites?.length || 0,
         url: window.location.href,
         hostname: window.location.hostname
       });
+      
+      // Take the highest priority site (first in sorted array)
+      const detectedSite = detectedSites && detectedSites.length > 0 ? detectedSites[0] : null;
+      
+      if (detectedSite) {
+        this.activeSiteName = detectedSite.name;
+        
+        this.log.info('Site detected successfully', {
+          siteName: this.activeSiteName,
+          priority: detectedSite.priority,
+          isActive: detectedSite.isActive
+        });
+        
+        // Activate the handler
+        const activationResult = await this.activateHandler(detectedSite.name);
+        
+        this.log.debug('Handler activation completed', {
+          siteName: this.activeSiteName,
+          success: activationResult
+        });
+        
+      } else {
+        this.log.debug('No supported site detected', {
+          url: window.location.href,
+          hostname: window.location.hostname,
+          availableHandlers: this.siteDetector.getRegisteredSites()
+        });
+      }
+    } catch (error) {
+      this.log.error('Site detection failed', {
+        error: error.message,
+        stack: error.stack,
+        url: window.location.href,
+        hostname: window.location.hostname
+      });
+      throw error;
     }
   }
 
@@ -144,27 +221,78 @@ class CACPMediaSource {
    */
   async activateHandler(siteName) {
     try {
-      this.log.debug(`Activating handler: ${siteName}`);
+      this.log.debug('Starting handler activation', { siteName });
       
       const HandlerClass = this.siteDetector.getHandler(siteName);
+      
+      this.log.debug('Handler class lookup completed', {
+        siteName,
+        handlerFound: !!HandlerClass,
+        handlerName: HandlerClass ? HandlerClass.name : null,
+        handlerType: typeof HandlerClass
+      });
+      
       if (HandlerClass) {
-        this.currentHandler = new HandlerClass();
+        this.log.debug('Creating handler instance', { handlerClass: HandlerClass.name });
+        
+        try {
+          this.currentHandler = new HandlerClass();
+          this.log.debug('Handler instance created successfully', {
+            handlerType: HandlerClass.name,
+            hasInitialize: !!this.currentHandler.initialize
+          });
+        } catch (constructorError) {
+          this.log.error('Handler constructor failed', {
+            siteName,
+            handlerClass: HandlerClass.name,
+            error: constructorError.message,
+            stack: constructorError.stack
+          });
+          throw new Error(`Handler constructor failed: ${constructorError.message}`);
+        }
         
         // Initialize the handler
         if (this.currentHandler.initialize) {
-          await this.currentHandler.initialize();
+          this.log.debug('Calling handler initialize method', { siteName });
+          
+          try {
+            const initResult = await this.currentHandler.initialize();
+            this.log.debug('Handler initialization completed', {
+              siteName,
+              success: initResult,
+              resultType: typeof initResult
+            });
+          } catch (initError) {
+            this.log.error('Handler initialization failed', {
+              siteName,
+              error: initError.message,
+              stack: initError.stack
+            });
+            throw new Error(`Handler initialization failed: ${initError.message}`);
+          }
+        } else {
+          this.log.debug('Handler has no initialize method', { siteName });
         }
         
-        this.log.info(`Handler activated: ${siteName}`);
+        this.log.info('Handler activated successfully', {
+          siteName,
+          handlerType: HandlerClass.name,
+          hasInitialize: !!this.currentHandler.initialize
+        });
         
         return true;
       } else {
-        this.log.error(`No handler found for site: ${siteName}`);
+        this.log.error('No handler class found', {
+          siteName,
+          availableHandlers: this.siteDetector.getRegisteredSites()
+        });
         return false;
       }
     } catch (error) {
-      this.log.error(`Failed to activate handler for ${siteName}`, {
+      this.log.error('Handler activation failed', {
+        siteName,
         error: error.message,
+        errorType: error.constructor.name,
         stack: error.stack
       });
       return false;
@@ -176,9 +304,20 @@ class CACPMediaSource {
    */
   async registerWithBackground() {
     try {
+      this.log.debug('Getting current media state for registration...');
       const mediaState = this.getCurrentMediaState();
       
-      await chrome.runtime.sendMessage({
+      this.log.debug('Media state for registration', {
+        site: this.activeSiteName,
+        isActive: mediaState.isActive,
+        trackTitle: mediaState.trackInfo?.title,
+        isPlaying: mediaState.isPlaying,
+        canControl: this.currentHandler?.canControl || true
+      });
+
+      this.log.debug('Sending registration message to background script...');
+      
+      const registrationData = {
         type: 'register-media-source',
         data: {
           site: this.activeSiteName,
@@ -188,18 +327,33 @@ class CACPMediaSource {
           canControl: this.currentHandler?.canControl || true,
           priority: this.siteDetector.getSitePriority(this.activeSiteName) || 1
         }
+      };
+      
+      this.log.debug('Registration data prepared', registrationData);
+      
+      const response = await chrome.runtime.sendMessage(registrationData);
+      
+      this.log.debug('Background script response', {
+        response,
+        responseType: typeof response,
+        success: response?.success
       });
       
       this.isRegistered = true;
-      this.log.debug('Registered with background script', {
+      this.log.debug('Registered with background script successfully', {
         site: this.activeSiteName,
-        isActive: mediaState.isActive
+        isActive: mediaState.isActive,
+        registrationResponse: response
       });
       
     } catch (error) {
       this.log.error('Failed to register with background script', {
-        error: error.message
+        error: error.message,
+        stack: error.stack,
+        site: this.activeSiteName,
+        chromeRuntimeError: chrome.runtime.lastError
       });
+      throw error;
     }
   }
 
@@ -451,4 +605,9 @@ if (document.readyState === 'loading') {
 // Export for potential external access
 window.cacpMediaSource = cacpMediaSource;
 
-console.log('[CACP] Media Source content script loaded');
+// Log that the content script loaded
+if (cacpMediaSource.log) {
+  cacpMediaSource.log.info('CACP Media Source content script loaded');
+} else {
+  console.log('[CACP] Media Source content script loaded'); // Fallback if logger not ready
+}

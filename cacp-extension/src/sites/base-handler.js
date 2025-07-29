@@ -5,6 +5,8 @@
  * Follows the 80/20 rule: config handles 80% of cases, custom overrides handle complex 20%.
  */
 
+import logger from '../logger.js';
+
 export class SiteHandler {
   constructor() {
     this.config = this.constructor.config;
@@ -12,6 +14,10 @@ export class SiteHandler {
     this.lastKnownTrackInfo = null;
     this.retryCount = 0;
     this.maxRetries = 3;
+    
+    // Get logger based on config name
+    const siteName = this.config.name.toLowerCase();
+    this.log = logger[siteName] || logger.createLogger(siteName);
   }
 
   /**
@@ -50,10 +56,17 @@ export class SiteHandler {
     try {
       await this.waitForElements();
       this.isInitialized = true;
-      console.log(`[CACP] ${this.config.name} handler initialized`);
+      this.log.info('Handler initialized successfully', {
+        siteName: this.config.name,
+        hasElements: true
+      });
       return true;
     } catch (error) {
-      console.error(`[CACP] Failed to initialize ${this.config.name}:`, error);
+      this.log.error('Handler initialization failed', {
+        siteName: this.config.name,
+        error: error.message,
+        stack: error.stack
+      });
       return false;
     }
   }
@@ -96,7 +109,11 @@ export class SiteHandler {
       }
       throw new Error('Play button not found or not in correct state');
     } catch (error) {
-      console.error(`[CACP] ${this.config.name} play failed:`, error);
+      this.log.error('Play command failed', {
+        siteName: this.config.name,
+        error: error.message,
+        selector: this.config.selectors?.playButton
+      });
       return { success: false, error: error.message };
     }
   }
@@ -109,7 +126,7 @@ export class SiteHandler {
       const button = this.getElement(['pauseButton', 'playButton']);
       if (button) {
         // Check if it's actually a pause button (not play)
-        const isPauseButton = !this.isPlayButton(button);
+        const isPauseButton = this.isPauseButton(button);
         if (isPauseButton) {
           this.clickElement(button);
           return { success: true, action: 'pause' };
@@ -117,13 +134,17 @@ export class SiteHandler {
       }
       throw new Error('Pause button not found or not in correct state');
     } catch (error) {
-      console.error(`[CACP] ${this.config.name} pause failed:`, error);
+      this.log.error('Pause command failed', {
+        siteName: this.config.name,
+        error: error.message,
+        selector: this.config.selectors?.pauseButton
+      });
       return { success: false, error: error.message };
     }
   }
 
   /**
-   * Skip to next track
+   * Next track
    */
   async next() {
     try {
@@ -134,13 +155,17 @@ export class SiteHandler {
       }
       throw new Error('Next button not found or disabled');
     } catch (error) {
-      console.error(`[CACP] ${this.config.name} next failed:`, error);
+      this.log.error('Next command failed', {
+        siteName: this.config.name,
+        error: error.message,
+        selector: this.config.selectors?.nextButton
+      });
       return { success: false, error: error.message };
     }
   }
 
   /**
-   * Skip to previous track
+   * Previous track
    */
   async previous() {
     try {
@@ -151,54 +176,49 @@ export class SiteHandler {
       }
       throw new Error('Previous button not found or disabled');
     } catch (error) {
-      console.error(`[CACP] ${this.config.name} previous failed:`, error);
+      this.log.error('Previous command failed', {
+        siteName: this.config.name,
+        error: error.message,
+        selector: this.config.selectors?.prevButton
+      });
       return { success: false, error: error.message };
     }
   }
 
   /**
    * Get current track information
-   * @returns {Object} Track metadata
+   * @returns {Object} Track info object
    */
   getTrackInfo() {
     try {
-      const title = this.getElementText('title');
-      const artist = this.getElementText('artist');
+      const title = this.getElementText('title') || 'Unknown Title';
+      const artist = this.getElementText('artist') || 'Unknown Artist';
       const album = this.getElementText('album') || '';
       const artwork = this.getArtwork();
-      const isPlaying = this.getPlayingState();
+      const isPlaying = this.isPlaying();
 
       const trackInfo = {
-        title: title || 'Unknown Title',
-        artist: artist || 'Unknown Artist',
+        title,
+        artist,
         album,
         artwork,
-        isPlaying,
-        site: this.config.name.toLowerCase()
+        isPlaying
       };
 
-      // Cache for fallback
-      if (title && artist) {
-        this.lastKnownTrackInfo = trackInfo;
-      }
-
+      this.lastKnownTrackInfo = trackInfo;
       return trackInfo;
     } catch (error) {
-      console.warn(`[CACP] ${this.config.name} getTrackInfo failed:`, error);
-      // Return cached data if available
-      return this.lastKnownTrackInfo || {
-        title: 'Unknown',
-        artist: 'Unknown',
-        album: '',
-        artwork: [],
-        isPlaying: false,
-        site: this.config.name.toLowerCase()
-      };
+      this.log.warn('Track info extraction failed', {
+        siteName: this.config.name,
+        error: error.message,
+        fallback: 'returning last known info'
+      });
+      return this.lastKnownTrackInfo || this.getDefaultTrackInfo();
     }
   }
 
   /**
-   * Get current playback position in seconds
+   * Get current playback time
    * @returns {number} Current time in seconds
    */
   getCurrentTime() {
@@ -210,13 +230,17 @@ export class SiteHandler {
       }
       return 0;
     } catch (error) {
-      console.warn(`[CACP] ${this.config.name} getCurrentTime failed:`, error);
+      this.log.warn('Current time extraction failed', {
+        siteName: this.config.name,
+        error: error.message,
+        fallback: 0
+      });
       return 0;
     }
   }
 
   /**
-   * Get total track duration in seconds
+   * Get total track duration
    * @returns {number} Duration in seconds
    */
   getDuration() {
@@ -228,34 +252,39 @@ export class SiteHandler {
       }
       return 0;
     } catch (error) {
-      console.warn(`[CACP] ${this.config.name} getDuration failed:`, error);
+      this.log.warn('Duration extraction failed', {
+        siteName: this.config.name,
+        error: error.message,
+        fallback: 0
+      });
       return 0;
     }
   }
 
   /**
-   * Seek to specific time position
+   * Seek to specific time
    * @param {number} time Time in seconds
+   * @returns {boolean} Success
    */
   async seek(time) {
     try {
       const progressBar = this.getElement('progressBar');
-      if (progressBar) {
+      if (progressBar && this.isSeekable(progressBar)) {
         const duration = this.getDuration();
         if (duration > 0) {
           const percentage = Math.max(0, Math.min(1, time / duration));
-          const rect = progressBar.getBoundingClientRect();
-          const clickX = rect.left + (rect.width * percentage);
-          const clickY = rect.top + (rect.height / 2);
-          
-          // Simulate click at calculated position
-          this.clickAtPosition(progressBar, clickX, clickY);
+          this.seekToPercentage(progressBar, percentage);
           return { success: true, action: 'seek', time };
         }
       }
-      throw new Error('Seek not supported or progress bar not found');
+      throw new Error('Seeking not available or invalid time');
     } catch (error) {
-      console.error(`[CACP] ${this.config.name} seek failed:`, error);
+      this.log.error('Seek command failed', {
+        siteName: this.config.name,
+        error: error.message,
+        time,
+        selector: this.config.selectors?.progressBar
+      });
       return { success: false, error: error.message };
     }
   }
