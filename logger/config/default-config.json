@@ -1,0 +1,30 @@
+{
+  "projectName": "CACP Logger",
+  "globalLevel": "info",
+  "autoRegister": true,
+  "format": {
+    "style": "brackets",
+    "componentCase": "upper",
+    "timestamp": "HH:mm:ss.SSS"
+  },
+  "levels": {
+    "10": { "name": "TRACE", "emoji": "🔍", "color": "#6C7B7F" },
+    "20": { "name": "DEBUG", "emoji": "🐛", "color": "#74B9FF" },
+    "30": { "name": "INFO", "emoji": "✨", "color": "#00B894" },
+    "40": { "name": "WARN", "emoji": "⚠️", "color": "#FDCB6E" },
+    "50": { "name": "ERROR", "emoji": "🚨", "color": "#E17055" },
+    "60": { "name": "FATAL", "emoji": "💀", "color": "#D63031" }
+  },
+  "components": {
+    "cacp": { "emoji": "🎯", "color": "#4A90E2", "name": "CACP-Core" },
+    "soundcloud": { "emoji": "🎵", "color": "#FF5500", "name": "SoundCloud" },
+    "youtube": { "emoji": "📹", "color": "#FF0000", "name": "YouTube" },
+    "site-detector": { "emoji": "🔍", "color": "#00C896", "name": "SiteDetector" },
+    "websocket": { "emoji": "🌐", "color": "#9B59B6", "name": "WebSocket" },
+    "popup": { "emoji": "🎛️", "color": "#FF6B6B", "name": "Popup" },
+    "background": { "emoji": "🔧", "color": "#4ECDC4", "name": "Background" },
+    "priority-manager": { "emoji": "⚖️", "color": "#45B7D1", "name": "PriorityManager" },
+    "settings": { "emoji": "⚙️", "color": "#96CEB4", "name": "Settings" },
+    "test": { "emoji": "🧪", "color": "#FFEAA7", "name": "Test" }
+  }
+}

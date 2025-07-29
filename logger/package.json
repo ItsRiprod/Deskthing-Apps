@@ -1,0 +1,46 @@
+{
+  "name": "@cacp/logger",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Smart Adaptive Logger System with multi-environment support",
+  "main": "index.js",
+  "keywords": [
+    "logging",
+    "pino",
+    "browser",
+    "cli",
+    "server",
+    "chrome-extension",
+    "adaptive"
+  ],
+  "author": "CACP Team",
+  "license": "ISC",
+  "dependencies": {
+    "pino": "^9.7.0"
+  },
+  "devDependencies": {
+    "pino-colada": "^2.2.2"
+  },
+  "peerDependencies": {
+    "pino-colada": "^2.2.2"
+  },
+  "files": [
+    "index.js",
+    "config/",
+    "formatters/",
+    "stores/",
+    "utils/",
+    "README.md"
+  ],
+  "exports": {
+    ".": "./index.js",
+    "./config": "./config/config-manager.js",
+    "./stores": "./stores/log-store.js",
+    "./formatters/browser": "./formatters/browser-formatter.js",
+    "./formatters/cli": "./formatters/cli-formatter.js",
+    "./formatters/server": "./formatters/server-formatter.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
