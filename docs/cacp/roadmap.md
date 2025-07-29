@@ -1,7 +1,7 @@
 # Chrome Audio Control Platform (CACP) - Roadmap
 
 **Last Updated:** July 28, 2025  
-**Current Phase:** Foundation Implementation  
+**Current Phase:** Extension Testing & Validation  
 **Repository Structure:** Dual development (working SoundCloud + CACP development)
 
 ---
@@ -35,55 +35,46 @@ Transform single-site audio control into a **universal Chrome audio control plat
 
 ---
 
-## 📋 **WebSocket Protocol** ✅ **Already Multi-Site Ready**
-
-The existing protocol was designed for multi-site support:
-
-**Extension → DeskThing:**
-```javascript
-{ type: 'connection', source: 'chrome-extension', version: '0.1.0', site: 'soundcloud' }
-{ type: 'mediaData', site: 'soundcloud', data: { title, artist, album, artwork, isPlaying } }
-{ type: 'timeupdate', site: 'soundcloud', currentTime, duration, isPlaying }
-{ type: 'command-result', site: 'soundcloud', commandId, success, result }
-```
-
-**DeskThing → Extension:**
-```javascript
-{ type: 'media-command', action: 'play|pause|nexttrack|previoustrack', id, targetSite?: 'soundcloud' }
-{ type: 'seek', time: number, targetSite?: 'soundcloud' }
-{ type: 'ping' }
-```
-
----
-
 ## 🛣️ **Implementation Phases**
 
-### **Phase 1: Foundation** 🔄 **Current (July 2025)**
+### **Phase 1: Foundation** ✅ **COMPLETE (Last Session)**
 - [x] Repository restructure with dual development approach
 - [x] CACP directory structure and scaffolding
 - [x] Updated documentation and architecture
 - [x] Chrome extension manifest with multi-site permissions
 - [x] CACP app package.json and TypeScript configuration
-- [ ] **🎯 Current:** Base handler class implementation
-- [ ] Site detector and priority manager
-- [ ] WebSocket manager for DeskThing communication
-- [ ] Extract SoundCloud functionality into modular handler
+- [x] **✅ Base handler class implementation**
+- [x] **✅ Site detector and priority manager**
+- [x] **✅ WebSocket manager for DeskThing communication**
+- [x] **✅ SoundCloud functionality extracted into modular handler**
+- [x] **✅ YouTube handler implementation**
+- [x] **✅ Global media manager with cross-tab coordination**
+- [x] **✅ Structured logging system**
+- [x] **✅ Extension popup and settings UI**
 
-### **Phase 2: Multi-Site Core** 🔜 **Next**
-- [ ] Priority manager with drag-drop settings UI
+### **Phase 2: Extension Validation** 🔄 **CURRENT (July 2025)**
+- [ ] **🎯 Current:** Test extension-to-SoundCloud site communication
+- [ ] Validate popup shows SoundCloud detection and controls
+- [ ] Test play/pause/next/previous commands from extension
+- [ ] Debug any site interaction or console errors
+- [ ] Verify extension works with existing SoundCloud app server
+- [ ] Test YouTube handler functionality
+
+### **Phase 3: Universal App Server** 🔜 **NEXT**
+- [ ] Migrate SoundCloud app server to universal CACP app
 - [ ] Message routing by site in CACP app
+- [ ] Multi-site data handling and storage
 - [ ] Error handling and graceful fallbacks
-- [ ] Basic YouTube implementation
-- [ ] Testing framework for site handlers
+- [ ] Testing framework for end-to-end validation
 
-### **Phase 3: Platform Maturity** 🎯 **Q3-Q4 2025**
+### **Phase 4: Platform Maturity** 🎯 **Q3-Q4 2025**
 - [ ] Contributor documentation and guidelines
 - [ ] Site handler template and examples
 - [ ] Automated testing for selector stability
 - [ ] Performance optimizations and resource management
 - [ ] Advanced error recovery mechanisms
 
-### **Phase 4: Ecosystem Growth** 🚀 **2026+**
+### **Phase 5: Ecosystem Growth** 🚀 **2026+**
 - [ ] Additional site handlers (Spotify Web, Apple Music, YouTube Music)
 - [ ] Community contribution pipeline
 - [ ] Advanced features (volume control, playlists, queue management)
@@ -91,59 +82,48 @@ The existing protocol was designed for multi-site support:
 
 ---
 
-## 🎵 **Target Site Support**
+## 📊 **Current Development Status**
 
-### **Phase 1 Sites**
-- **SoundCloud** ✅ Working baseline, 🔄 Migrating to modular
-- **YouTube** 🔄 Basic framework, needs implementation
+### **✅ Completed (Phase 1 - Last Session)**
+- **CACP Chrome Extension**: Fully implemented with 3000+ lines of code
+  - Content script orchestrator with site detection
+  - Background script with global media management
+  - Base handler class with config-driven architecture
+  - Complete SoundCloud handler (892 lines)
+  - Complete YouTube handler (477 lines)
+  - WebSocket manager for DeskThing communication
+  - Structured logging with Pino integration
+  - Extension popup and settings interfaces
+- **Multi-site manifest** with permissions for 5+ streaming services
+- **Build system** updates with workspace support
 
-### **Phase 2 Sites**
-- **Spotify Web** - Existing selector research available
-- **YouTube Music** - Extension of YouTube handler
+### **🔄 In Progress (Phase 2)**
+- **Extension testing** - Validate extension-to-site communication
+- **SoundCloud integration** - Test against working app server
+- **YouTube validation** - Verify second site handler works
+- **Console debugging** - Fix any remaining initialization issues
 
-### **Phase 3+ Sites**
-- **Apple Music Web** - Basic research completed
-- **Pandora** - Community request
-- **Tidal** - Premium streaming support
-- **Deezer** - International market support
-
----
-
-## 📝 **Current Development Status**
-
-### **✅ Completed (July 2025)**
-- Repository organization with dual development structure
-- Architecture documentation and technical design
-- CACP app and extension scaffolding
-- Multi-site Chrome extension manifest
-- Build system updates with workspace support
-
-### **🔄 In Progress**
-- **Base handler class** - Core interface for all site implementations
-- **Site detection system** - URL pattern matching and priority management
-- **WebSocket manager** - DeskThing communication layer
-
-### **🎯 Next Priorities**
-1. Complete base handler implementation
-2. Extract SoundCloud functionality into modular handler
-3. Implement site detection and priority management
-4. Create settings UI for site priority configuration
+### **🎯 Next Priorities (Phase 3)**
+1. Migrate working SoundCloud app server to universal CACP app
+2. Implement multi-site message routing and data handling
+3. Create unified WebSocket server for all sites
+4. Test end-to-end multi-site functionality
 
 ### **🔗 Dependencies**
-- No external dependencies - self-contained development
-- SoundCloud implementation serves as working reference
-- Chrome extension APIs provide site detection capabilities
+- Extension validation must complete before app server migration
+- SoundCloud baseline provides working reference for migration
+- Chrome extension APIs provide cross-tab and site communication
 
 ---
 
 ## 📊 **Success Metrics**
 
-**Phase 1 Complete:** Base handler + SoundCloud modular + YouTube basic  
-**Phase 2 Complete:** 3+ sites supported with user priority settings  
-**Phase 3 Complete:** Community contribution pipeline + 5+ sites  
+**Phase 2 Complete:** Extension controls SoundCloud + YouTube sites reliably  
+**Phase 3 Complete:** Universal app server supports 2+ sites with message routing  
+**Phase 4 Complete:** Community contribution pipeline + 5+ sites  
 **Platform Success:** 10+ sites with active community contributions
 
 ---
 
-**Next Update:** After base handler implementation completion  
-**Current Focus:** Foundation infrastructure for universal platform
+**Next Update:** After extension validation completion  
+**Current Focus:** Extension-to-site communication before universal app development

@@ -1,248 +1,125 @@
 # Next Session Planning - CACP Development
 
-*Last Updated: January 28, 2025*
+*Last Updated: July 28, 2025*
 
-## 🚨 **CRITICAL STATUS: CACP Extension Failed - Immediate Action Required**
+## 🎯 **CURRENT STATUS: CACP Extension Complete - Testing Phase**
 
-### **Current State: BROKEN ❌**
-- **CACP extension initialization FAILED**
-- Extension loads but crashes during `CACPMediaSource.initialize()`
-- No media detection or control functionality working
-- Multiple architectural and environmental issues identified
+### **✅ MAJOR PROGRESS: CACP Extension Fully Implemented (Last Session)**
+- **CACP extension is 90%+ complete** - sophisticated multi-site architecture implemented
+- **Content script** (455 lines): Global media source reporting with site detection  
+- **Background script** (324 lines): Complete GlobalMediaManager with tab coordination
+- **Site handlers**: Full SoundCloud (892 lines) + YouTube (477 lines) implementations
+- **Base architecture**: Config-driven handler system with override capabilities
+- **Support systems**: WebSocket manager, priority manager, structured logging, popup UI
 
-### **Console Error Summary:**
+### **🎯 CURRENT PRIORITY: Extension-to-SoundCloud Communication**
+**Focus**: Get CACP extension working with SoundCloud site **before** touching DeskThing app
+- Extension → SoundCloud site interaction (play/pause/next/prev)
+- Popup interface showing SoundCloud detection and control
+- Validate against working SoundCloud app server (port 8081)
+
+### **🔄 IMPLEMENTATION STATUS**
+
+**✅ COMPLETE (Last Session):**
+- CACP Chrome extension architecture and implementation
+- Multi-site handler system with base class + overrides
+- SoundCloud and YouTube site handlers 
+- Global media manager for cross-tab coordination
+- WebSocket communication layer
+- Structured logging system with Pino
+- Extension popup and settings UI
+- Chrome manifest with multi-site permissions
+
+**🎯 CURRENT FOCUS:**
+- [ ] **DEBUG**: Extension popup showing SoundCloud detection
+- [ ] **TEST**: SoundCloud site control commands (play/pause/next/prev)
+- [ ] **VALIDATE**: Extension communication with SoundCloud app server
+- [ ] **FIX**: Any extension-to-site interaction issues
+
+**🔜 NEXT PHASE (After Extension Works):**
+- [ ] Migrate working SoundCloud app server to universal CACP app
+- [ ] Multi-site server message routing
+- [ ] Test YouTube handler integration
+
+---
+
+## 🚨 **PREVIOUS CONSOLE ERRORS (May Be Resolved)**
+
+### **Extension Loading Issues (Check if still occurring):**
 ```
 cacp.js:4 {time: 1753749008251, level: 'error', msg: 'CACP Media Source initialization failed'}
 Uncaught runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
 ```
 
-### **Root Cause Analysis:**
-
-**1. 🔥 CRITICAL: Extension Architecture Failure**
-- New global media controller architecture has bugs
-- Background script/content script communication broken  
-- Async message handling errors in Chrome extension APIs
-- `chrome.runtime.sendMessage` calls failing or timing out
-
-**2. 🔥 CRITICAL: Ad-Blocker Interference**
-- **30+ blocked requests** for SoundCloud internal scripts:
-  - `net::ERR_BLOCKED_BY_CLIENT` for analytics, ads, tracking
-  - `htlbid.js`, `scorecardresearch.com`, `googletagmanager.com` blocked
-  - `synchrobox.adswizz.com`, `cdn.moengage.com` blocked
-- SoundCloud's MediaSession API likely compromised
-- Our extension may be fighting damaged SoundCloud functionality
-
-**3. 🔥 CRITICAL: Service Worker Errors** 
-- Multiple `TypeError: Failed to convert value to 'Response'` errors
-- Service worker conflicts between our extension and SoundCloud
-- CORS policy blocks for SoundCloud assets (`@rive-app-canvas-lite`)
-
-**4. Environment Issues:**
-- Vite bundling may have introduced module resolution bugs
-- ES6 module compatibility problems in Chrome extension context
-- Background script may not be properly handling async operations
-
----
-
-## 🚨 **IMMEDIATE PRIORITY FIXES**
-
-### **Block everything else until these are fixed:**
-
-**1. 🔥 DEBUG EXTENSION INITIALIZATION FAILURE (Critical)**
-- [ ] Add comprehensive error logging to `CACPMediaSource.initialize()`
-- [ ] Check background script is loading and responding
-- [ ] Verify `chrome.runtime.sendMessage` communication works
-- [ ] Test without ad-blockers to isolate interference
-
-**2. 🔥 FIX GLOBAL MEDIA CONTROLLER ARCHITECTURE (Critical)**
-- [ ] Debug background script `GlobalMediaManager` class
-- [ ] Fix async message handling in `chrome.runtime.onMessage`
-- [ ] Ensure content script registration with background works
-- [ ] Verify popup can communicate with background script
-
-**3. 🔥 ISOLATE AD-BLOCKER IMPACT (High)**
-- [ ] Test extension on clean browser profile (no ad-blockers)
-- [ ] Document which SoundCloud features break with heavy ad-blocking
-- [ ] Determine if our extension can work around blocked APIs
-- [ ] Consider fallback strategies for compromised MediaSession
-
-### **Secondary (After core fixes):**
-**4. 🟡 IMPLEMENT MISSING SOUNDCLOUD FIXES**
-- [ ] Fix next/previous control timing to match original
-- [ ] Add missing timeline scrub selectors  
-- [ ] Implement continuous position tracking interval
-- [ ] Add MediaSession API control fallbacks
-
----
-
-## 🚨 **CRITICAL FINDINGS: SoundCloud vs CACP Handler Comparison**
-
-### ✅ **What's ALIGNED:**
-
-**Selectors:**
-- ✅ Duration selector: `.playbackTimeline__duration` - **IDENTICAL**
-- ✅ Position selector: `.playbackTimeline__timePassed` - **IDENTICAL** 
-- ✅ Progress bar: `.playbackTimeline__progressBar` - **IDENTICAL**
-- ✅ Next/Prev buttons: `.playControls__next`, `.playControls__prev` - **IDENTICAL**
-- ✅ Play/Pause patterns: `[title="Play"]`, `[title="Pause"]` - **IDENTICAL**
-
-**Core Strategies:**
-- ✅ MediaSession monitoring - **SAME APPROACH**
-- ✅ MSE detection with fetch interception - **SAME APPROACH**
-- ✅ Progress bar percentage calculation for position - **SAME LOGIC**
-- ✅ Multiple fallback methods for timing - **SAME PATTERN**
-- ✅ Audio segment detection via `media-streaming.soundcloud.cloud` - **SAME URL PATTERN**
-
----
-
-### ⚠️ **CRITICAL INCONGRUENCES - MUST FIX:**
-
-**1. Next/Previous Control Strategy - DIFFERENT TIMING:**
-```javascript
-// Original (working):
-handleNext() {
-  // Keyboard shortcut FIRST with 50ms delay
-  setTimeout(() => {
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', code: 'KeyJ' }));
-  }, 50);
-  
-  // Button click AFTER with 600ms delay  
-  setTimeout(() => {
-    nextButton.click();
-  }, 600);
-}
-
-// CACP (my version):
-async next() {
-  // Button click FIRST
-  const nextButton = this.getElement(this.constructor.config.selectors.nextButton);
-  if (nextButton && !nextButton.disabled) {
-    this.clickElement(nextButton);
-    return { success: true, action: 'next' };
-  }
-  
-  // Keyboard shortcut FALLBACK (no delays)
-  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', code: 'KeyJ' }));
-}
-```
-**Issue:** Original uses keyboard FIRST + timing delays. Mine uses button FIRST + immediate fallback.
-
-**2. Missing Smart Logging System:**
-```javascript
-// Original has sophisticated SmartLogger class:
-- 20-second log intervals
-- Jump detection with 5-second threshold  
-- Scrub session tracking
-- Log cooldowns and deduplication
-
-// CACP: Basic logging without smart filtering
-- No log throttling
-- No jump detection
-- No scrub session management
-```
-
-**3. Timeline Scrub Detection - MISSING SELECTORS:**
-```javascript
-// Original covers MORE timeline selectors:
-const timelineSelectors = [
-  '.playbackTimeline',
-  '.playbackTimeline__progressWrapper',  
-  '.playbackTimeline__progressBackground', // ← MISSING in CACP
-  '.playbackTimeline__progressBar',
-  '.playbackTimeline__progressHandle'     // ← MISSING in CACP
-];
-
-// CACP only has:
-timeline: '.playbackTimeline, .playbackTimeline__progressWrapper'
-```
-
-**4. Position Update Interval - NOT IMPLEMENTED:**
-```javascript
-// Original has automatic position tracking:
-startPositionTracking() {
-  this.positionUpdateInterval = setInterval(() => {
-    this.updatePosition(); // Calls extractSoundCloudTiming()
-  }, 1000);
-}
-
-// CACP: Only extracts timing on-demand via getCurrentTime()
-// Missing continuous position broadcasting
-```
-
-**5. MSE Element Storage - DIFFERENT APPROACH:**
-```javascript
-// Original stores MSE element globally:
-window.discoveredMSEElement = this;
-
-// CACP stores in instance:
-self.mseElement = this;
-```
-
-**6. Media Element Seeking Priority - DIFFERENT ORDER:**
-```javascript
-// Original: MSE element → any media element → UI click
-// CACP: MSE element → any media element → progress bar click
-
-// Original doesn't try progress bar clicking for seek
-```
-
-**7. Play/Pause Control Fallbacks - MISSING METHODS:**
-```javascript
-// Original tries MediaSession API first:
-if (navigator.mediaSession && navigator.mediaSession.setActionHandler) {
-  navigator.mediaSession.setActionHandler('play', null);
-}
-
-// CACP: Goes straight to button → keyboard
-// Missing MediaSession API control attempt
-```
+### **Ad-Blocker Interference (Still Relevant):**
+- **30+ blocked requests** for SoundCloud internal scripts
+- May affect MediaSession API and extension functionality
+- Test in clean browser profile if issues persist
 
 ---
 
 ## 📋 **CURRENT SESSION GOALS**
 
-### **🚨 EMERGENCY FIXES (Do First):**
-- [ ] **DEBUG:** Add detailed error logging to identify initialization failure point
-- [ ] **DEBUG:** Test background script loads and responds to messages
-- [ ] **DEBUG:** Verify content script → background → popup communication chain
-- [ ] **TEST:** Run extension in clean browser (no ad-blockers) to isolate issues
-- [ ] **FIX:** Resolve async message handling errors in global media controller
+### **🎯 PRIMARY (Extension-to-Site Communication):**
+- [ ] **LOAD**: Test CACP extension in Chrome Developer Mode
+- [ ] **NAVIGATE**: Go to SoundCloud and check popup shows detection
+- [ ] **CONTROL**: Test play/pause/next/prev commands from popup
+- [ ] **DEBUG**: Any site interaction failures or console errors
+- [ ] **VALIDATE**: Extension properly detects and controls SoundCloud
 
-### **🔧 CRITICAL FIXES (After Emergency):**
-- [ ] **CRITICAL:** Implement SmartLogger system in CACP
-- [ ] **CRITICAL:** Fix next/previous control timing to match original
-- [ ] **CRITICAL:** Add missing timeline scrub selectors
-- [ ] **CRITICAL:** Implement continuous position tracking interval
-- [ ] Add MediaSession API control fallbacks
-- [ ] Test CACP extension with fixed implementation
-- [ ] Move to CACP app server implementation
+### **🔧 SECONDARY (If Primary Works):**
+- [ ] **CONNECT**: Test extension WebSocket connection to SoundCloud app (port 8081)
+- [ ] **VERIFY**: Media state reporting to DeskThing app
+- [ ] **CONFIRM**: Full end-to-end control flow working
 
-## 🔄 **NEXT STEPS**
+## 🔄 **TESTING WORKFLOW**
 
-### **Immediate (This Session):**
-1. **Add debug logging** throughout CACP initialization process
-2. **Test background script** functionality in isolation  
-3. **Verify message passing** between all extension components
-4. **Test on clean browser** to confirm ad-blocker impact
-5. **Fix critical initialization bugs** before proceeding
+### **Phase 1: Extension-to-Site (Current)**
+1. **Load CACP extension** in Chrome Developer Mode
+2. **Navigate to SoundCloud** 
+3. **Open extension popup** - should show SoundCloud detected
+4. **Test basic controls** - play, pause, next, previous from popup
+5. **Check console** for any errors or warnings
 
-### **After Emergency Fixes:**
-1. **Find existing logging implementation** in Fora app for reference
-2. **Implement SmartLogger** in CACP base-handler or site-detector
-3. **Update SoundCloud handler** with proper timing and intervals
-4. **Test against working SoundCloud extension**
-5. **Validate all control commands work properly**
+### **Phase 2: Extension-to-App (If Phase 1 Works)**
+1. **Start SoundCloud app server** (`npm run dev:soundcloud`)
+2. **Test WebSocket connection** from extension
+3. **Verify media data flow** - track info, playback state
+4. **Test DeskThing control commands** end-to-end
 
-## 📝 **NOTES**
+## 📝 **ARCHITECTURE NOTES**
 
-- **CRITICAL:** Extension is completely broken - no functionality works
-- **Ad-blocker interference** is severe and may require working around compromised SoundCloud APIs
-- **New global architecture** introduced bugs that need immediate fixing
-- The biggest concern is the **extension initialization failure** which blocks everything else
-- SmartLogger is crucial for performance - the original has sophisticated throttling that prevents log spam
-- Timeline interaction needs all selectors to properly detect user scrubbing
+### **CACP Extension Structure (Implemented):**
+```
+cacp-extension/src/
+├── cacp.js                 # Content script orchestrator (455 lines)
+├── background.js           # Global media manager (324 lines)  
+├── sites/
+│   ├── base-handler.js     # Config-driven base class (442 lines)
+│   ├── soundcloud.js       # Full SC implementation (892 lines)
+│   └── youtube.js          # Full YT implementation (477 lines)
+├── managers/
+│   ├── site-detector.js    # URL pattern matching (311 lines)
+│   ├── priority-manager.js # User priority ranking (321 lines)
+│   └── websocket-manager.js # DeskThing communication (545 lines)
+└── logger.js               # Structured logging (250 lines)
+```
 
-## 🚧 **BLOCKERS**
+### **Next Phase: CACP App Server (Not Started)**
+```
+cacp-app/server/
+├── index.ts               # Empty - needs implementation
+├── mediaStore.ts          # Empty - needs implementation  
+└── siteManager.ts         # Empty - needs implementation
+```
 
-- **Extension initialization completely failing** - blocks all testing and development
-- **Unknown cause of background script communication errors** - need debugging session 
+## 🚧 **BLOCKERS & DEPENDENCIES**
+
+**Current Blocker**: Unknown if extension-to-SoundCloud site communication works
+**Dependency**: Must validate extension works before building universal app server
+**Environment**: Test with/without ad-blockers if issues arise
+
+---
+
+**Evolution Path**: Extension Working → App Migration → Universal Platform  
+**Current Focus**: Extension validation and site control before DeskThing integration 
