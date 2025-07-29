@@ -1,5 +1,5 @@
 {
-  "projectName": "CACP Extension",
+  "projectName": "Advanced CACP Logger Demo",
   "globalLevel": "info",
   "timestampMode": "absolute",
   "format": {
@@ -84,25 +84,67 @@
       "component": "soundcloud",
       "emoji": "🎵",
       "display": {
+        "timestamp": true,
+        "emoji": true,
+        "component": true,
+        "level": true,
+        "message": true,
         "jsonPayload": true,
         "stackTrace": true
       }
     },
     "src/managers/*.js": { 
-      "level": "warn"
+      "level": "warn",
+      "display": {
+        "jsonPayload": false
+      }
     },
     "src/popup.js": { 
       "level": "debug",
       "emoji": "🎛️",
+      "timestampMode": "relative",
       "display": {
         "timestamp": true,
-        "jsonPayload": false
+        "emoji": true,
+        "component": true,
+        "level": false,
+        "message": true,
+        "jsonPayload": false,
+        "stackTrace": true
       }
     },
     "src/background.js": {
       "level": "info",
       "display": {
+        "jsonPayload": false,
+        "stackTrace": false
+      }
+    },
+    "src/cacp.js": {
+      "level": "debug",
+      "emoji": "🎯",
+      "display": {
+        "level": true,
+        "jsonPayload": true
+      }
+    },
+    "src/sites/youtube.js": {
+      "level": "info",
+      "emoji": "📹",
+      "timestampMode": "readable",
+      "display": {
+        "timestamp": true,
         "jsonPayload": false
+      }
+    },
+    "src/test-*.js": {
+      "level": "trace",
+      "emoji": "🧪",
+      "timestampMode": "disable",
+      "display": {
+        "timestamp": false,
+        "level": true,
+        "jsonPayload": true
       }
     }
   }

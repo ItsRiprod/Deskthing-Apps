@@ -1,6 +1,7 @@
 /**
  * Configuration Manager for CACP Logger
  * Handles loading, merging, and validation of logger configurations
+ * Implements smart level resolution and file override system
  */
 
 import defaultConfig from './default-config.json' assert { type: 'json' };
@@ -10,6 +11,7 @@ export class ConfigManager {
   constructor() {
     this.config = { ...defaultConfig };
     this.loadedPaths = [];
+    this.currentFile = null; // Track current file for overrides
   }
 
   /**
@@ -51,6 +53,14 @@ export class ConfigManager {
   }
 
   /**
+   * Set current file context for override resolution
+   * @param {string} filePath - Current file path being logged from
+   */
+  setCurrentFile(filePath) {
+    this.currentFile = filePath;
+  }
+
+  /**
    * Deep merge two configuration objects
    * @private
    */
@@ -71,18 +81,104 @@ export class ConfigManager {
   }
 
   /**
-   * Get component configuration
+   * Get effective log level using hierarchy: file override > component level > global level
    * @param {string} componentName - Component identifier
-   * @returns {Object} Component configuration
+   * @param {string} filePath - Optional file path for override checking
+   * @returns {string} Effective log level
    */
-  getComponentConfig(componentName) {
-    // Check if component exists in loaded config
-    if (this.config.components && this.config.components[componentName]) {
-      return this.config.components[componentName];
+  getEffectiveLevel(componentName, filePath = null) {
+    const checkFile = filePath || this.currentFile;
+    
+    // 1. Check file overrides first (highest priority)
+    if (checkFile && this.config.fileOverrides) {
+      const fileOverride = this.getFileOverride(checkFile);
+      if (fileOverride && fileOverride.level) {
+        return fileOverride.level;
+      }
     }
     
-    // Fallback to default schemes
-    return COMPONENT_SCHEME[componentName] || COMPONENT_SCHEME['cacp'];
+    // 2. Check component-specific level
+    if (this.config.components && this.config.components[componentName] && this.config.components[componentName].level) {
+      return this.config.components[componentName].level;
+    }
+    
+    // 3. Fall back to global level
+    return this.config.globalLevel || 'info';
+  }
+
+  /**
+   * Get file override configuration for a given file path
+   * @param {string} filePath - File path to check
+   * @returns {Object|null} File override config or null
+   */
+  getFileOverride(filePath) {
+    if (!this.config.fileOverrides || !filePath) {
+      return null;
+    }
+
+    // Normalize file path (remove leading ./ and ../)
+    const normalizedPath = filePath.replace(/^\.\.?\//g, '');
+    
+    // Check exact matches first
+    if (this.config.fileOverrides[normalizedPath]) {
+      return this.config.fileOverrides[normalizedPath];
+    }
+    
+    // Check pattern matches
+    for (const pattern in this.config.fileOverrides) {
+      if (this.matchFilePattern(normalizedPath, pattern)) {
+        return this.config.fileOverrides[pattern];
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Match file path against a pattern (supports wildcards)
+   * @param {string} filePath - File path to test
+   * @param {string} pattern - Pattern to match against
+   * @returns {boolean} Whether the file matches the pattern
+   * @private
+   */
+  matchFilePattern(filePath, pattern) {
+    // Convert glob pattern to regex
+    const regexPattern = pattern
+      .replace(/\./g, '\\.')  // Escape dots
+      .replace(/\*/g, '.*')   // Convert * to .*
+      .replace(/\?/g, '.')    // Convert ? to .
+      + '$';                  // End of string
+    
+    const regex = new RegExp(regexPattern);
+    return regex.test(filePath);
+  }
+
+  /**
+   * Get component configuration with file override support
+   * @param {string} componentName - Component identifier
+   * @param {string} filePath - Optional file path for override checking
+   * @returns {Object} Component configuration
+   */
+  getComponentConfig(componentName, filePath = null) {
+    const baseComponent = this.config.components?.[componentName] || COMPONENT_SCHEME[componentName] || COMPONENT_SCHEME['cacp'];
+    
+    // Check for file-specific overrides
+    const checkFile = filePath || this.currentFile;
+    if (checkFile) {
+      const fileOverride = this.getFileOverride(checkFile);
+      if (fileOverride) {
+        return {
+          ...baseComponent,
+          ...fileOverride,
+          level: this.getEffectiveLevel(componentName, checkFile)
+        };
+      }
+    }
+    
+    return {
+      ...baseComponent,
+      level: this.getEffectiveLevel(componentName, checkFile)
+    };
   }
 
   /**
@@ -106,6 +202,45 @@ export class ConfigManager {
    */
   getGlobalLevel() {
     return this.config.globalLevel || 'info';
+  }
+
+  /**
+   * Get timestamp mode
+   * @returns {string} Timestamp mode ('absolute', 'readable', 'relative', 'disable')
+   */
+  getTimestampMode() {
+    return this.config.timestampMode || 'absolute';
+  }
+
+  /**
+   * Get display configuration with file override support
+   * @param {string} filePath - Optional file path for override checking
+   * @returns {Object} Display configuration
+   */
+  getDisplayConfig(filePath = null) {
+    const baseDisplay = this.config.display || {
+      timestamp: true,
+      emoji: true,
+      component: true,
+      level: false,
+      message: true,
+      jsonPayload: true,
+      stackTrace: true
+    };
+
+    // Check for file-specific display overrides
+    const checkFile = filePath || this.currentFile;
+    if (checkFile) {
+      const fileOverride = this.getFileOverride(checkFile);
+      if (fileOverride && fileOverride.display) {
+        return {
+          ...baseDisplay,
+          ...fileOverride.display
+        };
+      }
+    }
+
+    return baseDisplay;
   }
 
   /**
@@ -165,6 +300,61 @@ export class ConfigManager {
   }
 
   /**
+   * Add or update a file override
+   * @param {string} filePath - File path or pattern
+   * @param {Object} overrideConfig - Override configuration
+   */
+  addFileOverride(filePath, overrideConfig) {
+    if (!this.config.fileOverrides) {
+      this.config.fileOverrides = {};
+    }
+    
+    this.config.fileOverrides[filePath] = overrideConfig;
+  }
+
+  /**
+   * Format timestamp based on mode
+   * @param {number} timestamp - Unix timestamp
+   * @param {string} mode - Timestamp mode
+   * @returns {string} Formatted timestamp
+   */
+  formatTimestamp(timestamp, mode = null) {
+    const timestampMode = mode || this.getTimestampMode();
+    const date = new Date(timestamp);
+    
+    switch (timestampMode) {
+      case 'readable':
+        return date.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+        
+      case 'relative':
+        const now = Date.now();
+        const diff = now - timestamp;
+        
+        if (diff < 1000) return 'now';
+        if (diff < 60000) return `${Math.floor(diff / 1000)}s ago`;
+        if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+        return `${Math.floor(diff / 3600000)}h ago`;
+        
+      case 'disable':
+        return '';
+        
+      case 'absolute':
+      default:
+        return date.toLocaleTimeString('en-US', {
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          fractionalSecondDigits: 3
+        });
+    }
+  }
+
+  /**
    * Get configuration summary for debugging
    * @returns {Object} Configuration summary
    */
@@ -172,10 +362,14 @@ export class ConfigManager {
     return {
       projectName: this.getProjectName(),
       globalLevel: this.getGlobalLevel(),
+      timestampMode: this.getTimestampMode(),
       loadedPaths: this.loadedPaths,
       componentCount: this.getAvailableComponents().length,
+      fileOverrideCount: Object.keys(this.config.fileOverrides || {}).length,
       autoRegister: this.isAutoRegisterEnabled(),
-      format: this.getFormatConfig()
+      format: this.getFormatConfig(),
+      display: this.getDisplayConfig(),
+      currentFile: this.currentFile
     };
   }
 }

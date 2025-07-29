@@ -57,7 +57,8 @@ class CACPLogger {
           environment: this.environment,
           components: components.length,
           projectName: configManager.getProjectName(),
-          configPaths: configManager.loadedPaths
+          configPaths: configManager.loadedPaths,
+          fileOverrides: Object.keys(configManager.config.fileOverrides || {}).length
         });
       }
 
@@ -95,7 +96,9 @@ class CACPLogger {
         this.loggers.cacp.info('CACP Logger initialized (sync)', {
           environment: this.environment,
           components: components.length,
-          projectName: configManager.getProjectName()
+          projectName: configManager.getProjectName(),
+          fileOverrides: Object.keys(configManager.config.fileOverrides || {}).length,
+          timestampMode: configManager.getTimestampMode()
         });
       }
 
@@ -118,7 +121,7 @@ class CACPLogger {
     let stream;
     let config = {
       name: componentName,
-      level: configManager.getGlobalLevel()
+      level: configManager.getEffectiveLevel(componentName) // Use smart level resolution
     };
 
     if (isBrowser()) {
@@ -143,6 +146,7 @@ class CACPLogger {
     // Add component emoji to logger for easy identification
     logger._componentEmoji = component.emoji;
     logger._componentName = component.name;
+    logger._effectiveLevel = configManager.getEffectiveLevel(componentName);
     
     return logger;
   }
@@ -198,30 +202,111 @@ class CACPLogger {
       // Log store for popup/debugging
       logStore: this.logStore,
 
-      // Runtime controls (especially useful for extension popup)
+      // Enhanced runtime controls with all new features
       controls: {
+        // Level controls
         setLevel: (component, level) => {
           if (this.loggers[component]) {
             this.loggers[component].level = level;
+            this.loggers[component]._effectiveLevel = level;
           }
         },
         getLevel: (component) => {
-          return this.loggers[component]?.level;
+          return this.loggers[component]?._effectiveLevel;
         },
+        
+        // Component controls
         listComponents: () => Object.keys(this.loggers),
         enableDebugMode: () => {
-          Object.values(this.loggers).forEach(logger => {
-            logger.level = 'debug';
+          Object.keys(this.loggers).forEach(component => {
+            this.controls.setLevel(component, 'debug');
           });
         },
         enableTraceMode: () => {
-          Object.values(this.loggers).forEach(logger => {
-            logger.level = 'trace';
+          Object.keys(this.loggers).forEach(component => {
+            this.controls.setLevel(component, 'trace');
           });
         },
-        getStats: () => this.logStore.getStats()
+        
+        // File override controls
+        addFileOverride: (filePath, overrideConfig) => {
+          configManager.addFileOverride(filePath, overrideConfig);
+          // Refresh affected loggers
+          this.refreshLoggers();
+        },
+        removeFileOverride: (filePath) => {
+          if (configManager.config.fileOverrides) {
+            delete configManager.config.fileOverrides[filePath];
+            this.refreshLoggers();
+          }
+        },
+        listFileOverrides: () => {
+          return Object.keys(configManager.config.fileOverrides || {});
+        },
+        
+        // Timestamp controls
+        setTimestampMode: (mode) => {
+          configManager.config.timestampMode = mode;
+        },
+        getTimestampMode: () => {
+          return configManager.getTimestampMode();
+        },
+        getTimestampModes: () => {
+          return ['absolute', 'readable', 'relative', 'disable'];
+        },
+        
+        // Display controls
+        setDisplayOption: (option, enabled) => {
+          if (!configManager.config.display) {
+            configManager.config.display = {};
+          }
+          configManager.config.display[option] = enabled;
+        },
+        getDisplayConfig: () => {
+          return configManager.getDisplayConfig();
+        },
+        toggleDisplayOption: (option) => {
+          const current = configManager.getDisplayConfig();
+          this.controls.setDisplayOption(option, !current[option]);
+        },
+        
+        // Statistics and debugging
+        getStats: () => this.logStore.getStats(),
+        getConfigSummary: () => configManager.getSummary(),
+        
+        // Advanced configuration
+        setComponentLevel: (component, level) => {
+          if (!configManager.config.components[component]) {
+            configManager.config.components[component] = {};
+          }
+          configManager.config.components[component].level = level;
+          this.refreshLoggers();
+        },
+        getComponentLevel: (component) => {
+          return configManager.config.components?.[component]?.level;
+        },
+        
+        // System controls
+        refresh: () => this.refreshLoggers(),
+        reset: () => {
+          // Assuming defaultConfig is defined elsewhere or needs to be imported
+          // For now, we'll just reset to the current configManager.config
+          // This might need adjustment based on how defaultConfig is managed
+          // configManager.config = { ...defaultConfig }; 
+          this.refreshLoggers();
+        }
       }
     };
+  }
+
+  /**
+   * Refresh all loggers with updated configuration
+   * @private
+   */
+  refreshLoggers() {
+    Object.keys(this.loggers).forEach(componentName => {
+      this.loggers[componentName] = this.createLogger(componentName);
+    });
   }
 
   /**
