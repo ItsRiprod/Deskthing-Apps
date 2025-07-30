@@ -13,6 +13,8 @@ export default defineConfig({
       logging: {
         level: "debug",
       },
+      // viteLocation: 'http://192.168.1.241'
+      vitePort: 5173
     },
     server: {
       editCooldownMs: 8000,
