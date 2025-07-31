@@ -14,8 +14,8 @@ export const GuildStatusBox = ({ guild }: GuildStatusProps) => {
     return DeskThing.useProxy(guild.icon);
   }, [guild.icon]);
 
-  const selectGuild = useChatStore((state) => state.setSelectedGuildID)
-  const selectedGuildId = useChatStore((state) => state.selectedGuildId)
+  const selectGuild = useChatStore((state) => state.setSelectedGuildID);
+  const selectedGuildId = useChatStore((state) => state.selectedGuildId);
 
   const bgColor = useProfileColor(guildUrl);
 
@@ -26,7 +26,9 @@ export const GuildStatusBox = ({ guild }: GuildStatusProps) => {
         boxShadow: "0 6px 16px -4px rgba(0,0,0,0.7)",
         backgroundColor: bgColor || "rgb(54, 57, 63)",
       }}
-      className={`w-full h-full relative rounded-lg flex items-center justify-center border-4 ${selectedGuildId === guild.id ? "border-blue-500" : "border-transparent"}`}
+      className={`w-full h-full min-h-36 min-w-36 relative rounded-lg flex items-center justify-center border-4 ${
+        selectedGuildId === guild.id ? "border-blue-500" : "border-transparent"
+      }`}
     >
       {guildUrl ? (
         <div className="flex items-center justify-center flex-col">

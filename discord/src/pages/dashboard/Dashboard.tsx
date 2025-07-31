@@ -1,5 +1,5 @@
 import { JSX } from "react";
-import { DASHBOARD_ELEMENTS, PANEL_ELEMENTS } from "@shared/types/discord";
+import { CLOCK_OPTIONS, DASHBOARD_ELEMENTS, PANEL_ELEMENTS } from "@shared/types/discord";
 import { CallStatusPanel } from "./panels/CallStatusPanel";
 import { ChatPanel } from "./panels/ChatPanel";
 import { SongPanel } from "./panels/SongPanel";
@@ -23,6 +23,7 @@ export function Dashboard(): JSX.Element {
   const leftPanel = useUIStore((state) => state.leftPanel);
   const rightPanel = useUIStore((state) => state.rightPanel);
   const widgets = useUIStore((state) => state.widgets);
+  const clock_setting = useUIStore((state) => state.clock_options);
 
   const LeftPanelComponent = PanelMap[leftPanel];
   const RightPanelComponent = PanelMap[rightPanel];
@@ -30,11 +31,13 @@ export function Dashboard(): JSX.Element {
   const showLeft = leftPanel !== PANEL_ELEMENTS.BLANK;
   const showRight = rightPanel !== PANEL_ELEMENTS.BLANK;
 
+
+
   return (
     <div className="relative w-full h-full max-h-screen">
       {widgets.includes(DASHBOARD_ELEMENTS.BG_ALBUM) && <BgAlbumArtWidget />}
-      <div className="flex p-5 flex-col w-full h-full">
-        <div className="flex flex-grow max-h-full overflow-hidden items-center space-x-5 justify-center">
+      <div className="flex z-10 flex-col w-full h-full">
+        <div className="flex flex-grow max-h-full overflow-hidden items-center justify-center">
           {showLeft && LeftPanelComponent && <LeftPanelComponent />}
           {showRight && RightPanelComponent &&  <RightPanelComponent />}
         </div>
@@ -44,7 +47,7 @@ export function Dashboard(): JSX.Element {
       </div>
 
       {/* Widgets rendered absolutely */}
-      {widgets.includes(DASHBOARD_ELEMENTS.CLOCK) && <ClockWidget />}
+      {clock_setting != CLOCK_OPTIONS.DISABLED && <ClockWidget />}
       {widgets.includes(DASHBOARD_ELEMENTS.MINI_CALL) && <MiniCallWidget />}
       {widgets.includes(DASHBOARD_ELEMENTS.NOTIFICATIONS) && (
         <NotificationWidget />

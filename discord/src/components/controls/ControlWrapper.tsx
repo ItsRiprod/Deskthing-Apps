@@ -14,7 +14,7 @@ export const ControlWrapper: React.FC<ControlWrapperProps> = ({
   isEnabled,
 }) => {
   return (
-    <button onClick={onClick} className={`items-center h-full p-1 rounded-xl transition-colors cursor-pointer ${isEnabled ? "bg-transparent" : "bg-red-500/50"}`}>
+    <button onClick={onClick} className={`items-center w-full h-full rounded-xl transition-colors cursor-pointer ${isEnabled ? "bg-transparent" : "bg-red-500/50"}`}>
       {isEnabled ? iconEnabled : iconDisabled}
     </button>
   );

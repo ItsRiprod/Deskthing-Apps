@@ -2,10 +2,23 @@ import { create } from "zustand";
 import { createDeskThing } from "@deskthing/client";
 import { DiscordEvents, ToClientTypes, ToServerTypes } from "@shared/types/transit";
 import { AppSettings, DEVICE_CLIENT } from "@deskthing/types";
-import { AppSettingIDs, DASHBOARD_ELEMENTS, DiscordSettings, PANEL_ELEMENTS } from "@shared/types/discord";
+import { AppSettingIDs, CLOCK_OPTIONS, DASHBOARD_ELEMENTS, DiscordSettings, PANEL_ELEMENTS, SONG_CONTROLS } from "@shared/types/discord";
 import { validateDiscordSettings } from "@src/utils/settingValidator";
 
 export type Page = "chat" | "browsing" | "call" | "dashboard";
+
+export type Dimensions = {
+  width: number;
+  height: number;
+  panel: {
+    width: number;
+    height: number;
+  };
+  controls: {
+    width: number;
+    height: number;
+  };
+}
 
 type UIStore = {
   currentPage: Page;
@@ -13,7 +26,23 @@ type UIStore = {
   currentTime: string;
   leftPanel: PANEL_ELEMENTS
   rightPanel: PANEL_ELEMENTS
+  song_controls: SONG_CONTROLS;
   widgets: DASHBOARD_ELEMENTS[]
+  clock_options: CLOCK_OPTIONS
+
+  dimensions: {
+    width: number;
+    height: number;
+    panel: {
+      width: number;
+      height: number;
+    };
+    controls: {
+      width: number;
+      height: number;
+    };
+  };
+
   setCurrentPage: (page: Page) => void;
 
   initialized: boolean;
@@ -21,6 +50,9 @@ type UIStore = {
 
   settings: DiscordSettings | null;
   setSettings: (settings: AppSettings | DiscordSettings | undefined) => void;
+
+  setDimensions: (dimensions: Partial<Dimensions>) => void;
+
 };
 
 const DeskThing = createDeskThing<ToClientTypes, ToServerTypes>();
@@ -31,9 +63,23 @@ export const useUIStore = create<UIStore>((set, get) => ({
   currentTime: 'Loading Time...',
   isLoading: true,
   settings: null,
+  song_controls: SONG_CONTROLS.BOTTOM,
   leftPanel: PANEL_ELEMENTS.GUILD_LIST,
   rightPanel: PANEL_ELEMENTS.CHAT,
   widgets: [],
+  clock_options: CLOCK_OPTIONS.TOP_CENTER,
+  dimensions: {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    panel: {
+      width: window.innerWidth / 2,
+      height: window.innerHeight - 75,
+    },
+    controls: {
+      width: window.innerWidth,
+      height: 75,
+    }
+  },
 
   initialize: () => {
     if (get().initialized) return;
@@ -78,7 +124,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
 
       if (settings) {
         validateDiscordSettings(settings);
-        set({ settings: settings, isLoading: false, leftPanel: settings[AppSettingIDs.LEFT_DASHBOARD_PANEL].value, rightPanel: settings[AppSettingIDs.RIGHT_DASHBOARD_PANEL].value, widgets: settings[AppSettingIDs.DASHBOARD_ELEMENTS].value });
+        set({ clock_options: settings[AppSettingIDs.CLOCK_OPTIONS].value, isLoading: false, leftPanel: settings[AppSettingIDs.LEFT_DASHBOARD_PANEL].value, rightPanel: settings[AppSettingIDs.RIGHT_DASHBOARD_PANEL].value, widgets: settings[AppSettingIDs.DASHBOARD_ELEMENTS].value, song_controls: settings[AppSettingIDs.SONG_OPTIONS].value, settings: settings as DiscordSettings });
       }
     } catch (error) {
       console.error("Error validating settings:", error);
@@ -86,4 +132,21 @@ export const useUIStore = create<UIStore>((set, get) => ({
   },
 
   setCurrentPage: (page) => set({ currentPage: page }),
+
+  setDimensions: (newDimensions) => {
+    set(({ dimensions }) => ({
+      dimensions: {
+        ...dimensions,
+        ...newDimensions,
+        panel: {
+          ...dimensions.panel,
+          ...newDimensions.panel,
+        },
+        controls: {
+          ...dimensions.controls,
+          ...newDimensions.controls,
+        },
+      },
+    }));
+  },
 }));

@@ -68,7 +68,7 @@ export const ChannelStatusBox = ({ channel }: ChannelBoxProps) => {
   return (
     <button
       onClick={() => selectChannel(channel.id)}
-      className={`w-full h-full py-2 relative rounded-lg flex ${selectedChannelId === channel.id ? "bg-neutral-500/50" : "bg-transparent"}`}
+      className={`w-full h-full min-h-5 py-2 relative rounded-lg flex ${selectedChannelId === channel.id ? "bg-neutral-500/50" : "bg-transparent"}`}
     >
       <ChannelTypeIcon type={channel.type} />
       <p className="text-white font-semibold text-sm">{channel.name}</p>

@@ -19,7 +19,7 @@ export enum DiscordEvents {
     NOTIFICATION = 'notification',
     GUILD_LIST = 'guildList',
     CHANNELS = 'channels',
-    SETTINGS = 'discord-settings'
+    SETTINGS = 'discord-settings',
 }
 
 export type ToClientTypes =

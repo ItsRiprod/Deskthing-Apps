@@ -1,4 +1,4 @@
-import { SETTING_TYPES } from "@deskthing/types";
+import { SETTING_TYPES, SettingsBoolean, SettingsColor, SettingsMultiSelect, SettingsRanked, SettingsSelect, SettingsString } from "@deskthing/types";
 
 export interface CallStatus {
   channelId: string | null;
@@ -119,12 +119,18 @@ export enum AppSettingIDs {
     CLIENT_ID = 'client_id',
     CLIENT_SECRET = 'client_secret',
     REDIRECT_URL = 'redirect_url',
+    RICH_PRESENCE = 'rich_presence',
     SET_MAIN_TEXT = 'set_main_text',
     SET_SECONDARY_TEXT = 'set_secondary_text',
     HAVE_TIMER = 'have_timer',
     LEFT_DASHBOARD_PANEL = 'left_dashboard_panel',
     RIGHT_DASHBOARD_PANEL = 'right_dashboard_panel',
     DASHBOARD_ELEMENTS = 'dashboard_elements',
+    SCROLL_TO_BOTTOM = 'scroll_to_bottom',
+    CONTROLS_ORDER = 'controls_order',
+    SPEAKING_COLOR = 'speaking_color',
+    CLOCK_OPTIONS = 'clock_options',
+    SONG_OPTIONS = 'song_options'
 }
 
 export enum PANEL_ELEMENTS {
@@ -134,56 +140,80 @@ export enum PANEL_ELEMENTS {
   SONG = 'song',
   BLANK = 'blank'
 }
+
 export enum DASHBOARD_ELEMENTS {
   MINI_CALL = 'mini_call',
   CALL_CONTROLS = 'call_controls',
-  CLOCK = 'clock',
   NOTIFICATIONS = 'notifications',
   BG_ALBUM = 'bg_album'
 }
 
-type StringSetting = {
-  id: AppSettingIDs.CLIENT_ID | AppSettingIDs.CLIENT_SECRET | AppSettingIDs.SET_MAIN_TEXT | AppSettingIDs.SET_SECONDARY_TEXT | AppSettingIDs.REDIRECT_URL;
-  type: typeof SETTING_TYPES.STRING;
-  description: string;
-  label: string;
-  value: string;
-};
+export enum CONTROL_OPTIONS {
+  MUTE = 'mute',
+  DEAFEN = 'deafen',
+  DISCONNECT = 'disconnect'
+}
 
-type BooleanSetting = {
-  id: AppSettingIDs.HAVE_TIMER;
-  type: typeof SETTING_TYPES.BOOLEAN;
-  description: string;
-  label: string;
-  value: boolean;
-};
+export enum CLOCK_OPTIONS {
+  TOP_LEFT = 'top_left',
+  TOP_RIGHT = 'top_right',
+  TOP_CENTER = 'top_center',
+  CUSTOM = 'custom',
+  DISABLED = 'disabled'
+}
 
-type SelectSetting = {
+export enum SONG_CONTROLS {
+  DISABLED = 'disabled',
+  FREE = 'free',
+  TOP = 'top',
+  BOTTOM = 'bottom',
+}
+
+type SelectSetting = SettingsSelect & {
   id: AppSettingIDs.LEFT_DASHBOARD_PANEL | AppSettingIDs.RIGHT_DASHBOARD_PANEL;
   type: typeof SETTING_TYPES.SELECT;
-  description: string;
-  label: string;
   value: PANEL_ELEMENTS;
   options: { value: PANEL_ELEMENTS; label: string }[];
 };
 
-type MultiSelectSetting = {
+type MultiSelectSetting = SettingsMultiSelect & {
   id: AppSettingIDs.DASHBOARD_ELEMENTS;
-  type: typeof SETTING_TYPES.MULTISELECT;
-  description: string;
-  label: string;
   value: DASHBOARD_ELEMENTS[];
   options: { value: DASHBOARD_ELEMENTS; label: string }[];
 };
 
+type SelectClockOptions = SettingsSelect & {
+  id: AppSettingIDs.CLOCK_OPTIONS;
+  value: CLOCK_OPTIONS;
+  options: { value: CLOCK_OPTIONS; label: string }[];
+}
+
+type SelectSongOptions = SettingsSelect & {
+  id: AppSettingIDs.SONG_OPTIONS;
+  value: SONG_CONTROLS;
+  options: { value: SONG_CONTROLS; label: string }[];
+}
+
+type OrderSettings = SettingsRanked & {
+  id: AppSettingIDs.CONTROLS_ORDER;
+  value: CONTROL_OPTIONS[];
+  options: { value: CONTROL_OPTIONS; label: string }[];
+};
+
 export type DiscordSettings = {
-  [AppSettingIDs.CLIENT_ID]: StringSetting & { id: AppSettingIDs.CLIENT_ID };
-  [AppSettingIDs.CLIENT_SECRET]: StringSetting & { id: AppSettingIDs.CLIENT_SECRET };
-  [AppSettingIDs.REDIRECT_URL]: StringSetting & { id: AppSettingIDs.REDIRECT_URL };
-  [AppSettingIDs.SET_MAIN_TEXT]: StringSetting & { id: AppSettingIDs.SET_MAIN_TEXT };
-  [AppSettingIDs.SET_SECONDARY_TEXT]: StringSetting & { id: AppSettingIDs.SET_SECONDARY_TEXT };
-  [AppSettingIDs.HAVE_TIMER]: BooleanSetting;
+  [AppSettingIDs.CLIENT_ID]: SettingsString & { id: AppSettingIDs.CLIENT_ID };
+  [AppSettingIDs.CLIENT_SECRET]: SettingsString & { id: AppSettingIDs.CLIENT_SECRET };
+  [AppSettingIDs.REDIRECT_URL]: SettingsString & { id: AppSettingIDs.REDIRECT_URL };
+  [AppSettingIDs.RICH_PRESENCE]: SettingsBoolean & { id: AppSettingIDs.RICH_PRESENCE };
+  [AppSettingIDs.SET_MAIN_TEXT]: SettingsString & { id: AppSettingIDs.SET_MAIN_TEXT };
+  [AppSettingIDs.SET_SECONDARY_TEXT]: SettingsString & { id: AppSettingIDs.SET_SECONDARY_TEXT };
+  [AppSettingIDs.HAVE_TIMER]: SettingsBoolean & { id: AppSettingIDs.HAVE_TIMER };
   [AppSettingIDs.LEFT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.LEFT_DASHBOARD_PANEL, value: PANEL_ELEMENTS };
   [AppSettingIDs.RIGHT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.RIGHT_DASHBOARD_PANEL, value: PANEL_ELEMENTS };
   [AppSettingIDs.DASHBOARD_ELEMENTS]: MultiSelectSetting & { id: AppSettingIDs.DASHBOARD_ELEMENTS, value: DASHBOARD_ELEMENTS[]  };
+  [AppSettingIDs.SCROLL_TO_BOTTOM]: SettingsBoolean & { id: AppSettingIDs.SCROLL_TO_BOTTOM };
+  [AppSettingIDs.CONTROLS_ORDER]: OrderSettings & { id: AppSettingIDs.CONTROLS_ORDER };
+  [AppSettingIDs.SPEAKING_COLOR]: SettingsColor & { id: AppSettingIDs.SPEAKING_COLOR };
+  [AppSettingIDs.CLOCK_OPTIONS]: SelectClockOptions & { id: AppSettingIDs.CLOCK_OPTIONS };
+  [AppSettingIDs.SONG_OPTIONS]: SelectSongOptions & { id: AppSettingIDs.SONG_OPTIONS };
 };

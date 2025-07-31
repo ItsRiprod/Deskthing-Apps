@@ -1,7 +1,7 @@
 {
   "name": "discord",
   "private": true,
-  "version": "0.11.3",
+  "version": "0.11.5",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -35,7 +35,6 @@
     "@vitejs/plugin-react": "^4.3.4",
     "archiver": "^7.0.1",
     "autoprefixer": "^10.4.20",
-    "concurrently": "^9.2.0",
     "esbuild": "^0.19.12",
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.1.0",

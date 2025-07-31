@@ -1,1 +1,27 @@
-{"id":"discord","isWebApp":true,"requires":[""],"label":"Discord App","version":"0.11.4","description":"The ultimate completely recoded discord app","author":"Riprod","platforms":["windows","macos","linux"],"homepage":"https://deskthing.app","repository":"https://github.com/ItsRiprod/Deskthing-Apps","tags":[false,false],"requiredVersions":{"server":">=0.11.13","client":">=0.11.2"},"updateUrl":"https://github.com/ItsRiprod/deskthing-apps"}
+{
+  "id": "discord",
+  "isWebApp": true,
+  "requires": [
+    ""
+  ],
+  "label": "Discord App",
+  "version": "0.11.5",
+  "description": "The ultimate completely recoded discord app",
+  "author": "Riprod",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "homepage": "https://deskthing.app",
+  "repository": "https://github.com/ItsRiprod/Deskthing-Apps",
+  "tags": [
+    false,
+    false
+  ],
+  "requiredVersions": {
+    "server": ">=0.11.13",
+    "client": ">=0.11.2"
+  },
+  "updateUrl": "https://github.com/ItsRiprod/deskthing-apps"
+}

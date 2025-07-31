@@ -7,11 +7,11 @@ config()
 export default defineConfig({
   development: {
     logging: {
-      level: "debug",
+      level: "info",
     },
     client: {
       logging: {
-        level: "debug",
+        level: "info",
       },
       // viteLocation: 'http://192.168.1.241'
       vitePort: 5173

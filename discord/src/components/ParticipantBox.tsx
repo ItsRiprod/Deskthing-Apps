@@ -1,6 +1,7 @@
 import { DeskThing } from "@deskthing/client";
-import { CallParticipant } from "@shared/types/discord";
+import { AppSettingIDs, CallParticipant } from "@shared/types/discord";
 import { IconDeafenedDiscord, IconMicOffDiscord } from "@src/assets/icons";
+import { useUIStore } from "@src/stores/uiStore";
 import { useProfileColor } from "@src/utils/colorExtractor";
 import { useMemo } from "react";
 
@@ -13,6 +14,7 @@ export const ParticipantBox = ({ participant }: ParticipantBoxProps) => {
     if (!participant.profileUrl) return null;
     return DeskThing.useProxy(participant.profileUrl);
   }, [participant.profileUrl, participant.username]);
+  const activeColor = useUIStore((state) => state.settings?.[AppSettingIDs.SPEAKING_COLOR].value)
 
   const bgColor = useProfileColor(profileUrl)
 
@@ -21,12 +23,9 @@ export const ParticipantBox = ({ participant }: ParticipantBoxProps) => {
       style={{
         boxShadow: "0 6px 16px -4px rgba(0,0,0,0.7)",
         backgroundColor: bgColor || "rgb(54, 57, 63)",
+        borderColor: participant.isSpeaking ? activeColor : "transparent",
       }}
-      className={`w-full h-full relative border-4 rounded-lg flex items-center justify-center transition-colors duration-200 ${
-        participant.isSpeaking
-          ? "border-green-500 shadow-[0_0_12px_2px_rgba(34,197,94,0.7)]"
-          : "border-transparent"
-      }`}
+      className={`w-full h-full relative border-4 rounded-lg flex items-center justify-center transition-colors duration-200`}
     >
       {profileUrl && (
         <img
