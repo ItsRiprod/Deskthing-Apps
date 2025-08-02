@@ -13,7 +13,7 @@ const clockPositionClasses = {
 export const ClockWidget = () => {
   const currentTime = useUIStore((state) => state.currentTime);
   const clockOption = useUIStore((state) => state.clock_options);
-  const isDark = useSongStore((store) => store.color.isDark)
+  const isDark = useSongStore((store) => store?.color?.isDark)
 
   if (clockOption === CLOCK_OPTIONS.DISABLED) return null;
 
@@ -24,11 +24,24 @@ export const ClockWidget = () => {
       }`}
       style={
         clockOption === CLOCK_OPTIONS.CUSTOM
-          ? { top: 20, left: 20 } // Example custom position, adjust as needed
+          ? { top: 20, left: 20 }
           : undefined
       }
     >
-      <p className={`font-semibold ${isDark ? 'text-white' : 'text-black'}`}>{currentTime}</p>
+      <p
+        className={`font-semibold px-2 py-1 rounded transition-colors`}
+        style={{
+          color: isDark ? "#fff" : "#111",
+          background: isDark
+            ? "rgba(0,0,0,0.7)"
+            : "rgba(255,255,255,0.7)",
+          textShadow: isDark
+            ? "0 1px 4px rgba(0,0,0,0.8)"
+            : "0 1px 4px rgba(255,255,255,0.8)",
+        }}
+      >
+        {currentTime}
+      </p>
     </div>
   );
 };

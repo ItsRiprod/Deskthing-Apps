@@ -10,6 +10,7 @@ import { NotificationWidget } from "./widgets/NotificationWidget";
 import { useUIStore } from "@src/stores/uiStore";
 import { CallControlsWidget } from "./widgets/CallControlsWidget";
 import { BgAlbumArtWidget } from "./widgets/BgAlbumArtWidget";
+import { ClockPanel } from "./panels/ClockPanel";
 
 const PanelMap: Record<PANEL_ELEMENTS, () => JSX.Element | null> = {
   [PANEL_ELEMENTS.CALL_STATUS]: CallStatusPanel,
@@ -17,6 +18,7 @@ const PanelMap: Record<PANEL_ELEMENTS, () => JSX.Element | null> = {
   [PANEL_ELEMENTS.SONG]: SongPanel,
   [PANEL_ELEMENTS.GUILD_LIST]: GuildListPanel,
   [PANEL_ELEMENTS.BLANK]: () => null,
+  [PANEL_ELEMENTS.CLOCK]: ClockPanel,
 };
 
 export function Dashboard(): JSX.Element {

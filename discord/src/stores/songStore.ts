@@ -46,7 +46,7 @@ export const useSongStore = create<MusicStore>((set, get) => ({
 
       const updates: Partial<MusicStore> = {
         isPlaying: data.payload.is_playing,
-        color: data.payload.color
+        color: data.payload?.color || get().color
       }
 
       if (currentSong && currentSong.id === data.payload.id) {

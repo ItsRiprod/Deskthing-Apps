@@ -11,7 +11,10 @@ export const SongControlsWrapper: React.FC<SongControlsWrapperProps> = ({
   children,
 }) => {
   // For FREE mode: allow dragging
-  const [dragPos, setDragPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [dragPos, setDragPos] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
   const dragging = useRef(false);
   const offset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -63,13 +66,9 @@ export const SongControlsWrapper: React.FC<SongControlsWrapperProps> = ({
 
   return (
     <div
-      className={
-      [
-        "absolute left-1/2 -translate-x-1/2 z-40",
-        position === SONG_CONTROLS.TOP ? "top-2" : "",
-        position === SONG_CONTROLS.BOTTOM ? "bottom-2" : ""
-      ].filter(Boolean).join(" ")
-      }
+      className={`absolute flex items-center justify-center flex-col left-1/2 -translate-x-1/2 z-40 ${
+        position === SONG_CONTROLS.TOP ? "top-2" : ""
+      } ${position === SONG_CONTROLS.BOTTOM ? "bottom-2" : ""}`}
     >
       {children}
     </div>

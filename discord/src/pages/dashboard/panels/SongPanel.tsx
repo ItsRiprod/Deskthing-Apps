@@ -64,17 +64,13 @@ export const SongPanel = () => {
               <IconSkip className={`stroke-2 ${songData?.color?.isDark ? 'text-white fill-white' : 'text-black fill-black'}`} />
             </button>
           </div>
-          {controlPos != SONG_CONTROLS.FREE && (
-            <div className="w-full h-2">
-              <ProgressBar
-                className="w-full h-full"
-                oldProgress={progress}
-                totalLength={totalLength}
-                isPlaying={songData?.is_playing || false}
-              />
-            </div>
-          )}
         </SongControlsWrapper>
+          <ProgressBar
+            className="w-full h-2"
+            oldProgress={progress}
+            totalLength={totalLength}
+            isPlaying={songData?.is_playing || false}
+          />
       </div>
     </PanelWrapper>
   );

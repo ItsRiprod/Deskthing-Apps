@@ -138,6 +138,7 @@ export enum PANEL_ELEMENTS {
   GUILD_LIST = 'guild_list',
   CHAT = 'chat',
   SONG = 'song',
+  CLOCK = 'clock',
   BLANK = 'blank'
 }
 

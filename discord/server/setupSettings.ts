@@ -48,7 +48,7 @@ export const setupSettings = () => {
       id: AppSettingIDs.RICH_PRESENCE,
       type: SETTING_TYPES.BOOLEAN,
       version: "0.11.4",
-      description: "Enable Rich Presence",
+      description: "Enable Rich Presence (Currently buggy and doesn't always work)",
       label: "Rich Presence",
       value: true,
     },
@@ -56,8 +56,8 @@ export const setupSettings = () => {
       id: AppSettingIDs.SET_MAIN_TEXT,
       type: SETTING_TYPES.STRING,
       version: "0.11.4",
-      description: "Main Text",
-      label: "Main Text",
+      description: "Main Text (Currently buggy and doesn't always work)",
+      label: "Rich Presence Main Text",
       value: "",
       dependsOn: [
         {
@@ -69,8 +69,8 @@ export const setupSettings = () => {
       id: AppSettingIDs.SET_SECONDARY_TEXT,
       type: SETTING_TYPES.STRING,
       version: "0.11.4",
-      description: "Secondary Text",
-      label: "Secondary Text",
+      description: "Secondary Text (Currently buggy and doesn't always work)",
+      label: "Rich Presence Secondary Text",
       value: "",
       dependsOn: [
         {
@@ -82,8 +82,8 @@ export const setupSettings = () => {
       id: AppSettingIDs.HAVE_TIMER,
       type: SETTING_TYPES.BOOLEAN,
       version: "0.11.4",
-      description: "Include timer with Rich Presence?",
-      label: "Have Timer",
+      description: "Include timer with Rich Presence? (Currently buggy and doesn't always work)",
+      label: "Rich Presence Timer",
       value: true,
       dependsOn: [
         {
@@ -94,7 +94,7 @@ export const setupSettings = () => {
     [AppSettingIDs.LEFT_DASHBOARD_PANEL]: {
       id: AppSettingIDs.LEFT_DASHBOARD_PANEL,
       type: SETTING_TYPES.SELECT,
-      version: "0.11.4",
+      version: "0.11.6",
       description: "What elements to show on the dashboard?",
       label: "Left Panel",
       value: PANEL_ELEMENTS.CALL_STATUS,
@@ -112,6 +112,10 @@ export const setupSettings = () => {
           label: "Song",
         },
         {
+          value: PANEL_ELEMENTS.CLOCK,
+          label: "Clock",
+        },
+        {
           value: PANEL_ELEMENTS.BLANK,
           label: "Nothing",
         },
@@ -120,7 +124,7 @@ export const setupSettings = () => {
     [AppSettingIDs.RIGHT_DASHBOARD_PANEL]: {
       id: AppSettingIDs.RIGHT_DASHBOARD_PANEL,
       type: SETTING_TYPES.SELECT,
-      version: "0.11.4",
+      version: "0.11.6",
       description: "What elements to show on the dashboard?",
       label: "Right Panel",
       value: PANEL_ELEMENTS.SONG,
@@ -136,6 +140,10 @@ export const setupSettings = () => {
         {
           value: PANEL_ELEMENTS.SONG,
           label: "Song",
+        },
+        {
+          value: PANEL_ELEMENTS.CLOCK,
+          label: "Clock",
         },
         {
           value: PANEL_ELEMENTS.BLANK,
