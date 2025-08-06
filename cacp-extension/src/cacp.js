@@ -3,7 +3,7 @@
  * Universal media source for multiple music streaming sites
  */
 
-import logger from '@logger';
+import logger from '@crimsonsunset/smart-logger';
 
 // Import site handlers
 import {SiteDetector} from './managers/site-detector.js';

@@ -1,5 +1,5 @@
 import { SiteHandler } from './base-handler.js';
-import logger from '@logger';
+import logger from '@crimsonsunset/smart-logger';
 
 /**
  * YouTube Site Handler for CACP

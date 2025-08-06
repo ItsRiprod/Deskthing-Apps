@@ -5,7 +5,7 @@
  * Follows the 80/20 rule: config handles 80% of cases, custom overrides handle complex 20%.
  */
 
-import logger from '@logger';
+import logger from '@crimsonsunset/smart-logger';
 
 export class SiteHandler {
   constructor() {

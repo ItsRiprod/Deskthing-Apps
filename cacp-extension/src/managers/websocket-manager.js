@@ -3,7 +3,7 @@
  * Handles connection to DeskThing app with auto-reconnection and error handling
  */
 
-import logger from '@logger';
+import logger from '@crimsonsunset/smart-logger';
 
 export class WebSocketManager {
   constructor() {

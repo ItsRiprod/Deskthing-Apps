@@ -6,7 +6,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(import.meta.dirname, "src"),
-      "@logger": resolve(import.meta.dirname, "../logger/index.js"),
     },
   },
   build: {
