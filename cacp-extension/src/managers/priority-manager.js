@@ -3,7 +3,7 @@
  * Handles user-defined site priority rankings and conflict resolution
  */
 
-import logger from '@crimsonsunset/smart-logger';
+import logger from '@crimsonsunset/jsg-logger';
 
 export class PriorityManager {
   constructor() {

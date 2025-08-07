@@ -19,8 +19,8 @@
   "license": "ISC",
   "description": "CACP - Chrome Audio Control Platform with Pino logging",
   "dependencies": {
-    "pino": "^9.7.0",
-    "@crimsonsunset/smart-logger": "^1.0.4"
+    "@crimsonsunset/jsg-logger": "^1.0.8",
+    "pino": "^9.7.0"
   },
   "devDependencies": {
     "pino-colada": "^2.2.2",

@@ -3,7 +3,7 @@
  * Handles URL pattern matching and site handler registration
  */
 
-import logger from '@crimsonsunset/smart-logger';
+import logger from '@crimsonsunset/jsg-logger';
 
 export class SiteDetector {
   constructor() {

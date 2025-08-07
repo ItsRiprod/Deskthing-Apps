@@ -3,7 +3,7 @@
  * Testing and monitoring interface for Chrome extension
  */
 
-import logger from '@crimsonsunset/smart-logger';
+import logger from '@crimsonsunset/jsg-logger';
 
 // Get version dynamically from manifest
 const EXTENSION_VERSION = chrome.runtime.getManifest().version;

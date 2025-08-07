@@ -3,7 +3,7 @@
  * Coordinates multi-tab media control across different music sites
  */
 
-import logger from '@crimsonsunset/smart-logger';
+import logger from '@crimsonsunset/jsg-logger';
 
 // Initialize logger
 const backgroundLogger = logger.cacp.child({ component: 'background' });
