@@ -231,6 +231,20 @@ export class SiteDetector {
   }
 
   /**
+   * Get numeric priority for a given site name
+   * @param {string} siteName
+   * @returns {number|null}
+   */
+  getSitePriority(siteName) {
+    for (const [, info] of this.registeredHandlers.entries()) {
+      if (info.name === siteName || info.name?.toLowerCase() === siteName?.toLowerCase()) {
+        return info.priority;
+      }
+    }
+    return null;
+  }
+
+  /**
    * Create handler instance for a site
    * @param {string} siteName Site name
    * @returns {Object|null} Handler instance or null if not found

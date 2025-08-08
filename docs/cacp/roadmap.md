@@ -127,3 +127,11 @@ Transform single-site audio control into a **universal Chrome audio control plat
 
 **Next Update:** After extension validation completion  
 **Current Focus:** Extension-to-site communication before universal app development
+
+---
+
+### 2025-08-08 — Progress Note (Validation)
+
+- Adopted ARIA-first timeline extraction on SoundCloud feed (reads `[role="progressbar"]` now/max) with fallbacks; scrubs update immediately. Added detailed trace logging for timing paths.
+- Fixed popup UX (open-by-default, art + progress, heartbeat) and content SW/module build issues; manifests now patch-bumped on each build and version logged.
+- Remaining: sanitize duplicated DOM titles, relax control presence check, and improve popup reconnect after SW restarts.

@@ -12,6 +12,14 @@ let logs = [];
 // Initialize popup logger
 const popupLogger = logger.popup;
 
+// Utility to format seconds to mm:ss
+function formatTime(sec) {
+  const s = Math.max(0, Math.floor(sec || 0));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return m + ':' + String(r).padStart(2, '0');
+}
+
 class CACPPopup {
   constructor() {
     this.globalState = null;
@@ -33,6 +41,14 @@ class CACPPopup {
     // Set version in UI
     this.updateVersionDisplay();
     
+    // Ensure debug logs panel starts expanded by default
+    try {
+      const debugInfo = document.getElementById('debugInfo');
+      if (debugInfo) {
+        debugInfo.classList.remove('hidden');
+      }
+    } catch {}
+
     // Start periodic updates
     this.startPeriodicUpdates();
     
@@ -40,6 +56,9 @@ class CACPPopup {
     await this.refreshGlobalState();
     
     popupLogger.info('Popup interface ready');
+
+    // Prime the log view so users see something immediately
+    this.log('Popup opened (v' + EXTENSION_VERSION + ')');
   }
 
   /**
@@ -91,9 +110,35 @@ class CACPPopup {
    * Start periodic updates
    */
   startPeriodicUpdates() {
+    // Poll frequently; background will dedupe
     this.updateInterval = setInterval(() => {
       this.refreshGlobalState();
-    }, 3000); // Update every 3 seconds
+    }, 1000);
+    // Subscribe to background push events even if popup reopens later
+    chrome.runtime.sendMessage({ type: 'get-global-state' }).then(() => {}).catch(() => {});
+
+    // Lifecycle diagnostics to catch the popup "dying" issue
+    try {
+      const start = Date.now();
+      this.log('Popup heartbeat started');
+      this.heartbeat = setInterval(() => {
+        const aliveMs = Date.now() - start;
+        if (aliveMs % 5000 < 1000) {
+          // Log every ~5s without spamming
+          popupLogger.trace('Popup heartbeat', { aliveMs });
+        }
+      }, 1000);
+
+      // Log visibility changes; Chrome may suspend timers when hidden
+      document.addEventListener('visibilitychange', () => {
+        popupLogger.debug('Popup visibilitychange', { hidden: document.hidden });
+      });
+
+      // Log runtime disconnects which could kill messaging
+      chrome.runtime.onDisconnect.addListener((port) => {
+        popupLogger.warn('Popup runtime disconnect detected');
+      });
+    } catch {}
   }
 
   /**
@@ -172,8 +217,28 @@ class CACPPopup {
 
     const prioritySite = currentPriority ? currentPriority.site : 'None';
     const priorityTrack = currentPriority?.trackInfo?.title || 'No track';
+    const artwork = currentPriority?.trackInfo?.artwork?.[0]?.src || currentPriority?.trackInfo?.artwork?.[0] || '';
+    const isPlaying = !!currentPriority?.isPlaying;
+    const currentTime = currentPriority?.currentTime ?? 0;
+    const duration = currentPriority?.duration ?? 0;
+    const pct = duration > 0 ? Math.round((currentTime / duration) * 100) : 0;
 
-    statusEl.innerHTML = '<div class="status-item"><span class="status-label">Active Sources:</span><span class="status-value">' + totalSources + '</span></div><div class="status-item"><span class="status-label">Priority:</span><span class="status-value">' + prioritySite + '</span></div><div class="status-item"><span class="status-label">Now Playing:</span><span class="status-value">' + priorityTrack + '</span></div>';
+    statusEl.innerHTML = '' +
+      '<div class="status-item"><span class="status-label">Active Sources:</span><span class="status-value">' + totalSources + '</span></div>' +
+      '<div class="status-item"><span class="status-label">Priority:</span><span class="status-value">' + prioritySite + '</span></div>' +
+      '<div class="status-item" style="align-items:flex-start; gap:8px">' +
+      '  <span class="status-label" style="margin-top:2px">Now Playing:</span>' +
+      '  <span class="status-value" style="display:flex; align-items:center; gap:10px;">' +
+      (artwork ? '<img src="' + artwork + '" alt="art" style="width:36px; height:36px; object-fit:cover; border-radius:4px; border:1px solid #333;" />' : '') +
+      '    <div style="display:flex; flex-direction:column; gap:6px; min-width:220px;">' +
+      '      <div>' + priorityTrack + '</div>' +
+      '      <div style="height:6px; background:#333; border-radius:4px; overflow:hidden; position:relative;">' +
+      '        <div style="position:absolute; left:0; top:0; bottom:0; width:' + pct + '%; background:' + (isPlaying ? '#00B894' : '#555') + ';"></div>' +
+      '      </div>' +
+      '      <div style="font-size:10px; color:#888">' + (formatTime(currentTime)) + ' / ' + (formatTime(duration)) + (isPlaying ? ' • Playing' : ' • Paused') + '</div>' +
+      '    </div>' +
+      '  </span>' +
+      '</div>';
   }
 
   /**
@@ -203,15 +268,42 @@ class CACPPopup {
     const isPriority = source.isPriority;
     const trackTitle = source.trackInfo?.title || 'Unknown Track';
     const trackArtist = source.trackInfo?.artist || 'Unknown Artist';
+    const artwork = source.trackInfo?.artwork?.[0]?.src || source.trackInfo?.artwork?.[0] || '';
     const isPlaying = source.isPlaying;
     const canControl = source.canControl;
     const isActive = source.isActive;
+    const pct = source.duration > 0 ? Math.round((source.currentTime / source.duration) * 100) : 0;
     
     const priorityBadge = isPriority ? '<span class="priority-badge">★ Priority</span>' : '';
     const statusIcon = isActive ? (isPlaying ? '▶️' : '⏸️') : '⏹️';
     const statusText = isActive ? (isPlaying ? 'Playing' : 'Paused') : 'Inactive';
     
-    return '<div class="source-item ' + (isPriority ? 'priority' : '') + ' ' + (isActive ? 'active' : 'inactive') + '" data-tab-id="' + source.tabId + '"><div class="source-header"><div class="source-info"><div class="source-site">' + source.site + ' ' + priorityBadge + '</div><div class="source-status">' + statusIcon + ' ' + statusText + '</div></div><div class="source-controls">' + (canControl && isActive ? '<button class="control-btn prev-btn" data-command="previous" data-tab-id="' + source.tabId + '" title="Previous">⏮️</button><button class="control-btn ' + (isPlaying ? 'pause-btn' : 'play-btn') + '" data-command="' + (isPlaying ? 'pause' : 'play') + '" data-tab-id="' + source.tabId + '" title="' + (isPlaying ? 'Pause' : 'Play') + '">' + (isPlaying ? '⏸️' : '▶️') + '</button><button class="control-btn next-btn" data-command="next" data-tab-id="' + source.tabId + '" title="Next">⏭️</button>' : '<span class="no-controls">' + (!canControl ? 'No controls' : 'Not ready') + '</span>') + '</div></div><div class="source-track"><div class="track-title">' + trackTitle + '</div><div class="track-artist">' + trackArtist + '</div></div>' + (!isPriority && isActive ? '<button class="set-priority-btn" data-tab-id="' + source.tabId + '">Set as Priority</button>' : '') + '</div>';
+    return '' +
+      '<div class="source-item ' + (isPriority ? 'priority' : '') + ' ' + (isActive ? 'active' : 'inactive') + '" data-tab-id="' + source.tabId + '">' +
+      '  <div class="source-header">' +
+      '    <div class="source-info">' +
+      '      <div class="source-site">' + source.site + ' ' + priorityBadge + '</div>' +
+      '      <div class="source-status">' + statusIcon + ' ' + statusText + '</div>' +
+      '    </div>' +
+      '    <div class="source-controls">' + (canControl && isActive ? (
+      '      <button class="control-btn prev-btn" data-command="previous" data-tab-id="' + source.tabId + '" title="Previous">⏮️</button>' +
+      '      <button class="control-btn ' + (isPlaying ? 'pause-btn' : 'play-btn') + '" data-command="' + (isPlaying ? 'pause' : 'play') + '" data-tab-id="' + source.tabId + '" title="' + (isPlaying ? 'Pause' : 'Play') + '">' + (isPlaying ? '⏸️' : '▶️') + '</button>' +
+      '      <button class="control-btn next-btn" data-command="next" data-tab-id="' + source.tabId + '" title="Next">⏭️</button>'
+      ) : '<span class="no-controls">' + (!canControl ? 'No controls' : 'Not ready') + '</span>') +
+      '    </div>' +
+      '  </div>' +
+      '  <div class="source-track" style="display:flex; gap:10px; align-items:center;">' +
+      (artwork ? '<img src="' + artwork + '" alt="art" style="width:34px; height:34px; object-fit:cover; border-radius:4px; border:1px solid #333;" />' : '') +
+      '    <div style="flex:1; min-width:120px;">' +
+      '      <div class="track-title">' + trackTitle + '</div>' +
+      '      <div class="track-artist">' + trackArtist + '</div>' +
+      '      <div style="height:6px; background:#333; border-radius:4px; overflow:hidden; position:relative; margin-top:6px;">' +
+      '        <div style="position:absolute; left:0; top:0; bottom:0; width:' + pct + '%; background:' + (isPlaying ? '#00B894' : '#555') + ';"></div>' +
+      '      </div>' +
+      '    </div>' +
+      '  </div>' +
+      (!isPriority && isActive ? '<button class="set-priority-btn" data-tab-id="' + source.tabId + '">Set as Priority</button>' : '') +
+      '</div>';
   }
 
   /**
@@ -385,6 +477,9 @@ class CACPPopup {
   cleanup() {
     if (this.updateInterval) {
       clearInterval(this.updateInterval);
+    }
+    if (this.heartbeat) {
+      clearInterval(this.heartbeat);
     }
     popupLogger.debug('Popup cleanup complete');
   }

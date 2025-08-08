@@ -10,8 +10,9 @@ export class SoundCloudHandler extends SiteHandler {
     name: 'SoundCloud',
     urlPatterns: ['soundcloud.com'],
     selectors: {
-      playButton: '[title="Play"], .playButton, [aria-label*="play" i]',
-      pauseButton: '[title="Pause"], .pauseButton, [aria-label*="pause" i]',
+      // Include persistent mini-player controls on feed pages
+      playButton: '.playControls__play, [title="Play"], .playButton, button[aria-label*="play" i]',
+      pauseButton: '.playControls__pause, [title="Pause"], .pauseButton, button[aria-label*="pause" i]',
       nextButton: '.playControls__next, .skipControl__next, button[title="Skip to next"]',
       prevButton: '.playControls__prev, .skipControl__previous, button[title="Skip to previous"]',
       durationElement: '.playbackTimeline__duration',
@@ -37,6 +38,7 @@ export class SoundCloudHandler extends SiteHandler {
     this.lastLoggedTime = 0;
     this.segmentLogged = false;
     this.mseElement = null;
+    this.audioEl = null;
     
     this.log.debug('SoundCloud handler constructed', {
       config: SoundCloudHandler.config,
@@ -68,6 +70,11 @@ export class SoundCloudHandler extends SiteHandler {
       // Set up MSE detection
       this.setupMSEDetection();
       this.log.trace('MSE detection setup complete');
+
+      // Capture media element via src/srcObject hooks
+      this.hookMediaElementSrcSetter();
+      this.hookMediaElementSrcObject();
+      this.log.trace('Media element hooks setup complete');
       
       // Set up fetch interception for audio segments
       this.setupFetchInterception();
@@ -111,20 +118,23 @@ export class SoundCloudHandler extends SiteHandler {
     
     // Check if we have player controls or MediaSession
     const hasControls = !!this.getElement(this.constructor.config.selectors.playerContainer);
-    const hasMediaSession = navigator.mediaSession && navigator.mediaSession.metadata;
-    const isReady = hasControls || hasMediaSession || this.isStreamingActive;
+    const mediaSessionObj = (navigator.mediaSession && navigator.mediaSession.metadata) ? navigator.mediaSession.metadata : null;
+    const hasMediaSession = !!mediaSessionObj;
+    const hasMediaEl = !!(this.audioEl && this.audioEl.duration > 0);
+    const isReady = !!hasControls || hasMediaSession || this.isStreamingActive || hasMediaEl;
     
     this.log.debug('Ready check results', {
       hasControls,
-      hasMediaSession: !!hasMediaSession,
-      mediaSessionMetadata: hasMediaSession ? {
-        title: navigator.mediaSession.metadata?.title,
-        artist: navigator.mediaSession.metadata?.artist
+      hasMediaSession,
+      mediaSessionMetadata: mediaSessionObj ? {
+        title: mediaSessionObj?.title,
+        artist: mediaSessionObj?.artist
       } : null,
       isStreamingActive: this.isStreamingActive,
       finalResult: isReady,
       playerContainerSelector: this.constructor.config.selectors.playerContainer,
-      playerContainerFound: !!document.querySelector(this.constructor.config.selectors.playerContainer)
+      playerContainerFound: !!document.querySelector(this.constructor.config.selectors.playerContainer),
+      hasMediaEl
     });
     
     return isReady;
@@ -371,6 +381,7 @@ export class SoundCloudHandler extends SiteHandler {
     }
     
     // Fallback: check if pause button is visible (indicating playing)
+    if (this.audioEl) return !this.audioEl.paused;
     const pauseButton = this.getElement(this.constructor.config.selectors.pauseButton);
     return !!pauseButton;
   }
@@ -393,7 +404,10 @@ export class SoundCloudHandler extends SiteHandler {
     }
     
     // Try play button
-    const playButton = this.getElement(this.constructor.config.selectors.playButton);
+    const playButton = this.getElement(this.constructor.config.selectors.playButton)
+      || document.querySelector('.playControls .playControls__play')
+      || document.querySelector('.playControls button[aria-label*="play" i]')
+      || document.querySelector('.playControls button');
     if (playButton) {
       this.log.debug('Clicking play button', { className: playButton.className });
       this.clickElement(playButton);
@@ -436,7 +450,10 @@ export class SoundCloudHandler extends SiteHandler {
     }
     
     // Try pause button
-    const pauseButton = this.getElement(this.constructor.config.selectors.pauseButton);
+    const pauseButton = this.getElement(this.constructor.config.selectors.pauseButton)
+      || document.querySelector('.playControls .playControls__pause')
+      || document.querySelector('.playControls button[aria-label*="pause" i]')
+      || document.querySelector('.playControls button');
     if (pauseButton) {
       this.log.debug('Clicking pause button', { className: pauseButton.className });
       this.clickElement(pauseButton);
@@ -480,7 +497,8 @@ export class SoundCloudHandler extends SiteHandler {
     
     // BUTTON CLICK SECOND with 600ms delay (matches original)
     setTimeout(() => {
-      const nextButton = this.getElement(this.constructor.config.selectors.nextButton);
+      const nextButton = this.getElement(this.constructor.config.selectors.nextButton)
+        || document.querySelector('.playControls__next');
       
       if (nextButton && !nextButton.disabled) {
         this.log.debug('Clicking next button after delay', { 
@@ -516,7 +534,8 @@ export class SoundCloudHandler extends SiteHandler {
     
     // BUTTON CLICK SECOND with 200ms delay (matches original)
     setTimeout(() => {
-      const prevButton = this.getElement(this.constructor.config.selectors.prevButton);
+      const prevButton = this.getElement(this.constructor.config.selectors.prevButton)
+        || document.querySelector('.playControls__prev');
       
       if (prevButton && !prevButton.disabled) {
         this.log.debug('Clicking prev button after delay', { 
@@ -563,11 +582,13 @@ export class SoundCloudHandler extends SiteHandler {
       const progressBar = this.getElement(this.constructor.config.selectors.progressBar);
       
       if (progressBar && progressBar.parentElement) {
-        const rect = progressBar.parentElement.getBoundingClientRect();
+        // Click on the wrapper container rather than the filled bar to ensure hit target
+        const clickable = progressBar.parentElement;
+        const rect = clickable.getBoundingClientRect();
         const clickX = rect.left + (rect.width * percentage);
         const clickY = rect.top + (rect.height / 2);
         
-        this.clickAtPosition(progressBar.parentElement, clickX, clickY);
+        this.clickAtPosition(clickable, clickX, clickY);
         return { success: true, action: 'seek', time, method: 'click' };
       }
     }
@@ -582,49 +603,112 @@ export class SoundCloudHandler extends SiteHandler {
     try {
       let position = 0;
       let duration = 0;
-      
-      // Get duration from text elements
-      const durationElement = this.getElement(this.constructor.config.selectors.durationElement);
-      if (durationElement && durationElement.textContent) {
-        duration = this.parseTimeString(durationElement.textContent);
+      const stepLog = (label, data) => {
+        this.log.trace(`[Timing] ${label}`, data);
+      };
+
+      // 1) Prefer captured media element when available
+      if (this.audioEl && this.audioEl.duration && this.audioEl.duration > 0) {
+        const result = {
+          position: Math.floor(this.audioEl.currentTime || 0),
+          duration: Math.floor(this.audioEl.duration || 0)
+        };
+        stepLog('mediaEl ok', { position: result.position, duration: result.duration });
+        return result;
       }
-      
-      // Calculate position from progress bar percentage (most accurate)
-      if (duration > 0) {
-        const progressBar = this.getElement(this.constructor.config.selectors.progressBar);
-        
-        if (progressBar && progressBar.parentElement) {
-          const computedStyle = window.getComputedStyle(progressBar);
-          const parentStyle = window.getComputedStyle(progressBar.parentElement);
-          
-          const barWidth = parseFloat(computedStyle.width);
-          const parentWidth = parseFloat(parentStyle.width);
-          
-          if (barWidth >= 0 && parentWidth > 0) {
-            const percentage = barWidth / parentWidth;
-            position = Math.round(duration * percentage);
-          }
+
+      // 1b) Any media element fallback
+      const mediaElements = document.querySelectorAll('audio, video');
+      stepLog('mediaElements count', { count: mediaElements.length });
+      for (const el of mediaElements) {
+        if (el.duration && el.duration > 0) {
+          const result = {
+            position: Math.floor(el.currentTime || 0),
+            duration: Math.floor(el.duration || 0)
+          };
+          stepLog('mediaElements ok', { position: result.position, duration: result.duration });
+          return result;
         }
       }
       
-      // Fallback: try position element text
+      // 2) Primary DOM source: ARIA progressbar (provides both pos and duration)
+      const progressContainer = document.querySelector(
+        '.playbackTimeline [role="progressbar"], .playbackTimeline__progressWrapper [role="progressbar"], .playControls [role="progressbar"]'
+      );
+      if (progressContainer) {
+        const nowAttr = progressContainer.getAttribute('aria-valuenow') || '';
+        const maxAttr = progressContainer.getAttribute('aria-valuemax') || '';
+        const now = parseFloat(nowAttr);
+        const max = parseFloat(maxAttr);
+        if (!Number.isNaN(now) && !Number.isNaN(max) && max > 0) {
+          position = Math.round(now);
+          duration = Math.round(max);
+          stepLog('aria direct ok', { now, max, position, duration, valuetext: progressContainer.getAttribute('aria-valuetext') });
+          return { position, duration };
+        } else {
+          stepLog('aria direct unusable', { nowAttr, maxAttr });
+        }
+      } else {
+        stepLog('aria progress not found', {});
+      }
+
+      // 3) Fallback: duration from text elements
+      const durationElement = this.getElement(this.constructor.config.selectors.durationElement);
+      if (durationElement && durationElement.textContent) {
+        const raw = durationElement.textContent.trim();
+        duration = this.parseTimeString(raw);
+        stepLog('duration text parsed', { raw, duration });
+      } else {
+        stepLog('duration text missing', { found: !!durationElement });
+      }
+      
+      // 4) Position from progress bar percentage via rects/transform
+      if (duration > 0) {
+        const progressBar = this.getElement(this.constructor.config.selectors.progressBar);
+        if (progressBar && progressBar.parentElement) {
+          const barRect = progressBar.getBoundingClientRect();
+          const parentRect = progressBar.parentElement.getBoundingClientRect();
+          let barWidth = barRect.width;
+          const parentWidth = parentRect.width || parseFloat(window.getComputedStyle(progressBar.parentElement).width) || 0;
+          if (parentWidth > 0) {
+            if (Math.abs(barWidth - parentWidth) < 1) {
+              const style = window.getComputedStyle(progressBar);
+              const transform = style.transform || '';
+              const m = transform.match(/matrix\(([-0-9\.e]+),/); // a = scaleX
+              if (m && m[1]) {
+                const scaleX = parseFloat(m[1]);
+                if (!Number.isNaN(scaleX) && scaleX >= 0 && scaleX <= 1) {
+                  barWidth = parentWidth * scaleX;
+                  stepLog('transform scale used', { transform, scaleX, parentWidth, barWidth });
+                }
+              } else {
+                stepLog('transform missing/parse fail', { transform });
+              }
+            }
+            const percentage = Math.max(0, Math.min(1, barWidth / parentWidth));
+            position = Math.round(duration * percentage);
+            stepLog('rect ratio', { barWidth, parentWidth, percentage, position, duration });
+          }
+        } else {
+          stepLog('progress bar not found', { selector: this.constructor.config.selectors.progressBar });
+        }
+      }
+      
+      // 5) Fallback: try position element text
       if (position === 0 && duration > 0) {
         const positionElement = this.getElement(this.constructor.config.selectors.positionElement);
         if (positionElement && positionElement.textContent) {
-          position = this.parseTimeString(positionElement.textContent);
+          const raw = positionElement.textContent.trim();
+          position = this.parseTimeString(raw);
+          stepLog('position text parsed', { raw, position, duration });
+        } else {
+          stepLog('position text missing', { found: !!positionElement });
         }
       }
       
-      // Final fallback: try media elements
+      // 6) Already tried media elements first; if both still 0, leave as 0/0
       if (position === 0 && duration === 0) {
-        const mediaElements = document.querySelectorAll('audio, video');
-        for (const element of mediaElements) {
-          if (element.currentTime >= 0 && element.duration > 0) {
-            position = Math.floor(element.currentTime);
-            duration = Math.floor(element.duration);
-            break;
-          }
-        }
+        stepLog('timing unresolved', {});
       }
       
       return { position, duration };
@@ -635,6 +719,13 @@ export class SoundCloudHandler extends SiteHandler {
       });
       return { position: 0, duration: 0 };
     }
+  }
+
+  /**
+   * Report playing state for UI/background
+   */
+  isPlaying() {
+    return this.getPlayingState();
   }
 
   /**
@@ -786,26 +877,7 @@ export class SoundCloudHandler extends SiteHandler {
       };
     }
 
-    // Detect when MediaSource is attached to media elements
-    Object.defineProperty(HTMLMediaElement.prototype, 'src', {
-      set: function(value) {
-        if (value && value.startsWith('blob:') && value.includes('media-source')) {
-          const elementName = this.tagName.toLowerCase() + (this.id ? `#${this.id}` : '') + 
-                            (this.className ? `.${this.className.split(' ').join('.')}` : '');
-          
-          self.log.debug('MediaSource attached to media element', {
-            element: elementName,
-            src: value,
-            currentTime: this.currentTime,
-            duration: this.duration
-          });
-        }
-        this._src = value;
-      },
-      get: function() {
-        return this._src;
-      }
-    });
+    // Leave src hooking to hookMediaElementSrcSetter()
 
     // Monitor audio segment requests
     const originalFetch = window.fetch;
@@ -844,6 +916,12 @@ export class SoundCloudHandler extends SiteHandler {
             set: function(value) {
               if (value instanceof MediaSource) {
                 self.mseElement = this;
+                self.audioEl = this;
+                self.bindMediaEvents(this);
+                self.log.debug('Captured media element via srcObject', {
+                  tag: this.tagName,
+                  duration: this.duration || 0
+                });
               }
               return originalDescriptor.set.call(this, value);
             },
@@ -854,6 +932,46 @@ export class SoundCloudHandler extends SiteHandler {
         }
       }
     });
+  }
+
+  /**
+   * Hook HTMLMediaElement.src to capture blob: media-source assignment
+   */
+  hookMediaElementSrcSetter() {
+    try {
+      const elements = ['HTMLAudioElement', 'HTMLVideoElement'];
+      const self = this;
+      elements.forEach(elementName => {
+        const ElementClass = window[elementName];
+        if (ElementClass && ElementClass.prototype) {
+          const original = Object.getOwnPropertyDescriptor(ElementClass.prototype, 'src');
+          if (original && original.set) {
+            Object.defineProperty(ElementClass.prototype, 'src', {
+              set: function(value) {
+                try {
+                  if (typeof value === 'string' && value.startsWith('blob:')) {
+                    self.audioEl = this;
+                    self.bindMediaEvents(this);
+                    self.log.debug('Captured media element via src blob', {
+                      tag: this.tagName,
+                      duration: this.duration || 0
+                    });
+                  }
+                } catch (e) {
+                  self.log.trace('src setter capture error', { error: e.message });
+                }
+                return original.set.call(this, value);
+              },
+              get: original.get,
+              configurable: true,
+              enumerable: true
+            });
+          }
+        }
+      });
+    } catch (error) {
+      this.log.warn('Failed to hook media src setter', { error: error.message });
+    }
   }
 
   /**
@@ -899,6 +1017,8 @@ export class SoundCloudHandler extends SiteHandler {
               duration: timing.duration,
               percentage: timing.duration > 0 ? (timing.position / timing.duration * 100).toFixed(1) + '%' : '0%'
             });
+            // Force a quick update so popup reflects the new time
+            this.updatePosition();
           }, 100);
         }
       });
@@ -911,7 +1031,16 @@ export class SoundCloudHandler extends SiteHandler {
   parseTimeString(timeStr) {
     try {
       if (!timeStr || typeof timeStr !== 'string') return 0;
-      
+
+      // Handle textual formats first: "2 minutes 30 seconds"
+      const minMatch = timeStr.match(/(\d+)\s*minutes?/i);
+      const secMatch = timeStr.match(/(\d+)\s*seconds?/i);
+      if (minMatch || secMatch) {
+        const mm = minMatch ? parseInt(minMatch[1], 10) : 0;
+        const ss = secMatch ? parseInt(secMatch[1], 10) : 0;
+        return (mm * 60) + ss;
+      }
+
       // Handle common time formats: "1:23", "12:34", "1:23:45"
       const parts = timeStr.trim().split(':').map(p => parseInt(p, 10));
       

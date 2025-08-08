@@ -109,7 +109,12 @@ class CACPMediaSource {
         });
 
         // Logger is working perfectly with direct browser formatting
-        this.log.info('✨ CACP Extension v0.3.2 - Logger Ready!');
+        try {
+            const extVersion = chrome?.runtime?.getManifest?.().version || 'unknown';
+            this.log.info(`✨ CACP Extension v${extVersion} - Logger Ready!`);
+        } catch {
+            this.log.info('✨ CACP Extension - Logger Ready!');
+        }
 
         try {
             // Get tab ID from background script
@@ -313,16 +318,16 @@ class CACPMediaSource {
                     availableHandlers: Object.keys(this.siteDetector.siteHandlers || {})
                 });
 
-                this.activeHandler = this.siteDetector.createHandlerInstance(siteName);
+                this.currentHandler = this.siteDetector.createHandlerInstance(siteName);
 
-                if (this.activeHandler) {
+                if (this.currentHandler) {
                     this.log.info('Handler created successfully', {
                         siteName,
-                        handlerType: this.activeHandler.constructor.name,
-                        hasInitialize: typeof this.activeHandler.initialize === 'function'
+                        handlerType: this.currentHandler.constructor.name,
+                        hasInitialize: typeof this.currentHandler.initialize === 'function'
                     });
 
-                    const initialized = await this.activeHandler.initialize();
+                    const initialized = await this.currentHandler.initialize();
 
                     if (initialized) {
                         this.log.info('Handler activated successfully', {
@@ -336,7 +341,7 @@ class CACPMediaSource {
                             initialized,
                             initializeResult: initialized
                         });
-                        this.activeHandler = null;
+                        this.currentHandler = null;
                         return false;
                     }
                 } else {
@@ -354,7 +359,7 @@ class CACPMediaSource {
                     stack: error.stack,
                     errorType: error.constructor.name
                 });
-                this.activeHandler = null;
+                this.currentHandler = null;
                 return false;
             }
         } catch (error) {
@@ -441,10 +446,11 @@ class CACPMediaSource {
 
         try {
             const trackInfo = this.currentHandler.getTrackInfo ? this.currentHandler.getTrackInfo() : null;
-            const isPlaying = this.currentHandler.isPlaying ? this.currentHandler.isPlaying() : false;
+            const isPlaying = this.currentHandler.isPlaying ? this.currentHandler.isPlaying() : (this.currentHandler.getPlayingState ? this.currentHandler.getPlayingState() : false);
             const currentTime = this.currentHandler.getCurrentTime ? this.currentHandler.getCurrentTime() : 0;
             const duration = this.currentHandler.getDuration ? this.currentHandler.getDuration() : 0;
-            const isActive = this.currentHandler.isReady ? this.currentHandler.isReady() : false;
+            // Consider active when either handler reports ready OR media is currently playing
+            const isActive = this.currentHandler.isReady ? (this.currentHandler.isReady() || isPlaying) : isPlaying;
 
             return {
                 isActive,
@@ -530,7 +536,7 @@ class CACPMediaSource {
             prev.isPlaying !== newState.isPlaying ||
             prev.trackInfo?.title !== newState.trackInfo?.title ||
             prev.trackInfo?.artist !== newState.trackInfo?.artist ||
-            Math.abs(prev.currentTime - newState.currentTime) > 5 // 5 second threshold
+            Math.abs(prev.currentTime - newState.currentTime) > 1 // tighter threshold for timeline UI
         );
     }
 

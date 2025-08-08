@@ -143,6 +143,8 @@ class GlobalMediaManager {
       isPlaying: source.isPlaying,
       canControl: source.canControl,
       isActive: source.isActive,
+      currentTime: source.currentTime || 0,
+      duration: source.duration || 0,
       isPriority: source.tabId === this.currentPriority?.tabId,
       priority: source.priority,
       lastUpdate: source.lastUpdate

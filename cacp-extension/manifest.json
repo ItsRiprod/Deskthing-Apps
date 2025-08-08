@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "CACP - Chrome Audio Control Platform",
   "description": "Universal audio control for DeskThing across multiple streaming sites",
-  "version": "0.3.2",
+  "version": "0.3.12",
   "permissions": [
     "activeTab",
     "tabs",
@@ -19,7 +19,7 @@
     {
       "matches": [
         "https://soundcloud.com/*",
-        "https://www.youtube.com/*", 
+        "https://www.youtube.com/*",
         "https://music.youtube.com/*",
         "https://open.spotify.com/*",
         "https://music.apple.com/*"
@@ -36,7 +36,8 @@
   },
   "options_page": "src/settings/settings.html",
   "background": {
-    "service_worker": "src/background.js"
+    "service_worker": "src/background.js",
+    "type": "module"
   },
   "web_accessible_resources": [
     {

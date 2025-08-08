@@ -123,3 +123,23 @@ cacp-app/server/
 
 **Evolution Path**: Extension Working → App Migration → Universal Platform  
 **Current Focus**: Extension validation and site control before DeskThing integration 
+
+---
+
+## Session Findings — 2025-08-08 01:17:23 MDT
+
+- **What was broken**
+  - Media element is inside sandboxed iframes on the feed → no `audio/video` in main doc; MediaSession often empty at start → timing 0/0.
+  - Loading unpacked from `src/*` caused bare-import and module errors; popup logs collapsed; handler state checked wrong property.
+
+- **What we changed**
+  - Load built `dist/`, mark SW as module; patch-bump each build and log version in content/popup.
+  - Fix handler state (`currentHandler`), add `getSitePriority`, open popup by default with heartbeat logs, add art + progress.
+  - SoundCloud handler: add mini-player selectors; implement ARIA-first timeline (now/max) with fallbacks; scrub forces immediate update; detailed trace logs.
+
+- **What works now**
+  - ARIA path active on feed: progress and scrubs reflect immediately; MediaSession metadata/artwork populate mid-play; controls work.
+
+- **Remaining**
+  - Clean duplicated DOM titles (strip "Current track:" and repeats).
+  - Relax `hasControls` check; strengthen popup reconnect after SW restarts.
