@@ -7,7 +7,7 @@ const PUBLIC_BASE = '/resource/image/cacp/';
 
 function ensureImagesDir() {
   if (!existsSync(IMAGES_DIR)) {
-    DeskThing.sendLog('Creating images directory for CACP');
+    console.log('Creating images directory for CACP');
     mkdirSync(IMAGES_DIR, { recursive: true });
   }
 }

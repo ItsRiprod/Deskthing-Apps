@@ -56,7 +56,7 @@ export class CACPMediaStore {
   private lastSentPayload: SongData | null = null; // Cache to avoid duplicate sends
 
   private constructor() {
-    DeskThing.sendLog('🎯 [CACP-MediaStore] Initializing enhanced MediaStore with SoundCloud app features');
+    console.log('🎯 [CACP-MediaStore] Initializing enhanced MediaStore with SoundCloud app features');
   }
 
   public static getInstance(): CACPMediaStore {
@@ -71,11 +71,11 @@ export class CACPMediaStore {
    * Enhanced with comprehensive logging from SoundCloud app
    */
   public setExtensionWebSocket(ws: WebSocket) {
-    DeskThing.sendLog('🔗 [CACP-MediaStore] Setting extension WebSocket connection for control commands');
+    console.log('🔗 [CACP-MediaStore] Setting extension WebSocket connection for control commands');
     this.extensionWebSocket = ws;
     
     ws.on('close', () => {
-      DeskThing.sendLog('🔌 [CACP-MediaStore] Extension WebSocket connection closed');
+      console.log('🔌 [CACP-MediaStore] Extension WebSocket connection closed');
       this.extensionWebSocket = null;
     });
 
@@ -103,12 +103,12 @@ export class CACPMediaStore {
     };
 
     // Enhanced logging for all commands
-    DeskThing.sendLog(`🎮 [CACP-MediaStore] Sending command to extension: ${action}`);
+    console.log(`🎮 [CACP-MediaStore] Sending command to extension: ${action}`);
     console.log(`📋 [CACP-MediaStore] Command payload:`, JSON.stringify(command, null, 2));
     
     try {
       this.extensionWebSocket.send(JSON.stringify(command));
-      DeskThing.sendLog(`✅ [CACP-MediaStore] Command sent successfully: ${action}`);
+      console.log(`✅ [CACP-MediaStore] Command sent successfully: ${action}`);
       return true;
     } catch (error: any) {
       DeskThing.sendError(`❌ [CACP-MediaStore] Failed to send command ${action}: ${error?.message || error}`);
@@ -121,12 +121,12 @@ export class CACPMediaStore {
    */
   private async processArtwork(artworkUrl: string, title?: string, artist?: string): Promise<string | undefined> {
     if (!artworkUrl) {
-      DeskThing.sendLog('🖼️ [CACP-MediaStore] No artwork URL provided');
+      console.log('🖼️ [CACP-MediaStore] No artwork URL provided');
       return undefined;
     }
 
     try {
-      DeskThing.sendLog(`🖼️ [CACP-MediaStore] Processing artwork: ${artworkUrl}`);
+      console.log(`🖼️ [CACP-MediaStore] Processing artwork: ${artworkUrl}`);
       
       // Create safe filename from track info
       const safeFileName = `${title || 'unknown'}-${artist || 'unknown'}`
@@ -136,7 +136,7 @@ export class CACPMediaStore {
       const processedPath = await saveRemoteImage(artworkUrl, safeFileName);
       
       if (processedPath) {
-        DeskThing.sendLog(`✅ [CACP-MediaStore] Artwork processed successfully: ${processedPath}`);
+        console.log(`✅ [CACP-MediaStore] Artwork processed successfully: ${processedPath}`);
         return processedPath;
       } else {
         DeskThing.sendWarning(`⚠️ [CACP-MediaStore] Failed to process artwork: ${artworkUrl}`);
@@ -155,16 +155,16 @@ export class CACPMediaStore {
   public async handleExtensionMessage(message: ExtensionMessage) {
     try {
       const messageType = message.type || 'unknown';
-      DeskThing.sendLog(`📨 [CACP-MediaStore] Processing extension message: ${messageType}`);
+      console.log(`📨 [CACP-MediaStore] Processing extension message: ${messageType}`);
       
       switch (message.type) {
         case 'connection':
-          DeskThing.sendLog(`🔗 [CACP-MediaStore] Extension connected: ${message.source} v${message.version} site=${message.site}`);
+          console.log(`🔗 [CACP-MediaStore] Extension connected: ${message.source} v${message.version} site=${message.site}`);
           break;
           
         case 'mediaData':
           if (message.data) {
-            DeskThing.sendLog(`🎵 [CACP-MediaStore] Received media data from ${message.site || 'unknown site'}`);
+            console.log(`🎵 [CACP-MediaStore] Received media data from ${message.site || 'unknown site'}`);
             
             // Track changes for smart updates
             const hasChanges = (
@@ -176,29 +176,29 @@ export class CACPMediaStore {
             );
 
             if (hasChanges) {
-              DeskThing.sendLog(`🔄 [CACP-MediaStore] Media data changed, updating cache`);
+              console.log(`🔄 [CACP-MediaStore] Media data changed, updating cache`);
               
               // Update media metadata
               if (message.data.title !== undefined) {
                 this.extensionData.title = message.data.title;
-                DeskThing.sendLog(`🎵 [CACP-MediaStore] Title: "${message.data.title}"`);
+                console.log(`🎵 [CACP-MediaStore] Title: "${message.data.title}"`);
               }
               if (message.data.artist !== undefined) {
                 this.extensionData.artist = message.data.artist;
-                DeskThing.sendLog(`👤 [CACP-MediaStore] Artist: "${message.data.artist}"`);
+                console.log(`👤 [CACP-MediaStore] Artist: "${message.data.artist}"`);
               }
               if (message.data.album !== undefined) {
                 this.extensionData.album = message.data.album;
-                DeskThing.sendLog(`💿 [CACP-MediaStore] Album: "${message.data.album}"`);
+                console.log(`💿 [CACP-MediaStore] Album: "${message.data.album}"`);
               }
               if (message.data.isPlaying !== undefined) {
                 this.extensionData.isPlaying = message.data.isPlaying;
-                DeskThing.sendLog(`▶️ [CACP-MediaStore] Playing: ${message.data.isPlaying}`);
+                console.log(`▶️ [CACP-MediaStore] Playing: ${message.data.isPlaying}`);
               }
 
               // Process artwork if changed (borrowed from SoundCloud app)
               if (message.data.artwork && message.data.artwork !== this.extensionData.artwork) {
-                DeskThing.sendLog(`🖼️ [CACP-MediaStore] New artwork detected: ${message.data.artwork}`);
+                console.log(`🖼️ [CACP-MediaStore] New artwork detected: ${message.data.artwork}`);
                 this.extensionData.artwork = message.data.artwork;
                 
                 // Process artwork asynchronously
@@ -206,7 +206,7 @@ export class CACPMediaStore {
                   .then(processedPath => {
                     if (processedPath) {
                       this.extensionData.processedArtwork = processedPath;
-                      DeskThing.sendLog(`✅ [CACP-MediaStore] Artwork cached: ${processedPath}`);
+                      console.log(`✅ [CACP-MediaStore] Artwork cached: ${processedPath}`);
                       // Send updated data with processed artwork
                       this.sendExtensionDataToDeskThing();
                     }
@@ -222,7 +222,7 @@ export class CACPMediaStore {
               
               this.sendExtensionDataToDeskThing();
             } else {
-              DeskThing.sendLog(`📋 [CACP-MediaStore] No media data changes detected, skipping update`);
+              console.log(`📋 [CACP-MediaStore] No media data changes detected, skipping update`);
             }
           }
           break;
@@ -257,7 +257,7 @@ export class CACPMediaStore {
               const pos = this.extensionData.position || 0;
               const dur = this.extensionData.duration || 0;
               const percent = dur > 0 ? Math.round((pos / dur) * 100) : 0;
-              DeskThing.sendLog(`⏱️ [CACP-MediaStore] Progress: ${Math.round(pos)}s/${Math.round(dur)}s (${percent}%) playing=${this.extensionData.isPlaying}`);
+              console.log(`⏱️ [CACP-MediaStore] Progress: ${Math.round(pos)}s/${Math.round(dur)}s (${percent}%) playing=${this.extensionData.isPlaying}`);
             }
             
             this.sendExtensionDataToDeskThing();
@@ -267,7 +267,7 @@ export class CACPMediaStore {
         case 'command-result':
           const action = message.action || 'unknown';
           const success = message.success ? 'SUCCESS' : 'FAILED';
-          DeskThing.sendLog(`🎮 [CACP-MediaStore] Command result for ${action}: ${success}`);
+          console.log(`🎮 [CACP-MediaStore] Command result for ${action}: ${success}`);
           if (!message.success) {
             DeskThing.sendError(`❌ [CACP-MediaStore] Command ${action} failed on extension side`);
           }
@@ -289,7 +289,7 @@ export class CACPMediaStore {
    */
   private sendExtensionDataToDeskThing() {
     if (!this.extensionData.title && !this.extensionData.artist) {
-      DeskThing.sendLog('📋 [CACP-MediaStore] No meaningful data to send (missing title and artist)');
+      console.log('📋 [CACP-MediaStore] No meaningful data to send (missing title and artist)');
       return;
     }
 
@@ -327,9 +327,9 @@ export class CACPMediaStore {
         null;
 
       if (payloadKey !== lastKey) {
-        DeskThing.sendLog(`📤 [CACP-MediaStore] Sending to DeskThing: "${musicPayload.track_name}" by "${musicPayload.artist}" (${musicPayload.is_playing ? 'PLAYING' : 'PAUSED'})`);
+        console.log(`📤 [CACP-MediaStore] Sending to DeskThing: "${musicPayload.track_name}" by "${musicPayload.artist}" (${musicPayload.is_playing ? 'PLAYING' : 'PAUSED'})`);
         if (musicPayload.thumbnail) {
-          DeskThing.sendLog(`🖼️ [CACP-MediaStore] Including artwork: ${musicPayload.thumbnail}`);
+          console.log(`🖼️ [CACP-MediaStore] Including artwork: ${musicPayload.thumbnail}`);
         }
         
         DeskThing.sendSong(musicPayload);
@@ -346,28 +346,59 @@ export class CACPMediaStore {
 
   // Enhanced control methods with comprehensive logging (borrowed from SoundCloud app)
   public handleNext() {
-    DeskThing.sendLog('⏭️ [CACP-MediaStore] Next track requested');
+    console.log('⏭️ [CACP-MediaStore] Next track requested');
     this.sendCommandToExtension('nexttrack');
   }
 
   public handlePrevious() {
-    DeskThing.sendLog('⏮️ [CACP-MediaStore] Previous track requested');
+    console.log('⏮️ [CACP-MediaStore] Previous track requested');
     this.sendCommandToExtension('previoustrack');
   }
 
   public handlePlay() {
-    DeskThing.sendLog('▶️ [CACP-MediaStore] Play requested');
+    console.log('▶️ [CACP-MediaStore] Play requested');
     this.sendCommandToExtension('play');
   }
 
   public handlePause() {
-    DeskThing.sendLog('⏸️ [CACP-MediaStore] Pause requested');
+    console.log('⏸️ [CACP-MediaStore] Pause requested');
     this.sendCommandToExtension('pause');
   }
 
   public handleSeek(data: { positionMs: number }) {
-    const seconds = Math.round(data.positionMs / 1000);
-    DeskThing.sendLog(`⏩ [CACP-MediaStore] Seek requested to ${seconds}s`);
+    // Use more precise conversion - keep 1 decimal place for better accuracy
+    const seconds = Math.round(data.positionMs / 100) / 10; // Convert ms to s with 1 decimal
+    
+    // Detailed seek logging for debugging
+    console.log(`⏩ [CACP-MediaStore] === SEEK DEBUG ===`);
+    console.log(`⏩ [CACP-MediaStore] Raw positionMs from DeskThing: ${data.positionMs}ms`);
+    console.log(`⏩ [CACP-MediaStore] Precise seconds calculation: ${seconds}s`);
+    console.log(`⏩ [CACP-MediaStore] Current track duration: ${this.extensionData.duration || 'unknown'}s`);
+    console.log(`⏩ [CACP-MediaStore] Current position BEFORE seek: ${this.extensionData.position || 'unknown'}s`);
+    console.log(`⏩ [CACP-MediaStore] Track: "${this.extensionData.title}" by "${this.extensionData.artist}"`);
+    
+    // Percentage calculation for verification
+    if (this.extensionData.duration) {
+      const percentage = (seconds / this.extensionData.duration) * 100;
+      const requestedMs = Math.round(data.positionMs);
+      const durationMs = Math.round(this.extensionData.duration * 1000);
+      const expectedPercentage = (requestedMs / durationMs) * 100;
+      
+      console.log(`⏩ [CACP-MediaStore] Seek to ${percentage.toFixed(2)}% of track`);
+      console.log(`⏩ [CACP-MediaStore] Math check: ${requestedMs}ms / ${durationMs}ms = ${expectedPercentage.toFixed(2)}%`);
+      
+      // Sanity checks
+      if (seconds > this.extensionData.duration) {
+        console.log(`⚠️ [CACP-MediaStore] WARNING: Seek time (${seconds}s) exceeds duration (${this.extensionData.duration}s)!`);
+      }
+      if (seconds < 0) {
+        console.log(`⚠️ [CACP-MediaStore] WARNING: Negative seek time (${seconds}s)!`);
+      }
+    }
+    
+    console.log(`⏩ [CACP-MediaStore] Sending to extension: { time: ${seconds} }`);
+    console.log(`⏩ [CACP-MediaStore] ==================`);
+    
     this.sendCommandToExtension('seek', { time: seconds });
   }
 
@@ -376,7 +407,7 @@ export class CACPMediaStore {
   }
 
   public handleShuffle(data: { shuffle: boolean }) {
-    DeskThing.sendLog(`🔀 [CACP-MediaStore] Shuffle ${data.shuffle ? 'ON' : 'OFF'} requested`);
+    console.log(`🔀 [CACP-MediaStore] Shuffle ${data.shuffle ? 'ON' : 'OFF'} requested`);
     this.sendCommandToExtension('shuffle', { shuffle: data.shuffle });
   }
 
@@ -385,25 +416,25 @@ export class CACPMediaStore {
   }
 
   public handleGetSong() {
-    DeskThing.sendLog('📡 [CACP-MediaStore] GET song request - sending current data');
+    console.log('📡 [CACP-MediaStore] GET song request - sending current data');
     this.sendExtensionDataToDeskThing();
   }
 
   public handleRefresh() {
-    DeskThing.sendLog('🔄 [CACP-MediaStore] REFRESH request - sending current data');
+    console.log('🔄 [CACP-MediaStore] REFRESH request - sending current data');
     this.sendExtensionDataToDeskThing();
   }
 
   // Lifecycle methods
   public stop() {
-    DeskThing.sendLog('🛑 [CACP-MediaStore] Stopping MediaStore');
+    console.log('🛑 [CACP-MediaStore] Stopping MediaStore');
     this.extensionWebSocket = null;
     this.extensionData = {};
     this.lastSentPayload = null;
   }
 
   public purge() {
-    DeskThing.sendLog('🧹 [CACP-MediaStore] Purging MediaStore data');
+    console.log('🧹 [CACP-MediaStore] Purging MediaStore data');
     this.stop();
   }
 
