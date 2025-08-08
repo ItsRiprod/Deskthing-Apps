@@ -560,12 +560,12 @@ class CACPMediaSource {
     /**
      * Handle media control commands
      */
-    async handleControlCommand(command) {
+    async handleControlCommand(command, time) {
         if (!this.currentHandler) {
             return {success: false, error: 'No active handler'};
         }
 
-        this.log.info('Handling control command', {command, site: this.activeSiteName});
+        this.log.info('Handling control command', {command, time, site: this.activeSiteName});
 
         try {
             let result = false;
@@ -584,8 +584,8 @@ class CACPMediaSource {
                     result = await this.currentHandler.previous();
                     break;
                 case 'seek':
-                    if (typeof arguments[1] === 'number' && this.currentHandler.seek) {
-                        result = await this.currentHandler.seek(arguments[1]);
+                    if (typeof time === 'number' && this.currentHandler.seek) {
+                        result = await this.currentHandler.seek(time);
                     } else {
                         return { success: false, error: 'Seek time missing or unsupported' };
                     }
