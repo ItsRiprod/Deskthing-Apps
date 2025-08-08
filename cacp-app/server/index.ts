@@ -1,11 +1,28 @@
 import { DeskThing } from "@deskthing/server";
 import { DESKTHING_EVENTS } from "@deskthing/types";
 import { WebSocketServer, WebSocket } from 'ws';
+import { CACPMediaStore } from "./mediaStore";
+import { deleteImages } from "./imageUtils";
+import { initializeListeners } from "./initializer";
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 let wss: WebSocketServer | null = null;
 
-// Extremely shallow bridge: accepts extension updates, forwards song to DeskThing,
-// and relays simple control commands back to the extension.
+/**
+ * Enhanced CACP Server with comprehensive logging and image processing
+ * Borrowed robust functionality from SoundCloud app for production-ready operation
+ */
+
+// Dynamic version loading for logging
+let CACP_VERSION = 'unknown';
+try {
+  const packagePath = join(__dirname, '../package.json');
+  const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
+  CACP_VERSION = packageJson.version;
+} catch (error) {
+  console.warn('Could not load CACP version from package.json');
+}
 
 type ExtensionMessage = {
   type: 'connection' | 'mediaData' | 'timeupdate' | 'command-result';
@@ -18,115 +35,127 @@ type ExtensionMessage = {
   version?: string;
   action?: string;
   success?: boolean;
-};
-
-let lastExtensionSocket: WebSocket | null = null;
-let lastSnapshot: {
-  title?: string;
-  artist?: string;
-  album?: string;
-  artwork?: string;
-  isPlaying?: boolean;
-  currentTime?: number;
-  duration?: number;
-  site?: string;
-  sourceId?: string | number;
-  ts?: number;
-} = {};
-
-const sendSongToDeskThing = () => {
-  if (!lastSnapshot.title && !lastSnapshot.artist) return;
-  const payload = {
-    version: 2,
-    album: lastSnapshot.album || null,
-    artist: lastSnapshot.artist || null,
-    playlist: null,
-    playlist_id: null,
-    track_name: lastSnapshot.title || 'Unknown Track',
-    shuffle_state: null,
-    repeat_state: 'off' as const,
-    is_playing: !!lastSnapshot.isPlaying,
-    abilities: [
-      // Minimal abilities for extension control
-      3, // NEXT
-      4, // PREVIOUS
-      0, // PLAY
-      1  // PAUSE
-    ],
-    track_duration: lastSnapshot.duration ? Math.round(lastSnapshot.duration * 1000) : null,
-    track_progress: lastSnapshot.currentTime ? Math.round(lastSnapshot.currentTime * 1000) : null,
-    volume: 0,
-    thumbnail: lastSnapshot.artwork || null,
-    device: 'Chrome Extension',
-    id: null,
-    device_id: 'chrome-extension',
-    source: lastSnapshot.site || 'chrome-extension'
-  } as any;
-  DeskThing.sendSong(payload);
+  commandId?: string;
 };
 
 const startWsServer = async () => {
   const port = Number(process.env.CACP_WS_PORT || 8081);
   wss = new WebSocketServer({ port });
-  console.log(`🎯 [CACP] WS server listening on ${port}`);
+  DeskThing.sendLog(`🎯 [CACP-Server] WebSocket server listening on port ${port} for Chrome extension connections`);
 
   wss.on('connection', (ws, req) => {
-    lastExtensionSocket = ws;
-    console.log('🔌 [CACP] Extension connected from', req.socket.remoteAddress);
+    const clientIp = req.socket.remoteAddress;
+    DeskThing.sendLog(`🔌 [CACP-Server] Chrome extension connected from: ${clientIp}`);
+    
+    // Get MediaStore instance and set WebSocket connection
+    const mediaStore = CACPMediaStore.getInstance();
+    mediaStore.setExtensionWebSocket(ws);
 
     ws.on('message', (raw) => {
       try {
         const msg: ExtensionMessage = JSON.parse(raw.toString());
-        if (msg.type === 'mediaData') {
-          lastSnapshot.title = msg.data?.title ?? lastSnapshot.title;
-          lastSnapshot.artist = msg.data?.artist ?? lastSnapshot.artist;
-          lastSnapshot.album = msg.data?.album ?? lastSnapshot.album;
-          lastSnapshot.artwork = msg.data?.artwork ?? lastSnapshot.artwork;
-          if (msg.data?.isPlaying !== undefined) lastSnapshot.isPlaying = msg.data.isPlaying;
-          lastSnapshot.site = msg.site || lastSnapshot.site;
-          lastSnapshot.sourceId = msg.sourceId || lastSnapshot.sourceId;
-          lastSnapshot.ts = Date.now();
-          sendSongToDeskThing();
-        } else if (msg.type === 'timeupdate') {
-          if (typeof msg.currentTime === 'number') lastSnapshot.currentTime = msg.currentTime;
-          if (typeof msg.duration === 'number') lastSnapshot.duration = msg.duration;
-          if (typeof msg.isPlaying === 'boolean') lastSnapshot.isPlaying = msg.isPlaying;
-          lastSnapshot.ts = Date.now();
-          // Throttle: forward only if duration>0 and at least 1s since last
-          sendSongToDeskThing();
-        }
-      } catch (e) {
-        console.error('❌ [CACP] WS message parse error', e);
+        DeskThing.sendLog(`📨 [CACP-Server] Received from extension: ${msg.type} ${msg.site ? `(${msg.site})` : ''}`);
+        
+        // Route all messages to MediaStore for processing
+        mediaStore.handleExtensionMessage(msg);
+        
+      } catch (error: any) {
+        DeskThing.sendError(`❌ [CACP-Server] WebSocket message parse error: ${error?.message || error}`);
+        console.error('Full parse error:', error);
       }
     });
 
     ws.on('close', () => {
-      if (lastExtensionSocket === ws) lastExtensionSocket = null;
-      console.log('🔌 [CACP] Extension disconnected');
+      DeskThing.sendLog('🔌 [CACP-Server] Chrome extension disconnected');
     });
+
+    ws.on('error', (error) => {
+      DeskThing.sendError(`❌ [CACP-Server] WebSocket client error: ${error.message}`);
+    });
+  });
+
+  wss.on('error', (error) => {
+    DeskThing.sendError(`❌ [CACP-Server] WebSocket server error: ${error.message}`);
   });
 };
 
-// Map DeskThing control events to extension commands
-const sendControl = (action: string, payload: any = {}) => {
-  if (!lastExtensionSocket) return;
-  const msg = { type: 'media-command', action, ...payload, timestamp: Date.now(), id: Date.now() };
-  try { lastExtensionSocket.send(JSON.stringify(msg)); } catch {}
-};
+
 
 const start = async () => {
-  await startWsServer();
-  DeskThing.sendLog('CACP App Started (shallow bridge)');
+  try {
+    DeskThing.sendLog(`🚀 [CACP-Server] Starting enhanced CACP app v${CACP_VERSION} with comprehensive logging and image processing`);
+    
+    // Initialize event listeners first
+    await initializeListeners();
+    
+    // Start WebSocket server
+    await startWsServer();
+    
+    DeskThing.sendLog(`✅ [CACP-Server] CACP App v${CACP_VERSION} Started Successfully - Ready for Chrome extension connections`);
+    
+    // Log status for debugging
+    const mediaStore = CACPMediaStore.getInstance();
+    const status = mediaStore.getStatus();
+    DeskThing.sendLog(`📊 [CACP-Server] v${CACP_VERSION} Initial status: ${JSON.stringify(status, null, 2)}`);
+    
+  } catch (error: any) {
+    DeskThing.sendError(`❌ [CACP-Server] Failed to start CACP app: ${error?.message || error}`);
+    throw error;
+  }
 };
 
 const stop = async () => {
-  if (wss) { wss.close(); wss = null; }
-  DeskThing.sendLog('CACP App Stopped');
+  try {
+    DeskThing.sendLog('🛑 [CACP-Server] Stopping CACP app');
+    
+    // Stop MediaStore
+    const mediaStore = CACPMediaStore.getInstance();
+    mediaStore.stop();
+    
+    // Close WebSocket server
+    if (wss) {
+      wss.close((error) => {
+        if (error) {
+          DeskThing.sendError(`❌ [CACP-Server] Error closing WebSocket server: ${error.message}`);
+        } else {
+          DeskThing.sendLog('🔌 [CACP-Server] WebSocket server closed successfully');
+        }
+      });
+      wss = null;
+    }
+    
+    // Clean up images
+    deleteImages();
+    
+    DeskThing.sendLog('✅ [CACP-Server] CACP App Stopped Successfully');
+    
+  } catch (error: any) {
+    DeskThing.sendError(`❌ [CACP-Server] Error during stop: ${error?.message || error}`);
+  }
 };
 
 const purge = async () => {
-  if (wss) { wss.close(); wss = null; }
-  DeskThing.sendLog('CACP App Purged');
+  try {
+    DeskThing.sendLog('🧹 [CACP-Server] Purging CACP app data');
+    
+    // Purge MediaStore
+    const mediaStore = CACPMediaStore.getInstance();
+    mediaStore.purge();
+    
+    // Close WebSocket server
+    if (wss) {
+      wss.close();
+      wss = null;
+    }
+    
+    // Clean up images
+    deleteImages();
+    
+    DeskThing.sendLog('✅ [CACP-Server] CACP App Purged Successfully');
+    
+  } catch (error: any) {
+    DeskThing.sendError(`❌ [CACP-Server] Error during purge: ${error?.message || error}`);
+  }
 };
 
 DeskThing.on(DESKTHING_EVENTS.START, start);
