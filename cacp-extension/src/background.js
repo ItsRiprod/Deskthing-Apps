@@ -163,10 +163,12 @@ class GlobalMediaManager {
     }
 
     try {
-      const response = await chrome.tabs.sendMessage(targetTabId, {
-        type: 'media-control',
-        command: command
-      });
+      const payload = { type: 'media-control', command };
+      // Allow optional time param for seek
+      if (command === 'seek' && typeof arguments[2] === 'number') {
+        payload.time = arguments[2];
+      }
+      const response = await chrome.tabs.sendMessage(targetTabId, payload);
 
       backgroundLogger.debug('Control command sent', {
         command,
@@ -283,8 +285,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
 
     case 'control-media':
-      // Popup sending control command
-      mediaManager.sendControlCommand(message.command, message.tabId)
+      // Popup sending control command (optional time for seek)
+      mediaManager.sendControlCommand(message.command, message.tabId, message.time)
         .then(result => sendResponse(result));
       return true; // Async response
 

@@ -546,7 +546,7 @@ class CACPMediaSource {
     setupMessageListener() {
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             if (message.type === 'media-control') {
-                this.handleControlCommand(message.command)
+                this.handleControlCommand(message.command, message.time)
                     .then(result => sendResponse(result))
                     .catch(error => sendResponse({
                         success: false,
@@ -582,6 +582,13 @@ class CACPMediaSource {
                     break;
                 case 'previous':
                     result = await this.currentHandler.previous();
+                    break;
+                case 'seek':
+                    if (typeof arguments[1] === 'number' && this.currentHandler.seek) {
+                        result = await this.currentHandler.seek(arguments[1]);
+                    } else {
+                        return { success: false, error: 'Seek time missing or unsupported' };
+                    }
                     break;
                 case 'toggle':
                     const isPlaying = this.currentHandler.isPlaying ? this.currentHandler.isPlaying() : false;

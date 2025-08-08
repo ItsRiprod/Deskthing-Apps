@@ -201,7 +201,7 @@ class CACPPopup {
     }
     
     if (sourcesListEl) {
-      sourcesListEl.innerHTML = '<div class="no-sources"><p>🎵 No media detected</p><p>Open a supported music site in any tab to get started!</p><div class="supported-sites"><small>Supported: SoundCloud, YouTube, Spotify, Apple Music</small></div></div>';
+      sourcesListEl.innerHTML = '<div class="no-sources"><p>🎵 No media detected</p><p>Open a supported music site in any tab to get started!</p><div class="supported-sites"><small>Supported: SoundCloud, YouTube</small></div></div>';
     }
 
     // Disable global controls
@@ -232,13 +232,26 @@ class CACPPopup {
       (artwork ? '<img src="' + artwork + '" alt="art" style="width:36px; height:36px; object-fit:cover; border-radius:4px; border:1px solid #333;" />' : '') +
       '    <div style="display:flex; flex-direction:column; gap:6px; min-width:220px;">' +
       '      <div>' + priorityTrack + '</div>' +
-      '      <div style="height:6px; background:#333; border-radius:4px; overflow:hidden; position:relative;">' +
+      '      <div id="globalProgress" class="progress-click" style="height:6px; background:#333; border-radius:4px; overflow:hidden; position:relative; cursor:pointer;">' +
       '        <div style="position:absolute; left:0; top:0; bottom:0; width:' + pct + '%; background:' + (isPlaying ? '#00B894' : '#555') + ';"></div>' +
       '      </div>' +
       '      <div style="font-size:10px; color:#888">' + (formatTime(currentTime)) + ' / ' + (formatTime(duration)) + (isPlaying ? ' • Playing' : ' • Paused') + '</div>' +
       '    </div>' +
       '  </span>' +
       '</div>';
+
+    // Attach click-to-seek on the global progress bar
+    try {
+      const bar = document.getElementById('globalProgress');
+      if (bar && duration > 0) {
+        bar.onclick = (ev) => {
+          const rect = bar.getBoundingClientRect();
+          const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+          const target = Math.floor(duration * ratio);
+          this.sendGlobalSeek(target);
+        };
+      }
+    } catch {}
   }
 
   /**
@@ -297,7 +310,7 @@ class CACPPopup {
       '    <div style="flex:1; min-width:120px;">' +
       '      <div class="track-title">' + trackTitle + '</div>' +
       '      <div class="track-artist">' + trackArtist + '</div>' +
-      '      <div style="height:6px; background:#333; border-radius:4px; overflow:hidden; position:relative; margin-top:6px;">' +
+      '      <div class="progress-click" data-tab-id="' + source.tabId + '" data-duration="' + (source.duration || 0) + '" style="height:6px; background:#333; border-radius:4px; overflow:hidden; position:relative; margin-top:6px; cursor:pointer;">' +
       '        <div style="position:absolute; left:0; top:0; bottom:0; width:' + pct + '%; background:' + (isPlaying ? '#00B894' : '#555') + ';"></div>' +
       '      </div>' +
       '    </div>' +
@@ -327,6 +340,19 @@ class CACPPopup {
         const targetTabId = parseInt(e.target.dataset.tabId);
         this.setPriority(targetTabId);
       });
+    }
+
+    // Click-to-seek on per-source progress bar
+    const progress = document.querySelector('.source-item[data-tab-id="' + tabId + '"] .progress-click');
+    if (progress) {
+      progress.onclick = (ev) => {
+        const duration = parseInt(progress.getAttribute('data-duration') || '0', 10);
+        if (!duration || duration <= 0) return;
+        const rect = progress.getBoundingClientRect();
+        const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+        const target = Math.floor(duration * ratio);
+        this.sendSourceSeek(tabId, target);
+      };
     }
   }
 
@@ -387,6 +413,27 @@ class CACPPopup {
   }
 
   /**
+   * Send seek command to highest priority source
+   */
+  async sendGlobalSeek(seconds) {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'control-media',
+        command: 'seek',
+        time: seconds
+      });
+      if (response?.success) {
+        this.log('Seek to ' + formatTime(seconds) + ' sent successfully');
+        setTimeout(() => this.refreshGlobalState(), 150);
+      } else {
+        this.log('Seek failed: ' + (response?.error || 'unknown'), 'error');
+      }
+    } catch (error) {
+      this.log('Failed to send seek: ' + error.message, 'error');
+    }
+  }
+
+  /**
    * Send command to specific source
    */
   async sendSourceCommand(command, tabId) {
@@ -406,6 +453,28 @@ class CACPPopup {
       }
     } catch (error) {
       this.log('Failed to send ' + command + ' command to tab ' + tabId + ': ' + error.message, 'error');
+    }
+  }
+
+  /**
+   * Send seek to a specific source
+   */
+  async sendSourceSeek(tabId, seconds) {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'control-media',
+        command: 'seek',
+        tabId: tabId,
+        time: seconds
+      });
+      if (response?.success) {
+        this.log('Seek to ' + formatTime(seconds) + ' sent to tab ' + tabId);
+        setTimeout(() => this.refreshGlobalState(), 150);
+      } else {
+        this.log('Seek failed for tab ' + tabId + ': ' + (response?.error || 'unknown'), 'error');
+      }
+    } catch (error) {
+      this.log('Failed to send seek to tab ' + tabId + ': ' + error.message, 'error');
     }
   }
 

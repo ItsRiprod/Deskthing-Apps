@@ -139,7 +139,45 @@ cacp-app/server/
 
 - **What works now**
   - ARIA path active on feed: progress and scrubs reflect immediately; MediaSession metadata/artwork populate mid-play; controls work.
+  - Popup timeline click-to-seek for priority source and per-source progress bars; seeks dispatch mouse sequence onto SoundCloud `.playbackTimeline__progressWrapper[role="progressbar"]`.
 
 - **Remaining**
   - Clean duplicated DOM titles (strip "Current track:" and repeats).
   - Relax `hasControls` check; strengthen popup reconnect after SW restarts.
+  - Apply the same click-to-seek approach to YouTube when that handler is validated.
+
+---
+
+## YouTube (watch) Implementation Plan — Scoped (No YouTube Music)
+
+1) Scope
+- Support only `www.youtube.com` watch pages (exclude Shorts `/shorts/` and Live `/live/` for v1). No YouTube Music.
+
+2) Handler skeleton
+- Create `src/sites/youtube.js` mirroring SoundCloud public API: `initialize`, `isReady`, `getTrackInfo`, `getCurrentTime`, `getDuration`, `isPlaying/getPlayingState`, `play/pause/next/previous`, `seek`, `extractTiming`.
+
+3) Controls mapping
+- Play/Pause: `.ytp-play-button` (toggle) → fallback keyboard `'k'`.
+- Next/Prev: `.ytp-next-button` / `.ytp-prev-button` (if present).
+
+4) Timing extraction (priority order)
+- Media element: `document.querySelector('video')` → `currentTime/duration` if `duration>0`.
+- ARIA slider: `.ytp-progress-bar [role="slider"]` → `aria-valuenow/aria-valuemax`.
+- Ratio fallback: `.ytp-play-progress` width / `.ytp-progress-bar` width.
+- Text fallback: `.ytp-time-current`, `.ytp-time-duration`.
+
+5) Click-to-seek
+- Primary: set `video.currentTime = target`.
+- Fallback mouse sequence on `.ytp-progress-bar`: dispatch `mousemove/mousedown/mouseup/click` at `rect.left + rect.width * (time/duration)`.
+
+6) Readiness and metadata
+- isReady if controls exist, MediaSession metadata exists, or video present.
+- Track info from MediaSession; fallback to `h1.title` and channel link.
+
+7) Edge cases
+- Ads: skip timing during `player.classList.contains('ad-interrupting')` or ad overlays.
+- Live: `duration === 0` → disable seek.
+- SPA: re-detect on URL change (already wired).
+
+8) QA
+- Validate play/pause/next/prev, progress, click-to-seek on standard watch pages and playlist items; mini/theater modes.

@@ -75,7 +75,7 @@ Transform single-site audio control into a **universal Chrome audio control plat
 - [ ] Advanced error recovery mechanisms
 
 ### **Phase 5: Ecosystem Growth** 🚀 **2026+**
-- [ ] Additional site handlers (Spotify Web, Apple Music, YouTube Music)
+- [ ] Additional site handlers (deferred; current scope is SoundCloud + YouTube)
 - [ ] Community contribution pipeline
 - [ ] Advanced features (volume control, playlists, queue management)
 - [ ] Integration with additional DeskThing platform features
@@ -127,6 +127,8 @@ Transform single-site audio control into a **universal Chrome audio control plat
 
 **Next Update:** After extension validation completion  
 **Current Focus:** Extension-to-site communication before universal app development
+
+Note: Current scope limits “supported sites” to SoundCloud and YouTube during validation.
 
 ---
 

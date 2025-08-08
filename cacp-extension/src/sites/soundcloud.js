@@ -575,21 +575,36 @@ export class SoundCloudHandler extends SiteHandler {
       }
     }
 
-    // Calculate progress bar position and click
+    // Calculate progress bar position and synthesize pointer events on wrapper
     const duration = this.getDuration();
     if (duration > 0) {
       const percentage = time / duration;
+      // Prefer the role=progressbar wrapper
+      const wrapper = document.querySelector('.playbackTimeline__progressWrapper[role="progressbar"]')
+        || document.querySelector('.playbackTimeline [role="progressbar"]');
       const progressBar = this.getElement(this.constructor.config.selectors.progressBar);
-      
-      if (progressBar && progressBar.parentElement) {
-        // Click on the wrapper container rather than the filled bar to ensure hit target
-        const clickable = progressBar.parentElement;
+
+      const clickable = wrapper || (progressBar ? progressBar.parentElement : null);
+      if (clickable) {
         const rect = clickable.getBoundingClientRect();
-        const clickX = rect.left + (rect.width * percentage);
+        const clickX = rect.left + Math.max(0, Math.min(rect.width, rect.width * percentage));
         const clickY = rect.top + (rect.height / 2);
-        
-        this.clickAtPosition(clickable, clickX, clickY);
-        return { success: true, action: 'seek', time, method: 'click' };
+
+        // Dispatch the full event sequence some sites expect
+        const fire = (type) => clickable.dispatchEvent(new MouseEvent(type, {
+          view: window,
+          bubbles: true,
+          cancelable: true,
+          clientX: clickX,
+          clientY: clickY
+        }));
+        fire('mousemove');
+        fire('mousedown');
+        fire('mouseup');
+        fire('click');
+
+        this.log.trace('Seek click dispatched', { percentage: Math.round(percentage * 100), clickX, rectLeft: rect.left, rectWidth: rect.width });
+        return { success: true, action: 'seek', time, method: 'mouse-sequence' };
       }
     }
 
