@@ -1,6 +1,6 @@
 {
   "projectName": "CACP Extension",
-  "globalLevel": "info",
+  "globalLevel": "warn",
   "timestampMode": "readable",
   "format": {
     "style": "brackets",
@@ -13,7 +13,7 @@
     "component": true,
     "level": false,
     "message": true,
-    "jsonPayload": true,
+    "jsonPayload": false,
     "stackTrace": true
   },
   "components": {
@@ -21,25 +21,25 @@
       "emoji": "🎯", 
       "color": "#4A90E2", 
       "name": "CACP-Core",
-      "level": "debug"
+      "level": "warn"
     },
     "soundcloud": { 
       "emoji": "🎵", 
       "color": "#FF5500", 
       "name": "SoundCloud",
-      "level": "trace"
+      "level": "warn"
     },
     "youtube": { 
       "emoji": "📹", 
       "color": "#FF0000", 
       "name": "YouTube",
-      "level": "info"
+      "level": "warn"
     },
     "site-detector": { 
       "emoji": "🔍", 
       "color": "#00C896", 
       "name": "SiteDetector",
-      "level": "debug"
+      "level": "warn"
     },
     "websocket": { 
       "emoji": "🌐", 
@@ -51,7 +51,7 @@
       "emoji": "🎛️", 
       "color": "#FF6B6B", 
       "name": "Popup",
-      "level": "debug"
+      "level": "info"
     },
     "background": { 
       "emoji": "🔧", 
@@ -69,22 +69,22 @@
       "emoji": "⚙️", 
       "color": "#96CEB4", 
       "name": "Settings",
-      "level": "info"
+      "level": "warn"
     },
     "test": { 
       "emoji": "🧪", 
       "color": "#FFEAA7", 
       "name": "Test",
-      "level": "trace"
+      "level": "error"
     }
   },
   "fileOverrides": {
     "src/sites/soundcloud.js": { 
-      "level": "trace",
+      "level": "warn",
       "component": "soundcloud",
       "emoji": "🎵",
       "display": {
-        "jsonPayload": true,
+        "jsonPayload": false,
         "stackTrace": true
       }
     },
@@ -92,7 +92,7 @@
       "level": "warn"
     },
     "src/popup.js": { 
-      "level": "debug",
+      "level": "info",
       "emoji": "🎛️",
       "display": {
         "timestamp": true,

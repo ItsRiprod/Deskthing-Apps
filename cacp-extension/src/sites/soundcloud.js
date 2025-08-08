@@ -752,7 +752,13 @@ export class SoundCloudHandler extends SiteHandler {
     this.log.debug('Starting position tracking with 1000ms interval');
     
     this.positionUpdateInterval = setInterval(() => {
-      this.updatePosition();
+      try {
+        this.updatePosition();
+      } catch (error) {
+        if (error.message && error.message.includes('Extension context invalidated')) {
+          this.stopPositionTracking();
+        }
+      }
     }, 1000);
   }
 
@@ -764,6 +770,23 @@ export class SoundCloudHandler extends SiteHandler {
       clearInterval(this.positionUpdateInterval);
       this.positionUpdateInterval = null;
       this.log.debug('Stopped position tracking');
+    }
+  }
+
+  /**
+   * Clean up all intervals and listeners
+   */
+  cleanup() {
+    this.log.debug('🧹 [SOUNDCLOUD] Cleaning up handler');
+    
+    // Clean up position tracking
+    this.stopPositionTracking();
+    
+    // Clean up MediaSession polling
+    if (this.mediaSessionInterval) {
+      clearInterval(this.mediaSessionInterval);
+      this.mediaSessionInterval = null;
+      this.log.debug('Stopped MediaSession polling');
     }
   }
 
@@ -844,8 +867,17 @@ export class SoundCloudHandler extends SiteHandler {
       }
     };
 
-    // Poll MediaSession data
-    setInterval(checkMediaSession, 1000);
+    // Poll MediaSession data with cleanup tracking
+    this.mediaSessionInterval = setInterval(() => {
+      try {
+        checkMediaSession();
+      } catch (error) {
+        if (error.message && error.message.includes('Extension context invalidated')) {
+          clearInterval(this.mediaSessionInterval);
+          this.mediaSessionInterval = null;
+        }
+      }
+    }, 1000);
   }
 
   /**

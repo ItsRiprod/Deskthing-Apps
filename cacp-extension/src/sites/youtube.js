@@ -250,7 +250,7 @@ export class YouTubeHandler extends SiteHandler {
    * Play current video/track
    */
   async play() {
-    console.log(`[YouTube${this.isYouTubeMusic ? ' Music' : ''}] Play command`);
+    this.log.info(`Play command`, { isYouTubeMusic: this.isYouTubeMusic });
     
     // Try appropriate play button
     const playButtonSelector = this.isYouTubeMusic ? 
@@ -284,7 +284,7 @@ export class YouTubeHandler extends SiteHandler {
    * Pause current video/track
    */
   async pause() {
-    console.log(`[YouTube${this.isYouTubeMusic ? ' Music' : ''}] Pause command`);
+    this.log.info(`Pause command`, { isYouTubeMusic: this.isYouTubeMusic });
     
     // Try appropriate pause button
     const pauseButtonSelector = this.isYouTubeMusic ? 
@@ -318,7 +318,7 @@ export class YouTubeHandler extends SiteHandler {
    * Skip to next video/track
    */
   async next() {
-    console.log(`[YouTube${this.isYouTubeMusic ? ' Music' : ''}] Next track command`);
+    this.log.info(`Next track command`, { isYouTubeMusic: this.isYouTubeMusic });
     
     // Try appropriate next button
     const nextButtonSelector = this.isYouTubeMusic ? 
@@ -347,7 +347,7 @@ export class YouTubeHandler extends SiteHandler {
    * Skip to previous video/track
    */
   async previous() {
-    console.log(`[YouTube${this.isYouTubeMusic ? ' Music' : ''}] Previous track command`);
+    this.log.info(`Previous track command`, { isYouTubeMusic: this.isYouTubeMusic });
     
     // Try appropriate previous button
     const prevButtonSelector = this.isYouTubeMusic ? 
@@ -376,7 +376,7 @@ export class YouTubeHandler extends SiteHandler {
    * Seek to specific time
    */
   async seek(time) {
-    console.log(`[YouTube${this.isYouTubeMusic ? ' Music' : ''}] Seeking to ${time}s`);
+    this.log.info(`Seeking to ${time}s`, { isYouTubeMusic: this.isYouTubeMusic, time });
     
     // Try video element first
     const videoElement = this.currentVideoElement || this.getElement(this.constructor.config.selectors.videoElement);
@@ -409,16 +409,16 @@ export class YouTubeHandler extends SiteHandler {
     const findVideoElement = () => {
       const videoElement = this.getElement(this.constructor.config.selectors.videoElement);
       if (videoElement && videoElement !== this.currentVideoElement) {
-        console.log(`[YouTube${this.isYouTubeMusic ? ' Music' : ''}] Video element found`);
+        this.log.debug(`Video element found`, { isYouTubeMusic: this.isYouTubeMusic });
         this.currentVideoElement = videoElement;
         
         // Add event listeners for better state tracking
         videoElement.addEventListener('play', () => {
-          console.log(`[YouTube${this.isYouTubeMusic ? ' Music' : ''}] Video playing`);
+          this.log.debug(`Video playing`, { isYouTubeMusic: this.isYouTubeMusic });
         });
         
         videoElement.addEventListener('pause', () => {
-          console.log(`[YouTube${this.isYouTubeMusic ? ' Music' : ''}] Video paused`);
+          this.log.debug(`Video paused`, { isYouTubeMusic: this.isYouTubeMusic });
         });
       }
     };
@@ -426,8 +426,17 @@ export class YouTubeHandler extends SiteHandler {
     // Initial search
     findVideoElement();
     
-    // Re-search periodically (YouTube changes DOM frequently)
-    setInterval(findVideoElement, 2000);
+    // Re-search periodically (YouTube changes DOM frequently) with cleanup tracking
+    this.videoElementInterval = setInterval(() => {
+      try {
+        findVideoElement();
+      } catch (error) {
+        if (error.message && error.message.includes('Extension context invalidated')) {
+          clearInterval(this.videoElementInterval);
+          this.videoElementInterval = null;
+        }
+      }
+    }, 2000);
   }
 
   /**
@@ -435,11 +444,11 @@ export class YouTubeHandler extends SiteHandler {
    */
   setupMediaSessionMonitoring() {
     if (!navigator.mediaSession) {
-      console.warn(`[YouTube${this.isYouTubeMusic ? ' Music' : ''}] MediaSession API not available`);
+      this.log.warn(`MediaSession API not available`, { isYouTubeMusic: this.isYouTubeMusic });
       return;
     }
 
-    console.log(`[YouTube${this.isYouTubeMusic ? ' Music' : ''}] Setting up MediaSession monitoring...`);
+    this.log.debug(`Setting up MediaSession monitoring`, { isYouTubeMusic: this.isYouTubeMusic });
     
     let lastMetadata = null;
     
@@ -449,14 +458,27 @@ export class YouTubeHandler extends SiteHandler {
         const metadataKey = `${metadata.title}-${metadata.artist}`;
         
         if (metadataKey !== lastMetadata) {
-          console.log(`[YouTube${this.isYouTubeMusic ? ' Music' : ''}] New track detected:`, metadata.title);
+          this.log.info(`New track detected`, { 
+            isYouTubeMusic: this.isYouTubeMusic, 
+            title: metadata.title,
+            artist: metadata.artist 
+          });
           lastMetadata = metadataKey;
         }
       }
     };
 
-    // Poll MediaSession data
-    setInterval(checkMediaSession, 1000);
+    // Poll MediaSession data with cleanup tracking
+    this.mediaSessionInterval = setInterval(() => {
+      try {
+        checkMediaSession();
+      } catch (error) {
+        if (error.message && error.message.includes('Extension context invalidated')) {
+          clearInterval(this.mediaSessionInterval);
+          this.mediaSessionInterval = null;
+        }
+      }
+    }, 1000);
   }
 
   /**
@@ -472,5 +494,26 @@ export class YouTubeHandler extends SiteHandler {
       childList: true,
       subtree: true
     });
+  }
+
+  /**
+   * Clean up all intervals and listeners
+   */
+  cleanup() {
+    this.log.debug('🧹 Cleaning up handler');
+    
+    // Clean up video element monitoring
+    if (this.videoElementInterval) {
+      clearInterval(this.videoElementInterval);
+      this.videoElementInterval = null;
+      this.log.debug('Stopped video element monitoring');
+    }
+    
+    // Clean up MediaSession polling
+    if (this.mediaSessionInterval) {
+      clearInterval(this.mediaSessionInterval);
+      this.mediaSessionInterval = null;
+      this.log.debug('Stopped MediaSession polling');
+    }
   }
 }

@@ -5,6 +5,26 @@
 
 import logger from '@crimsonsunset/jsg-logger';
 
+// Global error handler for extension context invalidation
+window.addEventListener('error', (event) => {
+    if (event.error && event.error.message && event.error.message.includes('Extension context invalidated')) {
+        console.error('🚨 [CACP] Extension context invalidated - cleaning up intervals'); // Keep console for critical error
+        // Attempt cleanup of any global intervals
+        if (window.cacpCleanup) {
+            window.cacpCleanup();
+        }
+        return true; // Prevent error from bubbling
+    }
+});
+
+// Global cleanup function
+window.cacpCleanup = () => {
+    console.warn('🧹 [CACP] Global cleanup triggered'); // Keep console for global error handling
+    if (window.cacpMediaSource) {
+        window.cacpMediaSource.cleanup();
+    }
+};
+
 // Import site handlers
 import {SiteDetector} from './managers/site-detector.js';
 import {SoundCloudHandler} from './sites/soundcloud.js';
@@ -74,7 +94,7 @@ class CACPMediaSource {
                     }
                 }
 
-                console.log('📁 Logger config loaded from Chrome extension:', config.projectName);
+                console.info('📁 Logger config loaded from Chrome extension:', config.projectName);
             } else {
                 console.warn('❌ Failed to load config - Status:', xhr.status, 'Response:', xhr.responseText);
             }
@@ -654,24 +674,48 @@ class CACPMediaSource {
      * Clean up resources and unregister
      */
     cleanup() {
-        this.log.debug('Cleaning up media source');
+        this.log.debug('🧹 [CACP] Cleaning up media source');
 
         if (this.reportingInterval) {
             clearInterval(this.reportingInterval);
+            this.reportingInterval = null;
+        }
+
+        // Clean up current handler
+        if (this.currentHandler && typeof this.currentHandler.cleanup === 'function') {
+            this.currentHandler.cleanup();
         }
 
         if (this.isRegistered) {
-            chrome.runtime.sendMessage({
-                type: 'remove-media-source'
-            }).catch(() => {
-                // Background script might be unavailable during cleanup
-            });
+            try {
+                chrome.runtime.sendMessage({
+                    type: 'remove-media-source'
+                }).catch(() => {
+                    // Background script might be unavailable during cleanup
+                });
+            } catch (error) {
+                // Extension context might be invalidated
+                this.log.debug('Chrome runtime unavailable during cleanup');
+            }
         }
     }
 }
 
 // Initialize CACP Media Source when script loads
 const cacpMediaSource = new CACPMediaSource();
+
+// Register globally for cleanup
+window.cacpMediaSource = cacpMediaSource;
+
+// Clean up on page unload
+window.addEventListener('beforeunload', () => {
+    cacpMediaSource.cleanup();
+});
+
+// Clean up when content script is about to be unloaded
+window.addEventListener('pagehide', () => {
+    cacpMediaSource.cleanup();
+});
 
 // Wait for DOM to be ready, then initialize
 if (document.readyState === 'loading') {
@@ -686,9 +730,14 @@ if (document.readyState === 'loading') {
 // Export for potential external access
 window.cacpMediaSource = cacpMediaSource;
 
-// Log that the content script loaded
+// Log that the content script loaded with version info
 if (cacpMediaSource.log) {
-    cacpMediaSource.log.info('CACP Media Source content script loaded');
+    try {
+        const extVersion = chrome?.runtime?.getManifest?.().version || 'unknown';
+        cacpMediaSource.log.info(`CACP Extension v${extVersion} content script loaded`);
+    } catch {
+        cacpMediaSource.log.info('CACP Extension content script loaded');
+    }
 } else {
-    console.log('[CACP] Media Source content script loaded'); // Fallback if logger not ready
+    console.info('[CACP] Media Source content script loaded'); // Fallback if logger not ready
 }
