@@ -181,3 +181,32 @@ cacp-app/server/
 
 8) QA
 - Validate play/pause/next/prev, progress, click-to-seek on standard watch pages and playlist items; mini/theater modes.
+
+---
+
+## CACP → DeskThing Hardware Integration (Checklist)
+
+1) Universal App Server (CACP app)
+- Build `cacp-app/server/` with a single WS endpoint, in-memory media store, routing by `site`.
+- Outbound schema (reuse SoundCloud): `{ type: 'mediaData', site, data: { title, artist, album, artwork, isPlaying, currentTime, duration } }`.
+- Inbound commands: `{ type: 'control', command: 'play'|'pause'|'next'|'previous'|'seek', site?, seconds? }`.
+
+2) Extension ↔ App bridge (background)
+- WS client with reconnect/backoff and heartbeat.
+- Publish currentPriority + source diffs on change and at interval; receive commands and forward to target tab.
+
+3) Protocol alignment
+- Match existing SoundCloud app shapes so DeskThing UI needs no changes.
+- Add version/feature flags; gate seek availability when `duration===0` (ads/live).
+
+4) Config & discovery
+- Options page for host/port/TLS and enabled sites (SoundCloud, YouTube only).
+- Store in `chrome.storage.sync`; graceful defaults, connection status in logs.
+
+5) Reliability & lifecycle
+- Confirm SW keepalive cadence is sufficient; add watchdog logs.
+- Remove stale sources on tab close or WS disconnect; last-will clear.
+
+6) Packaging & deploy
+- Repeatable `npm run build` for extension (dist); `npm start` for app server with env (`PORT`, `TLS`).
+- One-page setup guide; device smoke test: SC + YT controls, progress, seek, reconnect.

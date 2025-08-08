@@ -4,6 +4,12 @@
  */
 
 import logger from '@crimsonsunset/jsg-logger';
+// Bridge connection to DeskThing shallow app server
+let ws = null; // WebSocket
+let wsConnected = false;
+let reconnectDelayMs = 1000;
+const MAX_RECONNECT_DELAY_MS = 15000;
+const DEFAULT_WS_URL = 'ws://127.0.0.1:8081';
 
 // Initialize logger
 const backgroundLogger = logger.cacp.child({ component: 'background' });
@@ -50,6 +56,8 @@ class GlobalMediaManager {
 
     // Notify popup if open
     this.notifyPopup('sources-updated', this.getSourcesList());
+    // Push current priority snapshot to app bridge
+    pushPriorityToBridge(this.currentPriority);
   }
 
   /**
@@ -67,6 +75,8 @@ class GlobalMediaManager {
       });
 
       this.notifyPopup('sources-updated', this.getSourcesList());
+      // Push current priority snapshot to app bridge
+      pushPriorityToBridge(this.currentPriority);
     }
   }
 
@@ -129,6 +139,8 @@ class GlobalMediaManager {
         currentPriority: highestPriority,
         allSources: this.getSourcesList()
       });
+      // Push latest priority snapshot to app bridge
+      pushPriorityToBridge(highestPriority);
     }
   }
 
@@ -325,3 +337,111 @@ let keepAliveInterval = setInterval(() => {
 
 backgroundLogger.info('Global Media Controller ready');
 backgroundLogger.debug('CACP Background Global Media Controller initialized'); 
+
+// --------------- Bridge: WS client ----------------
+function getBridgeUrl() {
+  // Allow override via storage later; for now fixed default
+  return DEFAULT_WS_URL;
+}
+
+function connectBridge() {
+  try {
+    const url = getBridgeUrl();
+    ws = new WebSocket(url);
+
+    ws.addEventListener('open', () => {
+      wsConnected = true;
+      reconnectDelayMs = 1000;
+      backgroundLogger.info('Connected to CACP app bridge', { url });
+      // Identify extension/version
+      const hello = {
+        type: 'connection',
+        source: 'cacp-extension',
+        version: chrome.runtime.getManifest().version,
+        ts: Date.now()
+      };
+      try { ws.send(JSON.stringify(hello)); } catch {}
+      // Send initial snapshot if available
+      pushPriorityToBridge(mediaManager.currentPriority);
+    });
+
+    ws.addEventListener('close', () => {
+      wsConnected = false;
+      ws = null;
+      backgroundLogger.warn('Bridge disconnected, scheduling reconnect', { reconnectDelayMs });
+      setTimeout(connectBridge, reconnectDelayMs);
+      reconnectDelayMs = Math.min(reconnectDelayMs * 2, MAX_RECONNECT_DELAY_MS);
+    });
+
+    ws.addEventListener('error', (e) => {
+      backgroundLogger.warn('Bridge socket error', { message: e?.message || 'unknown' });
+    });
+
+    ws.addEventListener('message', async (evt) => {
+      try {
+        const msg = JSON.parse(evt.data);
+        if (msg?.type === 'media-command' && msg?.action) {
+          // Map action names to our internal commands
+          const action = String(msg.action).toLowerCase();
+          switch (action) {
+            case 'play':
+              await mediaManager.sendControlCommand('play');
+              break;
+            case 'pause':
+              await mediaManager.sendControlCommand('pause');
+              break;
+            case 'previoustrack':
+            case 'previous':
+              await mediaManager.sendControlCommand('previous');
+              break;
+            case 'nexttrack':
+            case 'next':
+              await mediaManager.sendControlCommand('next');
+              break;
+            case 'seek':
+              if (typeof msg.time === 'number') {
+                await mediaManager.sendControlCommand('seek', null, msg.time);
+              }
+              break;
+            default:
+              backgroundLogger.debug('Unknown bridge command', { action });
+          }
+        }
+      } catch (err) {
+        backgroundLogger.warn('Failed to process bridge message', { error: err?.message });
+      }
+    });
+  } catch (e) {
+    backgroundLogger.error('Failed to create bridge socket', { error: e?.message });
+  }
+}
+
+function pushPriorityToBridge(priority) {
+  if (!priority || !wsConnected || !ws) return;
+  const track = priority.trackInfo || {};
+  const mediaData = {
+    type: 'mediaData',
+    site: priority.site,
+    sourceId: priority.tabId,
+    data: {
+      title: track.title,
+      artist: track.artist,
+      album: track.album || '',
+      artwork: Array.isArray(track.artwork) && track.artwork.length ? track.artwork[0]?.src || track.artwork[0] : undefined,
+      isPlaying: !!priority.isPlaying
+    }
+  };
+  const timeupdate = {
+    type: 'timeupdate',
+    currentTime: priority.currentTime || 0,
+    duration: priority.duration || 0,
+    isPlaying: !!priority.isPlaying
+  };
+  try {
+    ws.send(JSON.stringify(mediaData));
+    ws.send(JSON.stringify(timeupdate));
+  } catch {}
+}
+
+// Establish bridge connection at startup
+connectBridge();
