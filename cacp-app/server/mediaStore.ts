@@ -366,38 +366,13 @@ export class CACPMediaStore {
   }
 
   public handleSeek(data: { positionMs: number }) {
-    // Use more precise conversion - keep 1 decimal place for better accuracy
-    const seconds = Math.round(data.positionMs / 100) / 10; // Convert ms to s with 1 decimal
+    const seconds = Math.round(data.positionMs / 1000);
+    console.log(`⏩ [CACP-MediaStore] Seek requested to ${seconds}s (from ${data.positionMs}ms)`);
     
-    // Detailed seek logging for debugging
-    console.log(`⏩ [CACP-MediaStore] === SEEK DEBUG ===`);
-    console.log(`⏩ [CACP-MediaStore] Raw positionMs from DeskThing: ${data.positionMs}ms`);
-    console.log(`⏩ [CACP-MediaStore] Precise seconds calculation: ${seconds}s`);
-    console.log(`⏩ [CACP-MediaStore] Current track duration: ${this.extensionData.duration || 'unknown'}s`);
-    console.log(`⏩ [CACP-MediaStore] Current position BEFORE seek: ${this.extensionData.position || 'unknown'}s`);
-    console.log(`⏩ [CACP-MediaStore] Track: "${this.extensionData.title}" by "${this.extensionData.artist}"`);
-    
-    // Percentage calculation for verification
     if (this.extensionData.duration) {
       const percentage = (seconds / this.extensionData.duration) * 100;
-      const requestedMs = Math.round(data.positionMs);
-      const durationMs = Math.round(this.extensionData.duration * 1000);
-      const expectedPercentage = (requestedMs / durationMs) * 100;
-      
-      console.log(`⏩ [CACP-MediaStore] Seek to ${percentage.toFixed(2)}% of track`);
-      console.log(`⏩ [CACP-MediaStore] Math check: ${requestedMs}ms / ${durationMs}ms = ${expectedPercentage.toFixed(2)}%`);
-      
-      // Sanity checks
-      if (seconds > this.extensionData.duration) {
-        console.log(`⚠️ [CACP-MediaStore] WARNING: Seek time (${seconds}s) exceeds duration (${this.extensionData.duration}s)!`);
-      }
-      if (seconds < 0) {
-        console.log(`⚠️ [CACP-MediaStore] WARNING: Negative seek time (${seconds}s)!`);
-      }
+      console.log(`⏩ [CACP-MediaStore] Seeking to ${percentage.toFixed(1)}% of ${this.extensionData.duration}s track`);
     }
-    
-    console.log(`⏩ [CACP-MediaStore] Sending to extension: { time: ${seconds} }`);
-    console.log(`⏩ [CACP-MediaStore] ==================`);
     
     this.sendCommandToExtension('seek', { time: seconds });
   }
