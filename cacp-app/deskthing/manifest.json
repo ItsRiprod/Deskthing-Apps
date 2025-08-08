@@ -2,7 +2,7 @@
   "label": "CACP (Chrome Audio Control Platform)",
   "tags": ["audiosource"],
   "requires": [],
-  "version": "0.1.1",
+  "version": "0.1.2",
   "requiredVersions": { "server": ">=0.11.0", "client": ">=0.11.0" },
   "description": "Universal DeskThing audio app that bridges a Chrome extension to DeskThing via WebSocket (SoundCloud + YouTube scoped).",
   "author": "crimsonsunset",

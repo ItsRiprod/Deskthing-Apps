@@ -82,3 +82,20 @@ npm run dev:cacp          # Start CACP app development
 **Last Updated:** July 28, 2025  
 **Current Focus:** Base handler implementation and site detection system
 
+## 🧾 Logs and Troubleshooting
+
+### Desktop (macOS)
+- Primary DT log: `/Users/joe/Library/Application Support/DeskThing/logs/readable.log`
+- DT data dir: `/Users/joe/Library/Application Support/DeskThing/`
+- Per-app logs (if enabled): `/Users/joe/Library/Application Support/DeskThing/apps/<app-id>/logs/`
+
+### Device (Linux)
+- Typical: `~/.config/DeskThing/logs/` or `/var/log/deskthing/` (varies by build)
+
+### What to expect for CACP
+- App start: `CACP App Started (shallow bridge)`
+- WS connect from extension: `🔌 [CACP] Extension connected ...`
+- Incoming messages: `[CACP] WS message type=mediaData|timeupdate`
+- Artwork: `Artwork cached → /resource/image/cacp/...`
+- Controls: mapping of SongEvent.SET to `media-command` actions (play/pause/next/previous/seek)
+
