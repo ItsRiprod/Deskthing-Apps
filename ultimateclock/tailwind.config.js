@@ -11,6 +11,9 @@ export default {
         'drop-in': 'drop-in 0.3s ease-in-out forwards',
         'pop-in': 'pop-in 0.3s ease-in-out forwards',
       },
+      fontFamily: {
+        geist: ['Geist', 'sans-serif'],
+      },
       keyframes: {
         'drop-in': {
           '0%': {

@@ -1,12 +1,17 @@
-import React from 'react'
+import React from "react";
+import { Clock } from "./components/Clock";
+import { StoreInitializer } from "./store/storeInitializer";
+import { BackgroundComponent } from "./components/Background";
 
 const App: React.FC = () => {
 
-    return (
-        <div className="bg-slate-900 gap-2 flex-col w-screen h-screen flex justify-center items-center">
-            <p className="font-bold text-5xl text-white">New DeskThing App</p>
-        </div>
-    )
-}
+  return (
+    <div className="bg-slate-900 relative w-screen h-screen overflow-hidden flex justify-center items-center">
+      <StoreInitializer />
+      <BackgroundComponent />
+      <Clock />
+    </div>
+  );
+};
 
-export default App
+export default App;

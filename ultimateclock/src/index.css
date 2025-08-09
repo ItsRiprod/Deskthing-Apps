@@ -18,3 +18,11 @@ button:active {
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+  font-family: 'Geist';
+  src: url(/fonts/GeistVF.ttf) format('truetype');
+  font-style: normal;
+  font-weight: normal;
+  font-display: swap;
+}
