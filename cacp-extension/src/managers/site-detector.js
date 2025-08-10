@@ -298,13 +298,13 @@ export class SiteDetector {
    */
   logActiveStatus() {
     if (this.activeSites.size > 0) {
-      console.log(`[CACP] Active sites: [${Array.from(this.activeSites).join(', ')}]`);
+      this.log.info(`Active sites: [${Array.from(this.activeSites).join(', ')}]`);
       const activeHandler = this.getActiveHandler();
       if (activeHandler) {
-        console.log(`[CACP] Active handler: ${activeHandler.name} (priority: ${activeHandler.priority})`);
+        this.log.info(`Active handler: ${activeHandler.name} (priority: ${activeHandler.priority})`);
       }
     } else {
-      console.log('[CACP] No active sites');
+      this.log.info('No active sites');
     }
   }
 
@@ -315,7 +315,7 @@ export class SiteDetector {
     this.activeSites.clear();
     this.currentUrl = '';
     this.matchedHandlers = [];
-    console.log('[CACP] Site detector reset');
+    this.log.info('Site detector reset');
   }
 }
 

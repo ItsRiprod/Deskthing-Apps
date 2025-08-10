@@ -3,6 +3,9 @@
  * Provides drag-drop interface for configuring site priorities and auto-switch behavior
  */
 
+import logger from '@crimsonsunset/jsg-logger';
+
+const log = logger.settings;
 let priorityManager = null;
 let currentSites = [];
 let isLoading = false;
@@ -40,7 +43,12 @@ const SITE_CONFIG = {
  * Initialize settings page
  */
 async function initializeSettings() {
-  console.log('[CACP Settings] Initializing...');
+  try {
+    const extVersion = chrome?.runtime?.getManifest?.().version || 'unknown';
+    log.info(`CACP Settings v${extVersion} - Initializing...`);
+  } catch {
+    log.info('CACP Settings - Initializing...');
+  }
   
   try {
     // Load current settings
@@ -53,10 +61,10 @@ async function initializeSettings() {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('settings-content').style.display = 'block';
     
-    console.log('[CACP Settings] Initialization complete');
+    log.info('Initialization complete');
     
   } catch (error) {
-    console.error('[CACP Settings] Initialization failed:', error);
+    log.error('Initialization failed:', { error: error.message, stack: error.stack });
     showMessage('Failed to load settings: ' + error.message, 'error');
   }
 }
@@ -91,7 +99,7 @@ async function loadSettings() {
     updateStatusDisplay();
     
   } catch (error) {
-    console.error('[CACP Settings] Failed to load settings:', error);
+    log.error('Failed to load settings:', { error: error.message, stack: error.stack });
     throw error;
   }
 }
@@ -115,10 +123,10 @@ async function saveSettings() {
     await chrome.storage.sync.set({ 'cacp-site-priorities': data });
     
     showMessage('Settings saved successfully!', 'success');
-    console.log('[CACP Settings] Settings saved:', data);
+    log.info('Settings saved:', data);
     
   } catch (error) {
-    console.error('[CACP Settings] Failed to save settings:', error);
+    log.error('Failed to save settings:', { error: error.message, stack: error.stack });
     showMessage('Failed to save settings: ' + error.message, 'error');
   } finally {
     isLoading = false;
@@ -147,10 +155,10 @@ async function resetSettings() {
     updateAutoSwitchToggle();
     
     showMessage('Settings reset to defaults', 'success');
-    console.log('[CACP Settings] Settings reset to defaults');
+    log.info('Settings reset to defaults');
     
   } catch (error) {
-    console.error('[CACP Settings] Failed to reset settings:', error);
+    log.error('Failed to reset settings:', { error: error.message, stack: error.stack });
     showMessage('Failed to reset settings: ' + error.message, 'error');
   }
 }
@@ -297,7 +305,7 @@ function updatePrioritiesFromOrder() {
   });
   
   priorityManager.setPriorities(newPriorities);
-  console.log('[CACP Settings] Updated priorities:', newPriorities);
+  log.debug('Updated priorities:', newPriorities);
 }
 
 /**

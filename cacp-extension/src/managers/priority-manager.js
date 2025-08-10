@@ -253,7 +253,7 @@ export class PriorityManager {
         localStorage.setItem(this.storageKey, JSON.stringify(data));
       }
     } catch (error) {
-      console.error('[CACP] Failed to save priorities:', error);
+      this.log.error('Failed to save priorities:', { error: error.message, stack: error.stack });
     }
   }
 
@@ -286,10 +286,10 @@ export class PriorityManager {
           this.autoSwitchEnabled = data.autoSwitchEnabled;
         }
 
-        console.log('[CACP] Loaded priorities:', this.getAllPriorities());
+        this.log.debug('Loaded priorities:', this.getAllPriorities());
       }
     } catch (error) {
-      console.error('[CACP] Failed to load priorities:', error);
+      this.log.error('Failed to load priorities:', { error: error.message, stack: error.stack });
     }
   }
 

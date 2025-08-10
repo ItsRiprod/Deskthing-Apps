@@ -34,7 +34,12 @@ window.CACPTest = {
    * Run all CACP tests
    */
   async runAllTests() {
-    console.log('🎯 CACP Extension Test Suite Starting...');
+    try {
+      const extVersion = chrome?.runtime?.getManifest?.().version || 'unknown';
+      console.log(`🎯 CACP Extension v${extVersion} Test Suite Starting...`);
+    } catch {
+      console.log('🎯 CACP Extension Test Suite Starting...');
+    }
     console.log('Current URL:', window.location.href);
     
     try {
@@ -280,7 +285,12 @@ window.CACPTest = {
       }
     });
     
-    console.log('\n🎯 CACP Test Suite Complete!');
+    try {
+      const extVersion = chrome?.runtime?.getManifest?.().version || 'unknown';
+      console.log(`\n🎯 CACP Extension v${extVersion} Test Suite Complete!`);
+    } catch {
+      console.log('\n🎯 CACP Test Suite Complete!');
+    }
   },
 
   /**

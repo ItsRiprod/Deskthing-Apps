@@ -96,5 +96,3 @@ DeskThing.on(SongEvent.SET, (data) => {
       DeskThing.sendWarning(`⚠️ [CACP-Initializer] Unknown SET request: ${data.request}`);
   }
 });
-
-console.log('✅ [CACP-Initializer] All DeskThing event listeners initialized successfully');
