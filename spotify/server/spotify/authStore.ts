@@ -35,6 +35,7 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
         | string
         | undefined;
     }
+
     if (data && data.access_token && data.refresh_token) {
       console.log("Found auth token in storage");
       this.access_token = data.access_token as string;
@@ -67,12 +68,23 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
 
   private async checkAuth() {
     if (!this.client_id || !this.client_secret || !this.redirect_uri) {
+      const descriptionText = `Missing credentials: ${!this.client_id ? "Client ID, " : ""}${!this.client_secret ? "Client Secret, " : ""}${!this.redirect_uri ? "Redirect URI" : ""}`.replace(
+        /, $/,
+        ""
+      )
+
       console.warn(
-        `Missing credentials: ${!this.client_id ? "Client ID, " : ""}${!this.client_secret ? "Client Secret, " : ""}${!this.redirect_uri ? "Redirect URI" : ""}`.replace(
-          /, $/,
-          ""
-        )
+        descriptionText
       );
+
+
+      DeskThing.sendNotification({
+        id: 'missingAuth',
+        type: 'error',
+        title: 'Missing needed authentication information!',
+        description: descriptionText,
+        link: 'deskthing://apps/list?app=true&appId=spotify&page=settings' // this will deep link to the spotify settings
+      })
       return false;
     }
 
@@ -96,7 +108,7 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
       await this.login();
       this.debounceTimeout = null;
     }, 2000);
-  
+
     return true;
   }
 
@@ -203,7 +215,7 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
         // Token is completely invalid, need full re-auth
         this.access_token = undefined;
         this.refresh_token = undefined;
-        
+
         this.emit("authUpdate", { authStatus: false });
         await this.login();
       }

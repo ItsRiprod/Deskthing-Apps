@@ -18,9 +18,9 @@ import {
 const DeskThing = createDeskThing<ToServerTypes, ToClientTypes>();
 
 export const initialize = async () => {
-  setupActions();
-  setupTasks();
-  setupSettings();
+  await setupSettings();
+  await setupActions();
+  await setupTasks();
 };
 
 DeskThing.on(SongEvent.GET, async (data) => {

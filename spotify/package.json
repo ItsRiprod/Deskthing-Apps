@@ -17,15 +17,15 @@
   },
   "dependencies": {
     "@deskthing/client": "^0.11.2",
-    "@deskthing/server": "^0.11.6",
     "dotenv": "^16.4.7",
     "lucide-react": "^0.482.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@deskthing/cli": "^0.11.11",
-    "@deskthing/types": "^0.11.16",
+    "@deskthing/cli": "^0.11.13",
+    "@deskthing/server": "file:../../DeskThing-Link-Server",
+    "@deskthing/types": "^0.11.18",
     "@eslint/js": "^9.9.0",
     "@types/node": "^22.6.1",
     "@types/react": "19.0.12",
@@ -33,7 +33,6 @@
     "@vitejs/plugin-react": "^4.3.1",
     "archiver": "^7.0.1",
     "autoprefixer": "^10.4.19",
-    "concurrently": "^9.2.0",
     "eslint": "^9.9.0",
     "eslint-plugin-prettier": "^5.2.3",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
