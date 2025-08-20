@@ -25,6 +25,26 @@ window.cacpCleanup = () => {
     }
 };
 
+// Inject main world script for logger exposure
+(function injectMainWorldScript() {
+    try {
+        console.log('🚀 [CACP] Injecting main world script...');
+        const script = document.createElement('script');
+        script.src = chrome.runtime.getURL('src/main-world-logger.js');
+        script.onload = function() {
+            console.log('✅ [CACP] Main world script injected successfully');
+            script.remove(); // Clean up
+        };
+        script.onerror = function() {
+            console.error('❌ [CACP] Failed to inject main world script');
+            script.remove();
+        };
+        (document.head || document.documentElement).appendChild(script);
+    } catch (error) {
+        console.error('❌ [CACP] Script injection error:', error);
+    }
+})();
+
 // Import site handlers
 import {SiteDetector} from './managers/site-detector.js';
 import {SoundCloudHandler} from './sites/soundcloud.js';
@@ -32,11 +52,20 @@ import {YouTubeHandler} from './sites/youtube.js';
 
 class CACPMediaSource {
     constructor() {
+        console.log('🔧 [CACP] CACPMediaSource constructor started');
+        console.log('🔧 [CACP] Logger state check:', { 
+            logger: typeof logger, 
+            loggerCacp: logger ? typeof logger.cacp : 'no logger',
+            loggerControls: logger ? typeof logger.controls : 'no controls',
+            loggerKeys: logger ? Object.keys(logger) : 'no logger'
+        });
+        
         // Try to load config for logger
         this.loadLoggerConfig();
 
         // Initialize logger
         this.log = logger.cacp;
+        console.log('🔧 [CACP] Logger initialized:', typeof this.log);
 
         // Core components
         this.siteDetector = new SiteDetector();
@@ -64,26 +93,32 @@ class CACPMediaSource {
      * @private
      */
     loadLoggerConfig() {
+        console.log('🔧 [CACP] Starting logger config load...');
         try {
             // Attempt to load config via Chrome extension API
             const configUrl = chrome.runtime.getURL('logger-config.json');
-
+            console.log('🔧 [CACP] Config URL:', configUrl);
 
             // Try synchronous loading (works in Chrome extensions)
             const xhr = new XMLHttpRequest();
             xhr.open('GET', configUrl, false); // false = synchronous
             xhr.send();
+            
+            console.log('🔧 [CACP] Config XHR response:', { status: xhr.status, hasText: !!xhr.responseText });
 
             if (xhr.status === 200 && xhr.responseText) {
                 const config = JSON.parse(xhr.responseText);
+                console.log('🔧 [CACP] Config parsed:', { projectName: config.projectName, globalLevel: config.globalLevel });
 
                 // Apply config to logger using proper method
                 if (logger && logger.configManager) {
+                    console.log('🔧 [CACP] Logger available, merging config...');
                     // Use the existing loadConfig method which properly merges
                     logger.configManager.config = logger.configManager.mergeConfigs(logger.configManager.config, config);
 
                     // Refresh loggers to apply new config
                     if (logger.controls && logger.controls.refresh) {
+                        console.log('🔧 [CACP] Refreshing logger controls...');
                         logger.controls.refresh();
 
                         // Reassign our logger instance to pick up new formatter
@@ -91,7 +126,11 @@ class CACPMediaSource {
 
                         // Test the new config immediately
                         this.log.info('🧪 Config test - this should have readable timestamp and purple color!');
+                    } else {
+                        console.warn('🔧 [CACP] Logger controls not available for refresh');
                     }
+                } else {
+                    console.warn('🔧 [CACP] Logger or configManager not available');
                 }
 
                 console.info('📁 Logger config loaded from Chrome extension:', config.projectName);
@@ -699,6 +738,23 @@ class CACPMediaSource {
             }
         }
     }
+
+    /**
+     * Get current CACP status for debugging/testing
+     */
+    getStatus() {
+        return {
+            isInitialized: this.currentHandler !== null,
+            activeSiteName: this.activeSiteName,
+            hasActiveHandler: this.currentHandler !== null,
+            lastMediaData: this.lastReportedState?.trackInfo || null,
+            siteDetector: this.siteDetector?.getStatus() || null,
+            websocketManager: {
+                isConnected: this.isRegistered
+            },
+            version: chrome?.runtime?.getManifest?.()?.version || 'unknown'
+        };
+    }
 }
 
 // Initialize CACP Media Source when script loads
@@ -729,6 +785,171 @@ if (document.readyState === 'loading') {
 
 // Export for potential external access
 window.cacpMediaSource = cacpMediaSource;
+
+// Expose CACP object for testing
+window.CACP = {
+    getStatus: () => cacpMediaSource.getStatus(),
+    currentHandler: cacpMediaSource.currentHandler,
+    siteDetector: cacpMediaSource.siteDetector,
+    isInitialized: () => cacpMediaSource.currentHandler !== null
+};
+
+// Expose logger controls globally for debugging  
+console.log('🔧 CACP Logger exposure check:', {
+    loggerExists: typeof logger !== 'undefined',
+    loggerControls: logger ? typeof logger.controls : 'logger undefined',
+    loggerObject: logger ? Object.keys(logger) : 'no logger'
+});
+
+// Try to expose the logger controls
+const exposeLogger = () => {
+    console.log('🔍 Attempting to expose logger controls...');
+    console.log('🔍 Logger state:', {
+        logger: !!logger,
+        controls: logger ? !!logger.controls : false,
+        controlsType: logger && logger.controls ? typeof logger.controls : 'none',
+        loggerKeys: logger ? Object.keys(logger) : [],
+        currentWindowCACP: typeof window.CACP_Logger,
+        windowLoggerKeys: Object.keys(window).filter(k => k.toLowerCase().includes('logger'))
+    });
+    
+    if (logger && logger.controls && typeof logger.controls === 'object') {
+        try {
+            window.CACP_Logger = logger.controls;
+            console.log('✅ CACP_Logger exposed via logger.controls');
+            console.log('🎛️ Available methods:', Object.keys(logger.controls));
+            
+            // Verify the exposure actually worked
+            if (window.CACP_Logger && typeof window.CACP_Logger.enableDebugMode === 'function') {
+                console.log('🧪 Logger exposure verification: SUCCESS');
+                return true;
+            } else {
+                console.error('❌ Logger exposure verification: FAILED', {
+                    windowCACPLogger: typeof window.CACP_Logger,
+                    hasEnableDebugMode: window.CACP_Logger ? typeof window.CACP_Logger.enableDebugMode : 'no CACP_Logger'
+                });
+                return false;
+            }
+        } catch (e) {
+            console.error('❌ Logger exposure error:', e);
+            return false;
+        }
+    }
+    
+    console.warn('❌ Logger controls not available yet', {
+        loggerExists: !!logger,
+        controlsExists: logger ? !!logger.controls : false,
+        controlsType: logger && logger.controls ? typeof logger.controls : 'none'
+    });
+    return false;
+};
+
+// Try immediately
+if (!exposeLogger()) {
+    // Try after short delay
+    setTimeout(() => {
+        if (!exposeLogger()) {
+            // Try after longer delay
+            setTimeout(() => {
+                if (!exposeLogger()) {
+                    console.error('🚨 Failed to expose CACP_Logger after multiple attempts');
+                    console.log('Debug info:', {
+                        logger: typeof logger,
+                        Re: typeof Re,
+                        window: typeof window
+                    });
+                }
+            }, 1000);
+        }
+    }, 100);
+}
+
+// Add a manual exposure function for debugging
+window.exposeCACPLogger = () => {
+    console.log('🔧 Manual logger exposure attempt...');
+    
+    // First try the normal exposure
+    const normalExposure = exposeLogger();
+    if (normalExposure) {
+        console.log('✅ Normal exposure worked!');
+        return;
+    }
+    
+    // Manual fallback - try to find logger in global scope
+    console.log('🔍 Searching for logger objects globally...');
+    const globalObjects = Object.keys(window);
+    const loggerObjects = globalObjects.filter(key => 
+        key.toLowerCase().includes('logger') || 
+        (window[key] && typeof window[key] === 'object' && window[key].controls)
+    );
+    
+    console.log('Found potential logger objects:', loggerObjects);
+    
+    for (const objName of loggerObjects) {
+        const obj = window[objName];
+        if (obj && obj.controls && typeof obj.controls.enableDebugMode === 'function') {
+            window.CACP_Logger = obj.controls;
+            console.log(`✅ CACP_Logger manually exposed via ${objName}!`);
+            console.log('🎛️ Available methods:', Object.keys(window.CACP_Logger));
+            console.log('Try: CACP_Logger.enableDebugMode() or CACP_Logger.setLevel("soundcloud", "debug")');
+            return;
+        }
+    }
+    
+    console.error('❌ Manual logger exposure failed - no suitable objects found');
+    console.log('Debug info:', {
+        globalLoggerObjects: loggerObjects,
+        windowKeys: globalObjects.slice(0, 20) // Show first 20 for debugging
+    });
+};
+
+// Listen for messages from main world script
+window.addEventListener('message', (event) => {
+    // Only handle our CACP logger commands
+    if (event.data?.type !== 'CACP_LOGGER_COMMAND') return;
+    
+    console.log('🔗 [CACP] Received command from main world:', event.data);
+    
+    const { command, component, level } = event.data;
+    
+    try {
+        switch (command) {
+            case 'enableDebugMode':
+                if (logger?.controls?.enableDebugMode) {
+                    logger.controls.enableDebugMode();
+                    console.log('✅ [CACP] Debug mode enabled via main world command');
+                } else {
+                    console.warn('❌ [CACP] Debug mode not available - logger.controls missing');
+                }
+                break;
+                
+            case 'setLevel':
+                if (logger?.controls?.setLevel && component && level) {
+                    logger.controls.setLevel(component, level);
+                    console.log(`✅ [CACP] Set ${component} level to ${level} via main world command`);
+                } else {
+                    console.warn('❌ [CACP] setLevel not available or missing parameters:', { component, level });
+                }
+                break;
+                
+            case 'getStatus':
+                if (cacpMediaSource?.getStatus) {
+                    const status = cacpMediaSource.getStatus();
+                    console.log('ℹ️ [CACP] Current status:', status);
+                } else {
+                    console.warn('❌ [CACP] getStatus not available');
+                }
+                break;
+                
+            default:
+                console.warn('❓ [CACP] Unknown command from main world:', command);
+        }
+    } catch (error) {
+        console.error('❌ [CACP] Error handling main world command:', error);
+    }
+});
+
+console.log('🔗 [CACP] Main world message listener installed');
 
 // Log that the content script loaded with version info
 if (cacpMediaSource.log) {
