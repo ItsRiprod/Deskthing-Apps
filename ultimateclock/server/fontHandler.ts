@@ -29,10 +29,16 @@ const updateFontOptions = async (newFontUrl?: string) => {
       VALID_FONT_EXTENSIONS.includes(path.extname(file).toLowerCase())
     );
 
-    const fontOptions = fontFiles.map(file => ({
-      label: path.basename(file, path.extname(file)),
-      value: `./fonts/${file}`
-    }))
+    const fontOptions = fontFiles.map(file => {
+      // Un-sanitize: replace underscores with spaces and capitalize each word
+      const label = path.basename(file, path.extname(file))
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, char => char.toUpperCase());
+      return {
+        label,
+        value: `./fonts/${file}`
+      };
+    })
 
     const recentlyAddedFont = newFontUrl ? `./fonts/${path.basename(newFontUrl)}` : null;
 
@@ -89,7 +95,9 @@ const handleFontUpload = async (fontFilePath: string) => {
       return;
     }
 
-    const fileName = path.basename(fontFilePath);
+    // Sanitize the file name to remove illegal characters for URLs/paths
+    let fileName = path.basename(fontFilePath);
+    fileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
     const ext = path.extname(fileName).toLowerCase();
 
     if (!VALID_FONT_EXTENSIONS.includes(ext)) {
