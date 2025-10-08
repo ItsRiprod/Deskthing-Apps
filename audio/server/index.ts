@@ -3,10 +3,18 @@ import { DESKTHING_EVENTS } from "@deskthing/types";
 import { initializeListeners } from "./initializer"
 import { MediaStore } from "./mediaStore";
 import { deleteImages } from "./imageUtils";
+import { existsSync, mkdirSync } from "node:fs";
+import { imagesDir } from "./settings";
 
 const start = async () => {
   await initializeListeners()
-  DeskThing.sendLog('Server Started!');
+
+  if (!existsSync(imagesDir)) {
+    console.log('Creating images directory');
+    mkdirSync(imagesDir, { recursive: true });
+  }
+
+  console.log('Server Started!');
 };
 
 const stop = async () => {
@@ -14,7 +22,7 @@ const stop = async () => {
   const mediaStore = MediaStore.getInstance()
   mediaStore.stop()
   deleteImages()
-  DeskThing.sendLog('Server Stopped');
+  console.log('Server Stopped');
 };
 
 const purge = async () => {
@@ -22,7 +30,7 @@ const purge = async () => {
   const mediaStore = MediaStore.getInstance()
   mediaStore.purge()
   deleteImages()
-  DeskThing.sendLog('Server Purged');
+  console.log('Server Purged');
 };
 
 // Main Entrypoint of the server

@@ -7,19 +7,19 @@ export const initializeListeners = async () => {
   await mediaStore.initializeListeners()
 }
 
-DeskThing.on(SongEvent.GET, (data) => {
+DeskThing.on(SongEvent.GET, async (data) => {
   const mediaStore = MediaStore.getInstance()
   switch (data.request) {
     case AUDIO_REQUESTS.SONG:
-      mediaStore.handleGetSong()
+      await mediaStore.handleGetSong()
       break
     case AUDIO_REQUESTS.REFRESH:
-      mediaStore.handleRefresh()
+      await mediaStore.handleRefresh()
       break
   }
 })
 
-DeskThing.on(SongEvent.SET, (data) => {
+DeskThing.on(SongEvent.SET, async (data) => {
   const mediaStore = MediaStore.getInstance()
   switch (data.request) {
     case AUDIO_REQUESTS.FAST_FORWARD:
@@ -56,7 +56,7 @@ DeskThing.on(SongEvent.SET, (data) => {
       mediaStore.handleStop()
       break
     case AUDIO_REQUESTS.VOLUME:
-      mediaStore.handleVolume({ volume: data.payload })
+      await mediaStore.handleVolume({ volume: data.payload })
       break
   }
 })

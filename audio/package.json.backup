@@ -1,13 +1,13 @@
 {
   "name": "audio",
   "private": true,
-  "version": "0.11.2",
+  "version": "0.11.1",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "dev:vite": "vite",
     "dev:wrapper": "npx @deskthing/cli dev",
-    "dev": "npx @deskthing/cli dev --vite",
+    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:wrapper\"",
     "build": "npx @deskthing/cli package",
     "setup": "node setup.js",
     "lint": "eslint .",
@@ -17,7 +17,6 @@
     "@deskthing/client": "^0.11.2",
     "@deskthing/server": "^0.11.6",
     "autoprefixer": "^10.4.21",
-    "loudness": "^0.4.2",
     "node-nowplaying": "^0.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
