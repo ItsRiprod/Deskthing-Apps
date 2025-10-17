@@ -15,6 +15,8 @@ import {
   ToServerTypes,
 } from "../shared/transitTypes";
 
+import './setupSession' // Import to set up session handling
+
 const DeskThing = createDeskThing<ToServerTypes, ToClientTypes>();
 
 export const initialize = async () => {
@@ -50,13 +52,16 @@ DeskThing.on(SpotifyEvent.GET, async (data) => {
 
   switch (data.request) {
     case "playlists": {
-      const playlists = await playlistStore.getAllPlaylists();
-      console.debug(`Sending ${playlists.length} playlists`);
+      const playlists = await playlistStore.getAllPlaylists(data.payload);
+      
+      console.debug(`Sending ${playlists.items.length} playlists`);
+      
       DeskThing.send({
         app: "spotify",
         type: "playlists",
         payload: playlists,
       });
+      
       break;
     }
     case "presets": {
@@ -148,6 +153,7 @@ DeskThing.on(SpotifyEvent.SET, async (data) => {
     const actionStore = storeProvider.getActionStore();
     const songStore = storeProvider.getSongStore();
     const playlistStore = storeProvider.getPlaylistStore();
+    const deviceStore = storeProvider.getDeviceStore();
     let response;
     switch (data.request) {
       case "transfer":
@@ -165,6 +171,13 @@ DeskThing.on(SpotifyEvent.SET, async (data) => {
           return;
         }
         response = await playlistStore.setPreset(data.payload.presetNum, { playlistURI: data.payload.playlistId });
+        break;
+      case "device":
+        if (!data.payload || data.payload == undefined) {
+          console.error("No device ID provided");
+          return;
+        }
+        response = await deviceStore.transferPlayback(data.payload);
         break;
       case "like_song":
         response = await songStore.likeSong(data.payload);

@@ -82,6 +82,7 @@ export class DeviceStore extends EventEmitter<deviceStoreEvents> {
 
   async transferPlayback(deviceId: string) {
     try {
+      console.log(`Transferring playback to device ID: ${deviceId}`);
       await this.spotifyApi.transferPlayback(deviceId);
     } catch (error) {
       console.error("Error transferring playback: " + error);

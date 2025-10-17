@@ -1,9 +1,9 @@
 import { FC } from "react";
 import { Playlist } from "@shared/spotifyTypes";
-import { usePlaylists } from "@src/hooks/usePlaylists";
 import Overlay from "./Overlay";
 import Button from "./Button";
 import { X } from "lucide-react";
+import { usePlaylistStore } from "@src/stores/playlistStore";
 
 type AddToPresetOverlayProps = {
   onPresetSelect: (index: number) => void;
@@ -14,7 +14,7 @@ export const AddToPresetOverlay: FC<AddToPresetOverlayProps> = ({
   onPresetSelect,
   onClose,
 }) => {
-  const { presets } = usePlaylists();
+  const presets = usePlaylistStore(state => state.presets);
 
   return (
     <Overlay onClose={onClose}>

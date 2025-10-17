@@ -43,7 +43,7 @@ export const setupActions = () => {
     description: "Cycles the Auth Key",
     id: SpotifyActionIDs.CYCLE_KEY,
     enabled: true,
-    version: "0.10.3",
+    version: "0.11.1",
     version_code: 10,
   }
   DeskThing.registerAction(cycleKeyAction)

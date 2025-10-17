@@ -4,10 +4,10 @@ import { Device } from "../../shared/spotifyTypes";
 import { Actions, PlayerResponse } from "../types/spotifyAPI";
 import EventEmitter from "node:events";
 import { DeviceStore } from "./deviceStore"
-import { SongAbilities, SongData } from "@deskthing/types";
+import { SongAbilities, SongData11 } from "@deskthing/types";
 
 type songStoreEvents = {
-  songUpdate: [SongData];
+  songUpdate: [SongData11];
   rawSongUpdate: [PlayerResponse];
   thumbnailUpdate: [string];
   deviceUpdate: [Device];
@@ -209,7 +209,7 @@ export class SongStore extends EventEmitter<songStoreEvents> {
 
   private async constructSongData(
     currentPlayback: PlayerResponse
-  ): Promise<SongData> {
+  ): Promise<SongData11> {
     if (
       currentPlayback.device.id &&
       currentPlayback.device.id != this.recent_device_id
@@ -253,7 +253,7 @@ export class SongStore extends EventEmitter<songStoreEvents> {
       PlayerResponse,
       { currently_playing_type: "track" }
     >
-  ): Promise<SongData> {
+  ): Promise<SongData11> {
     const isLiked = await this.checkLiked(currentPlayback.item.id);
 
     return {
@@ -294,7 +294,7 @@ export class SongStore extends EventEmitter<songStoreEvents> {
       PlayerResponse,
       { currently_playing_type: "episode" }
     >
-  ): Promise<SongData> {
+  ): Promise<SongData11> {
     return {
       version: 2,
       album: currentPlayback?.item?.show?.name || 'Podcast',

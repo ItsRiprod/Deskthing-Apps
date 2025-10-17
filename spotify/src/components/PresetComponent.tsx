@@ -3,8 +3,7 @@ import { Playlist } from "@shared/spotifyTypes";
 import { FC, useMemo } from "react";
 import { SwipeContainer } from "@src/components/SwipeContainer";
 import { useControls } from "@src/hooks/useControls"
-import { usePlaylists } from "@src/hooks/usePlaylists"
-import { X, Heart, Plus, Play } from "lucide-react"
+import { X, Plus } from "lucide-react"
 
 type PresetComponentProps = {
   preset: Playlist;

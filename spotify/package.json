@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:wrapper\"",
+    "dev": "npx @deskthing/cli dev",
     "build": "npx @deskthing/cli package",
     "build-server": "esbuild server/index.ts --bundle --platform=node --outfile=dist/index.js",
     "setup": "node setup.js",
@@ -20,7 +20,8 @@
     "dotenv": "^16.4.7",
     "lucide-react": "^0.482.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@deskthing/cli": "^0.11.13",

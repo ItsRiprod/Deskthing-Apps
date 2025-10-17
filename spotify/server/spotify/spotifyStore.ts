@@ -307,8 +307,8 @@ export class SpotifyStore {
     return this.makeRequest("get", url, undefined, { signal });
   }
 
-  async getPlaylists(limit = 20): Promise<PlaylistsResponse | undefined> {
-    const url = `https://api.spotify.com/v1/me/playlists?limit=${limit}`;
+  async getPlaylists(start = 0, limit = 20): Promise<PlaylistsResponse | undefined> {
+    const url = `https://api.spotify.com/v1/me/playlists?limit=${limit}&offset=${start}`;
     return this.makeRequest("get", url);
   }
 

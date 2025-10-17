@@ -1,10 +1,11 @@
 import { PresetComponent } from "@src/components/PresetComponent";
-import { usePlaylists } from "../../hooks/usePlaylists";
 import Button from "@src/components/Button"
 import { RefreshCw } from "lucide-react"
+import { usePlaylistStore } from "@src/stores/playlistStore";
 
 export const Presets = () => {
-  const { presets, fetchPresets } = usePlaylists();
+  const fetchPresets = usePlaylistStore(state => state.fetchPresets);
+  const presets = usePlaylistStore(state => state.presets);
  
   const handleRefreshPlaylist = () => {
     fetchPresets();

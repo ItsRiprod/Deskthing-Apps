@@ -5,6 +5,7 @@ import { SpotifyStore } from "./spotifyStore";
 import { AuthStore } from "./authStore";
 import { PlaylistStore } from "./playlistStore";
 import { SongStore } from "./songStore";
+import { SpotifyActionIDs } from "../setupActions";
 
 export class ActionStore {
   private spotifyApi: SpotifyStore;
@@ -28,7 +29,7 @@ export class ActionStore {
   async handleAction(action: Action | ActionReference) {
     try {
       switch (action.id) {
-        case "set_playlist":
+        case SpotifyActionIDs.SET_PLAYLIST:
           if (typeof action.value === "number") {
             await this.playlistStore.addCurrentPlaylistToPreset(action.value + 1);
           } else {
@@ -36,7 +37,7 @@ export class ActionStore {
           }
           break;
 
-        case "play_playlist":
+        case SpotifyActionIDs.PLAY_PLAYLIST:
           if (typeof action.value === "number") {
             await this.playlistStore.playPreset(action.value + 1);
           } else if (typeof action.value === "string") {
@@ -46,15 +47,15 @@ export class ActionStore {
           }
           break;
 
-        case "like_song":
+        case SpotifyActionIDs.LIKE_SONG:
           await this.songStore.likeSong();
           break;
 
-        case "refresh_song":
+        case SpotifyActionIDs.REFRESH_SONG:
           await this.songStore.checkForRefresh();
           break;
 
-        case "cycle_key":
+        case SpotifyActionIDs.CYCLE_KEY:
           await this.spotifyAuth.refreshAccessToken();
           break;
 
