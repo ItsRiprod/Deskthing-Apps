@@ -1,0 +1,29 @@
+{
+  "label": "Test Agent",
+  "tags": [
+    "audioagent"
+  ],
+  "requires": [],
+  "version": "0.11.5",
+  "requiredVersions": {
+    "server": ">=0.11.13",
+    "client": ">=0.11.2"
+  },
+  "description": "A simple app to test audio agent functionality",
+  "author": "Riprod",
+  "postinstall": true,
+  "platforms": [
+    "windows",
+    "linux",
+    "mac",
+    "mac64",
+    "macarm",
+    "arm64",
+    "x64"
+  ],
+  "repository": "https://github.com/itsriprod/deskthing-apps",
+  "homepage": "https://deskthing.app/apps",
+  "updateUrl": "https://github.com/itsriprod/deskthing-apps",
+  "id": "testagent",
+  "template": "base"
+}
