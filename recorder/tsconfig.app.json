@@ -23,9 +23,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
     "paths": {
-      "@types/*": ["shared/types.ts"]
+      "@types/*": ["./shared/types.ts"]
     }
   },
   "include": ["src"]

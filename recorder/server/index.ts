@@ -1,20 +1,12 @@
 import { DeskThing } from "@deskthing/server";
-import { AppSettings, DESKTHING_EVENTS, SETTING_TYPES } from "@deskthing/types";
+import { DESKTHING_EVENTS } from "@deskthing/types";
 import { handleBinary } from "./micHandler";
+import { settingsStore } from "./settingsHandler"
 
 const start = async () => {
   console.log('Server Started!')
 
-  const settings: AppSettings = {
-    color: {
-      label: 'App Color',
-      id: 'color',
-      type: SETTING_TYPES.COLOR,
-      value: '#000000'
-    }
-  }
-
-  DeskThing.initSettings(settings)
+  await settingsStore.init()
 };
 
 const stop = async () => {

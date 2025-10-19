@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { useUIStore } from '../../stores/UIStore'
+import { useUIStore } from '../stores/UIStore'
 
 export const ErrorOverlay: React.FC = () => {
   const error = useUIStore((s) => s.errorMessage)

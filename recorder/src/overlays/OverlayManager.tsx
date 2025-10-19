@@ -1,5 +1,5 @@
 import React from "react";
-import { useUIStore } from "../../stores/UIStore";
+import { useUIStore } from "../stores/UIStore";
 import ErrorOverlay from "./ErrorOverlay";
 import MicrophoneStatusOverlay from "./MicrophoneStatusOverlay";
 import { SettingsPanel } from "./panels/SettingsPanel";

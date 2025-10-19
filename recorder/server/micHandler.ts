@@ -1,5 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
+import { settingsStore } from './settingsHandler'
+import { RECORDER_SETTING_IDS } from '../shared/types'
 
 let prevVolLevel = 0
 
@@ -68,7 +70,13 @@ const saveAudioFile = async () => {
   if (audioChunks.length === 0) return
   
   const audioData = Buffer.concat(audioChunks)
-  const wavHeader = createWavHeader(audioData.length)
+
+  const settings = await settingsStore.getSettings()
+  const sampleRate: number = Number(settings?.[RECORDER_SETTING_IDS.SAMPLE_RATE] || 16000)
+  const channels: number = Number(settings?.[RECORDER_SETTING_IDS.CHANNELS] || 1)
+  const bitsPerSample: number = Number(settings?.[RECORDER_SETTING_IDS.BITS_PER_SAMPLE] || 16)
+
+  const wavHeader = createWavHeader(audioData.length, sampleRate, channels, bitsPerSample)
   const wavFile = Buffer.concat([wavHeader, audioData])
   
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')

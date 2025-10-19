@@ -263,8 +263,8 @@ export const downloadGemma3 = async (): Promise<void> => {
             });
         });
         
-        logInfo('Successfully downloaded Qwen3 model');
+        logInfo('Successfully downloaded Gemma3:1b model');
     } catch (error) {
-        logError('Failed to download Qwen3 model', error);
+        logError('Failed to download Gemma3:1b model', error);
     }
 }

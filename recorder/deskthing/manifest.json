@@ -1,5 +1,5 @@
 {
-  "label": "Test Agent",
+  "label": "Recording Notes",
   "tags": [
     "audioagent"
   ],
@@ -9,7 +9,7 @@
     "server": ">=0.11.13",
     "client": ">=0.11.2"
   },
-  "description": "A simple app to test audio agent functionality",
+  "description": "A very simple audio recording app",
   "author": "Riprod",
   "platforms": [
     "windows",
@@ -23,6 +23,6 @@
   "repository": "https://github.com/itsriprod/deskthing-apps",
   "homepage": "https://deskthing.app/apps",
   "updateUrl": "https://github.com/itsriprod/deskthing-apps",
-  "id": "testagent",
+  "id": "recording-notes",
   "template": "base"
 }

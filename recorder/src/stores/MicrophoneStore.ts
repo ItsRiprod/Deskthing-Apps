@@ -52,6 +52,7 @@ export const useMicrophoneStore = create<MicrophoneStoreState>((set, get) => ({
 
     audioManager.onAudioPacket((chunk) => {
       // send it straight to the server
+      console.log('Sending audio chunk of size', chunk.byteLength)
       DeskThing.sendBinary(chunk)
     })
 

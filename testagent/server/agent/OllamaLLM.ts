@@ -15,7 +15,7 @@ export class OllamaLLM {
   private activeDownloads: Set<string> = new Set();
   private ollamaApiUrl: string
 
-  constructor(modelName: string = "qwen3:4b", ollamaApiUrl: string = OLLAMA_API_URL) {
+  constructor(modelName: string = "gemma3:1b", ollamaApiUrl: string = OLLAMA_API_URL) {
     this.modelName = modelName
     this.ollamaApiUrl = ollamaApiUrl
   }

@@ -1,6 +1,6 @@
 import React from 'react'
-import { useMicrophoneStore } from '../../stores/MicrophoneStore'
-import { useUIStore } from '../../stores/UIStore'
+import { useMicrophoneStore } from '../stores/MicrophoneStore'
+import { useUIStore } from '../stores/UIStore'
 
 export const MicrophoneStatusOverlay: React.FC = () => {
   const status = useMicrophoneStore((s) => s.status)

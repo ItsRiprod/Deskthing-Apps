@@ -13,7 +13,7 @@ import { ToolCalling, ToolCall } from './agent/ToolCalling'
 
 const defaultConfig: VoiceAssistantConfig = {
   maxHistoryLength: 10,
-  modelName: "qwen3:4b",
+  modelName: "gemma3:1b",
   speakResponses: false,
   prompt: 'You are a desk-side support assistant. Help the user with their tasks in a friendly and efficient manner. Keep responses concise and to the point. Avoid use of markdown formatting. The user input is done via speech recognition, so may contain errors. Do your best to interpret the user intent and provide a helpful response.'
 }

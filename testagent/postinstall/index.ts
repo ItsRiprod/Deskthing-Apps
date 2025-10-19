@@ -34,7 +34,7 @@ async function main() {
         setLogSubject('Ollama Download')
         await downloadOllama();
 
-        setLogSubject('Qwen3 Ollama Model Download')
+        setLogSubject('Gemma3:1b Ollama Model Download')
         await downloadGemma3();
 
         logInfo('Voice Assistant postinstall completed successfully!');

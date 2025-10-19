@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { MicrophoneComponent } from "./components/Microphone";
-import OverlayManager from "./components/overlays/OverlayManager";
 import { useMicrophoneStore } from "./stores/MicrophoneStore";
 
 const App: React.FC = () => {
@@ -13,7 +12,6 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen min-w-screen bg-gradient-to-br from-black via-slate-900 to-gray-900 text-white">
       <div className="relative min-h-screen">
-        <OverlayManager />
 
         {/* Main content area */}
         <main className="max-w-4xl mx-auto py-20 px-4">

@@ -16,10 +16,11 @@ export const DefaultRecorderSettings: RawRecorderSettingsType = {
     id: RECORDER_SETTING_IDS.SAMPLE_RATE,
     label: 'Sample Rate',
     type: SETTING_TYPES.SELECT,
-    value: '44100',
+    value: '16000',
     options: [
       { label: '44.1 kHz', value: '44100' },
       { label: '48 kHz', value: '48000' },
+      { label: '16 kHz', value: '16000' },
     ],
     description: 'The number of samples of audio carried per second.'
   },
@@ -50,7 +51,7 @@ export const DefaultRecorderSettings: RawRecorderSettingsType = {
     label: 'Chunk Duration (seconds)',
     type: SETTING_TYPES.NUMBER,
     value: 5,
-    min: 1,
+    min: 0.5,
     max: 60,
     description: 'The duration of each audio chunk in seconds.'
   },
