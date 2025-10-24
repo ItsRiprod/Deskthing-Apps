@@ -40,57 +40,57 @@ export const setupSettings = () => {
       id: AppSettingIDs.REDIRECT_URL,
       type: SETTING_TYPES.STRING,
       version: "0.11.4",
-      description: "Set the Redirect URL for the Discord Application",
+      description: "Set the Redirect URL for the Discord Application. It MUST be localhost!",
       label: "Redirect URL",
       value: "http://localhost:8888/callback/discord",
     },
-    [AppSettingIDs.RICH_PRESENCE]: {
-      id: AppSettingIDs.RICH_PRESENCE,
-      type: SETTING_TYPES.BOOLEAN,
-      version: "0.11.4",
-      description: "Enable Rich Presence (Currently buggy and doesn't always work)",
-      label: "Rich Presence",
-      value: true,
-    },
-    [AppSettingIDs.SET_MAIN_TEXT]: {
-      id: AppSettingIDs.SET_MAIN_TEXT,
-      type: SETTING_TYPES.STRING,
-      version: "0.11.4",
-      description: "Main Text (Currently buggy and doesn't always work)",
-      label: "Rich Presence Main Text",
-      value: "",
-      dependsOn: [
-        {
-          settingId: AppSettingIDs.RICH_PRESENCE,
-        },
-      ],
-    },
-    [AppSettingIDs.SET_SECONDARY_TEXT]: {
-      id: AppSettingIDs.SET_SECONDARY_TEXT,
-      type: SETTING_TYPES.STRING,
-      version: "0.11.4",
-      description: "Secondary Text (Currently buggy and doesn't always work)",
-      label: "Rich Presence Secondary Text",
-      value: "",
-      dependsOn: [
-        {
-          settingId: AppSettingIDs.RICH_PRESENCE,
-        },
-      ],
-    },
-    [AppSettingIDs.HAVE_TIMER]: {
-      id: AppSettingIDs.HAVE_TIMER,
-      type: SETTING_TYPES.BOOLEAN,
-      version: "0.11.4",
-      description: "Include timer with Rich Presence? (Currently buggy and doesn't always work)",
-      label: "Rich Presence Timer",
-      value: true,
-      dependsOn: [
-        {
-          settingId: AppSettingIDs.RICH_PRESENCE,
-        },
-      ],
-    },
+    // [AppSettingIDs.RICH_PRESENCE]: {
+    //   id: AppSettingIDs.RICH_PRESENCE,
+    //   type: SETTING_TYPES.BOOLEAN,
+    //   version: "0.11.4",
+    //   description: "Enable Rich Presence (Currently buggy and doesn't always work)",
+    //   label: "Rich Presence",
+    //   value: true,
+    // },
+    // [AppSettingIDs.SET_MAIN_TEXT]: {
+    //   id: AppSettingIDs.SET_MAIN_TEXT,
+    //   type: SETTING_TYPES.STRING,
+    //   version: "0.11.4",
+    //   description: "Main Text (Currently buggy and doesn't always work)",
+    //   label: "Rich Presence Main Text",
+    //   value: "",
+    //   dependsOn: [
+    //     {
+    //       settingId: AppSettingIDs.RICH_PRESENCE,
+    //     },
+    //   ],
+    // },
+    // [AppSettingIDs.SET_SECONDARY_TEXT]: {
+    //   id: AppSettingIDs.SET_SECONDARY_TEXT,
+    //   type: SETTING_TYPES.STRING,
+    //   version: "0.11.4",
+    //   description: "Secondary Text (Currently buggy and doesn't always work)",
+    //   label: "Rich Presence Secondary Text",
+    //   value: "",
+    //   dependsOn: [
+    //     {
+    //       settingId: AppSettingIDs.RICH_PRESENCE,
+    //     },
+    //   ],
+    // },
+    // [AppSettingIDs.HAVE_TIMER]: {
+    //   id: AppSettingIDs.HAVE_TIMER,
+    //   type: SETTING_TYPES.BOOLEAN,
+    //   version: "0.11.4",
+    //   description: "Include timer with Rich Presence? (Currently buggy and doesn't always work)",
+    //   label: "Rich Presence Timer",
+    //   value: true,
+    //   dependsOn: [
+    //     {
+    //       settingId: AppSettingIDs.RICH_PRESENCE,
+    //     },
+    //   ],
+    // },
     [AppSettingIDs.LEFT_DASHBOARD_PANEL]: {
       id: AppSettingIDs.LEFT_DASHBOARD_PANEL,
       type: SETTING_TYPES.SELECT,

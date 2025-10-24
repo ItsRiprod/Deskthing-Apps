@@ -205,10 +205,10 @@ export type DiscordSettings = {
   [AppSettingIDs.CLIENT_ID]: SettingsString & { id: AppSettingIDs.CLIENT_ID };
   [AppSettingIDs.CLIENT_SECRET]: SettingsString & { id: AppSettingIDs.CLIENT_SECRET };
   [AppSettingIDs.REDIRECT_URL]: SettingsString & { id: AppSettingIDs.REDIRECT_URL };
-  [AppSettingIDs.RICH_PRESENCE]: SettingsBoolean & { id: AppSettingIDs.RICH_PRESENCE };
-  [AppSettingIDs.SET_MAIN_TEXT]: SettingsString & { id: AppSettingIDs.SET_MAIN_TEXT };
-  [AppSettingIDs.SET_SECONDARY_TEXT]: SettingsString & { id: AppSettingIDs.SET_SECONDARY_TEXT };
-  [AppSettingIDs.HAVE_TIMER]: SettingsBoolean & { id: AppSettingIDs.HAVE_TIMER };
+  // [AppSettingIDs.RICH_PRESENCE]: SettingsBoolean & { id: AppSettingIDs.RICH_PRESENCE };
+  // [AppSettingIDs.SET_MAIN_TEXT]: SettingsString & { id: AppSettingIDs.SET_MAIN_TEXT };
+  // [AppSettingIDs.SET_SECONDARY_TEXT]: SettingsString & { id: AppSettingIDs.SET_SECONDARY_TEXT };
+  // [AppSettingIDs.HAVE_TIMER]: SettingsBoolean & { id: AppSettingIDs.HAVE_TIMER };
   [AppSettingIDs.LEFT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.LEFT_DASHBOARD_PANEL, value: PANEL_ELEMENTS };
   [AppSettingIDs.RIGHT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.RIGHT_DASHBOARD_PANEL, value: PANEL_ELEMENTS };
   [AppSettingIDs.DASHBOARD_ELEMENTS]: MultiSelectSetting & { id: AppSettingIDs.DASHBOARD_ELEMENTS, value: DASHBOARD_ELEMENTS[]  };

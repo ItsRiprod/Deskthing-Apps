@@ -1,5 +1,5 @@
 import { DeskThing } from "@deskthing/server"
-import { DESKTHING_EVENTS, SETTING_TYPES, Step, STEP_TYPES, Task } from "@deskthing/types"
+import { DESKTHING_EVENTS, Step, STEP_TYPES, Task } from "@deskthing/types"
 import { AppSettingIDs } from "../shared/types/discord"
 
 export const setupTasks = () => {
@@ -25,7 +25,7 @@ export const setupTasks = () => {
                     type: STEP_TYPES.SETTING,
                     id: 'redirect_url',
                     label: 'Get Redirect URL',
-                    instructions: 'Under the OAuth tab, create a new Redirect URL for the Discord Application that matches this one',
+                    instructions: 'Under the OAuth tab, create a new Redirect URL for the Discord Application that matches this one. It must be localhost',
                     completed: false,
                     imageId: 'redirect_url',
                     strict: false,
@@ -68,52 +68,52 @@ export const setupTasks = () => {
 
             }
         },
-        rich_presence: {
-            id: 'rich_presence',
-            label: "Rich Presence",
-            description: 'Enable Discord Rich Presence',
-            version: "0.10.4",
-            available: true,
-            completed: false,
-            started: false,
-            steps: {
-                enable_rich_presence: {
-                    type: STEP_TYPES.EXTERNAL,
-                    id: 'enable_rich_presence',
-                    label: 'Enable Rich Presence',
-                    instructions: 'Enable Rich Presence in the Discord Developer Portal',
-                    completed: false,
-                    url: 'https://discord.com/developers/applications',
-                },
-                set_main_text: {
-                    type: STEP_TYPES.SETTING,
-                    id: 'set_main_text',
-                    label: 'Set Main Text',
-                    instructions: 'Set the main text for the Rich Presence',
-                    completed: false,
-                    strict: true,
-                    setting: { id: AppSettingIDs.SET_MAIN_TEXT }
-                },
-                set_secondary_text: {
-                    type: STEP_TYPES.SETTING,
-                    id: 'set_secondary_text',
-                    label: 'Set Secondary Text',
-                    instructions: 'Set the secondary text for the Rich Presence',
-                    completed: false,
-                    strict: true,
-                    setting: { id: AppSettingIDs.SET_SECONDARY_TEXT }
-                },
-                have_timer: {
-                    type: STEP_TYPES.SETTING,
-                    id: 'have_timer',
-                    label: 'Have Timer',
-                    instructions: 'Have a timer running?',
-                    completed: false,
-                    strict: true,
-                    setting: { id: AppSettingIDs.HAVE_TIMER }
-                }
-            }
-        }
+        // rich_presence: {
+        //     id: 'rich_presence',
+        //     label: "Rich Presence",
+        //     description: 'Enable Discord Rich Presence',
+        //     version: "0.10.4",
+        //     available: true,
+        //     completed: false,
+        //     started: false,
+        //     steps: {
+        //         enable_rich_presence: {
+        //             type: STEP_TYPES.EXTERNAL,
+        //             id: 'enable_rich_presence',
+        //             label: 'Enable Rich Presence',
+        //             instructions: 'Enable Rich Presence in the Discord Developer Portal',
+        //             completed: false,
+        //             url: 'https://discord.com/developers/applications',
+        //         },
+        //         set_main_text: {
+        //             type: STEP_TYPES.SETTING,
+        //             id: 'set_main_text',
+        //             label: 'Set Main Text',
+        //             instructions: 'Set the main text for the Rich Presence',
+        //             completed: false,
+        //             strict: true,
+        //             setting: { id: AppSettingIDs.SET_MAIN_TEXT }
+        //         },
+        //         set_secondary_text: {
+        //             type: STEP_TYPES.SETTING,
+        //             id: 'set_secondary_text',
+        //             label: 'Set Secondary Text',
+        //             instructions: 'Set the secondary text for the Rich Presence',
+        //             completed: false,
+        //             strict: true,
+        //             setting: { id: AppSettingIDs.SET_SECONDARY_TEXT }
+        //         },
+        //         have_timer: {
+        //             type: STEP_TYPES.SETTING,
+        //             id: 'have_timer',
+        //             label: 'Have Timer',
+        //             instructions: 'Have a timer running?',
+        //             completed: false,
+        //             strict: true,
+        //             setting: { id: AppSettingIDs.HAVE_TIMER }
+        //         }
+        //     }
+        // }
     })
 }
 

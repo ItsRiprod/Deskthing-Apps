@@ -1,4 +1,3 @@
-import { DeskThing } from "@deskthing/server";
 import {
   Channel,
   RPCCommands,
