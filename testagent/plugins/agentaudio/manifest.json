@@ -1,0 +1,16 @@
+{
+  "version": "0.11.18",
+  "plugin_version": "0.11.0",
+  "required": {},
+  "id": "agentaudio",
+  "entrypoints": {
+    "adb": {
+      "fileName": "index.ts",
+      "isRepeatable": false,
+      "persistent": true
+    }
+  },
+  "label": "Agent Mic Configuration",
+  "description": "A required plugin for microphone integration to function correctly. You only need to configure this once per device",
+  "purpose": "Enabled microphone functionality"
+}
