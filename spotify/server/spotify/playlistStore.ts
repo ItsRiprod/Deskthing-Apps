@@ -1,5 +1,5 @@
 import { DeskThing } from "@deskthing/server";
-import { Playlist } from "../../shared/spotifyTypes";
+import { Paginated, Playlist } from "../../shared/spotifyTypes";
 import EventEmitter from "node:events";
 import { SpotifyStore } from "./spotifyStore";
 import { AuthStore } from "./authStore";
@@ -7,9 +7,8 @@ import { getEncodedImage } from "../utils/imageUtils";
 import { Context, PlaylistResponse } from "../types/spotifyAPI";
 
 type playlistStoreEvents = {
-  playlistsUpdate: [Playlist[]];
+  playlistsUpdate: [Paginated<Playlist>];
   presetsUpdate: [Playlist[]];
-  allPlaylistsUpdate: [Playlist[]];
 };
 
 export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
@@ -17,6 +16,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
   private availablePlaylists: Playlist[] = [];
   private spotifyApi: SpotifyStore;
   private spotifyAuth: AuthStore;
+  private numPlaylists: number = 0;
 
   constructor(spotifyApi: SpotifyStore, spotifyAuth: AuthStore) {
     super();
@@ -77,14 +77,54 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
     }
   }
 
-  async getAllPlaylists(): Promise<Playlist[]> {
-    if (this.availablePlaylists && this.availablePlaylists.length > 0) {
-      console.debug(`Using cached playlists`);
-      return this.availablePlaylists;
-    } else {
-      await this.initializePlaylists();
-      return this.availablePlaylists;
+  async getAllPlaylists(filter?: {
+    startIndex: number;
+    limit: number;
+  }): Promise<Paginated<Playlist>> {
+    if (!filter) {
+      if (this.availablePlaylists && this.availablePlaylists.length > 0) {
+        console.debug(`Using cached playlists`);
+        return {
+          items: this.availablePlaylists,
+          total: this.availablePlaylists.length,
+          limit: this.availablePlaylists.length,
+          startIndex: 0,
+        };
+      } else {
+        await this.initializePlaylists();
+        return {
+          items: this.availablePlaylists,
+          total: this.availablePlaylists.length,
+          limit: this.availablePlaylists.length,
+          startIndex: 0,
+        };
+      }
     }
+
+    const { startIndex, limit } = filter;
+
+    if (startIndex < 0 || limit <= 0) {
+      console.error("Invalid pagination parameters");
+      return {
+        items: [],
+        total: this.availablePlaylists.length,
+        limit,
+        startIndex,
+      };
+    }
+
+    // If requested range exceeds cached playlists, fetch more from API
+    if (startIndex + limit > this.availablePlaylists.length) {
+      await this.refreshPlaylists(startIndex, limit);
+    }
+
+    const paginatedItems = this.availablePlaylists.slice(startIndex, startIndex + limit);
+    return {
+      items: paginatedItems,
+      total: this.availablePlaylists.length,
+      limit,
+      startIndex,
+    };
   }
 
   private createEmptyPlaylist(index: number): Playlist {
@@ -203,7 +243,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
     await this.playPlaylist(playlist.uri);
   }
 
-  async refreshPlaylists() {
+  async refreshPlaylists(start?: number, limit?: number) {
 
     console.debug(`Refreshing playlists`);
     // Refresh preset slots
@@ -221,30 +261,39 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
 
     try {
       // Refresh available playlists
-      const playlistsResponse = await this.spotifyApi.getPlaylists();
+      const playlistsResponse = await this.spotifyApi.getPlaylists(start, limit);
 
       if (!playlistsResponse || playlistsResponse.items.length == 0) {
-        console.error("No playlists found!");
+        console.error("No new playlists found!");
 
+        
       } else {
         console.debug(
           `Got ${playlistsResponse?.items.length} playlists from Spotify`
         );
         const spotifyPlaylists = playlistsResponse.items;
+        this.numPlaylists = playlistsResponse.total
 
         if (spotifyPlaylists) {
-          this.availablePlaylists = await Promise.all(
+          const newPlaylists = await Promise.all(
             spotifyPlaylists.map(async (playlist, index) => ({
               title: playlist.name,
-              owner: playlist.owner.display_name || "Unknown",
-              tracks: playlist.tracks.total,
+              owner: playlist.owner?.display_name || "Unknown",
+              tracks: playlist.tracks?.total || 0,
               id: playlist.id,
               uri: playlist.uri,
               index,
-              snapshot_id: playlist.snapshot_id,
-              thumbnail_url: await getEncodedImage(playlist.images[0]?.url || ""),
+              snapshot_id: playlist?.snapshot_id,
+              thumbnail_url: await getEncodedImage(playlist.images?.[0]?.url || ""),
             }))
           );
+
+          // merge the new playlists with the existing ones, avoiding duplicates
+          const playlistMap = new Map<string, Playlist>();
+          [...this.availablePlaylists, ...newPlaylists].forEach((pl) => {
+            playlistMap.set(pl.id, pl);
+          });
+          this.availablePlaylists = Array.from(playlistMap.values());
         }
       }
 
@@ -426,7 +475,16 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
 
   private async sendPlaylistsToClient() {
     this.emit("presetsUpdate", this.presetSlots);
-    this.emit("playlistsUpdate", this.availablePlaylists);
+    this.emit("playlistsUpdate", this.getPagniatedPlaylists());
+  }
+
+  private getPagniatedPlaylists(): Paginated<Playlist> {
+    return {
+      items: this.availablePlaylists,
+      total: this.numPlaylists,
+      limit: this.availablePlaylists.length,
+      startIndex: 0,
+    };    
   }
 
   async addCurrentToPreset(playlistIndex: number) {
@@ -491,7 +549,7 @@ export class PlaylistStore extends EventEmitter<playlistStoreEvents> {
 
 
   private isValidIndex(index: number): boolean {
-    const isValid = index >= 0 && index <= this.presetSlots.length -1;
+    const isValid = index >= 0 && index <= this.presetSlots.length - 1;
     if (!isValid) {
       console.error(`Invalid playlist index! Received: ${index} and there are only ${this.presetSlots.length} preset slots.`);
     }

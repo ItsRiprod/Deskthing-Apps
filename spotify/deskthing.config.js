@@ -8,18 +8,18 @@ dotEnv.config()
 export default defineConfig({
   development: {
     logging: {
-      level: "debug",
+      level: "info",
       prefix: "[DeskThing Server]",
     },
     client: {
       logging: {
-        level: "debug",
+        level: "info",
         prefix: "[DeskThing Client]",
         enableRemoteLogging: false,
       },
       clientPort: 8888,
       viteLocation: "http://localhost",
-      vitePort: 5173,
+      vitePort: 5174,
       linkPort: 8080,
     },
     server: {

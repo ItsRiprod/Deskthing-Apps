@@ -9,6 +9,13 @@ export type Playlist = {
   thumbnail_url: string | undefined
 }
 
+export type Paginated<T> = {
+  items: T[];
+  total: number;
+  limit: number;
+  startIndex: number;
+}
+
 export interface Device {
   id: string;
   is_active: boolean;

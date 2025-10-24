@@ -8,6 +8,7 @@ import { SpotifyStore } from './spotifyStore'
 import { DeskthingStore } from './deskthingStore'
 import { DeviceStore } from './deviceStore'
 import { QueueStore } from './queueStore'
+import { SessionStore } from './sessionStore'
 
 export class StoreProvider {
   private static instance: StoreProvider
@@ -19,9 +20,11 @@ export class StoreProvider {
   private deviceStore: DeviceStore
   private queueStore: QueueStore
   private deskthingStore: DeskthingStore
+  private sessionStore: SessionStore
 
   private constructor() {
     this.authStore = new AuthStore()
+    this.sessionStore = new SessionStore()
     this.spotifyApi = new SpotifyStore(this.authStore)
     this.playlistStore = new PlaylistStore(this.spotifyApi, this.authStore)
     this.deviceStore = new DeviceStore(this.spotifyApi)
@@ -37,7 +40,8 @@ export class StoreProvider {
       this.songStore,
       this.playlistStore,
       this.authStore,
-      this.deviceStore
+      this.deviceStore,
+      this.sessionStore
     )
   }
 
@@ -74,6 +78,14 @@ export class StoreProvider {
 
   public getDeskthingStore(): DeskthingStore {
     return this.deskthingStore
+  }
+
+  public getDeviceStore(): DeviceStore {
+    return this.deviceStore
+  }
+
+  public getSessionStore(): SessionStore {
+    return this.sessionStore
   }
 }
 

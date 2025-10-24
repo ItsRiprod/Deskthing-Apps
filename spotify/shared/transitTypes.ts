@@ -1,16 +1,16 @@
-import { APP_REQUESTS, AUDIO_REQUESTS, SongData } from "@deskthing/types";
-import { Device, Playlist, SongQueue } from "./spotifyTypes";
+import { APP_REQUESTS, AUDIO_REQUESTS, SongData, SongData11 } from "@deskthing/types";
+import { Device, Paginated, Playlist, SongQueue } from "./spotifyTypes";
 
 
 export type ToClientTypes =
   | {
       type: APP_REQUESTS.SONG;
-      payload: SongData | { thumbnail: string };
+      payload: SongData11 | { thumbnail: string }
       request?: string
     }
     | {
       type: "playlists";
-      payload: Playlist[];
+      payload: Paginated<Playlist>;
       request?: string
     }
   | {
@@ -28,7 +28,16 @@ export type ToClientTypes =
   | {
       type: "device";
       payload: Device;
-    };
+    }
+  | {
+      type: "deviceList";
+      payload: Device[];
+    }
+    
+  | { type: 'notice'; request: "auth"; payload: { authStatus: boolean } }
+  | { type: 'notice'; request: "playback"; payload: { playbackStatus: boolean } }
+  | { type: 'notice'; request: "error"; payload: { errorMessage: string } }
+  | { type: 'notice'; request: "info"; payload: { message: string } }
 
 export enum SpotifyEvent {
   GET = "get",
@@ -36,11 +45,12 @@ export enum SpotifyEvent {
   ADD = "add",
   PLAY = "play",
   REMOVE = "remove",
+  NOTICE = "notice"
 }
 
 export type ToServerTypes =
   | { type: SpotifyEvent.GET; request: "song" }
-  | { type: SpotifyEvent.GET; request: "playlists" }
+  | { type: SpotifyEvent.GET; request: "playlists"; payload?: { startIndex: number; limit: number } }
   | { type: SpotifyEvent.GET; request: "presets" }
   | { type: SpotifyEvent.GET; request: "queue" }
 
@@ -53,6 +63,9 @@ export type ToServerTypes =
   
   | { type: SpotifyEvent.SET; request: "preset"; payload: { presetNum: number; playlistId: string } }
   | { type: SpotifyEvent.SET; request: "like_song"; payload?: string }
+
+  | { type: SpotifyEvent.SET; request: "device"; payload: string } // payload is device id
+  
   | { type: SpotifyEvent.SET; request: AUDIO_REQUESTS.LIKE; payload?: string }
 
   | { type: SpotifyEvent.SET; request: AUDIO_REQUESTS.PLAY; payload: { id?: string } }

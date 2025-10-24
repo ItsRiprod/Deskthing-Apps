@@ -8,34 +8,29 @@ import { ToClientTypes, ToServerTypes } from "../../shared/transitTypes";
 import { DeviceStore } from "./deviceStore";
 import { SpotifySettingIDs } from "../../shared/spotifyTypes";
 import { APP_REQUESTS } from "@deskthing/types"
+import { SessionStore } from "./sessionStore";
 
 const DeskThing = createDeskThing<ToServerTypes, ToClientTypes>();
 
 export class DeskthingStore {
-  private songStore: SongStore;
-  private playlistStore: PlaylistStore;
-  private authStore: AuthStore;
-  private deviceStore: DeviceStore;
 
   constructor(
-    songStore: SongStore,
-    playlistStore: PlaylistStore,
-    authStore: AuthStore,
-    deviceStore: DeviceStore
+    private songStore: SongStore,
+    private playlistStore: PlaylistStore,
+    private authStore: AuthStore,
+    private deviceStore: DeviceStore,
+    private sessionStore: SessionStore
   ) {
-    this.songStore = songStore;
-    this.deviceStore = deviceStore;
-    this.playlistStore = playlistStore;
-    this.authStore = authStore;
     this.setup();
   }
 
   setup() {
     // Listen for song updates
     this.songStore.on("songUpdate", (songData) => {
+
       console.debug(
         "deskthingStore: song change detected, sending: " +
-          JSON.stringify(songData)
+        JSON.stringify(songData)
       );
       DeskThing.send({
         app: "client",
@@ -55,6 +50,7 @@ export class DeskthingStore {
 
     // Listen for playlist updates
     this.playlistStore.on("playlistsUpdate", (playlists) => {
+      if (!this.sessionStore.hasOpenClients()) return
       DeskThing.send({
         app: "spotify",
         type: "playlists",
@@ -63,6 +59,7 @@ export class DeskthingStore {
     });
 
     this.playlistStore.on("presetsUpdate", (playlists) => {
+      if (!this.sessionStore.hasOpenClients()) return
       DeskThing.send({
         app: "spotify",
         type: "presets",
@@ -72,6 +69,7 @@ export class DeskthingStore {
 
     // Listen for auth updates
     this.authStore.on("authUpdate", (authData) => {
+      if (!this.sessionStore.hasOpenClients()) return
       DeskThing.send({
         app: "spotify",
         type: "auth",
@@ -86,6 +84,7 @@ export class DeskthingStore {
 
     // Listen for device updates
     this.songStore.on("deviceUpdate", (device) => {
+      if (!this.sessionStore.hasOpenClients()) return
       DeskThing.send({
         app: "spotify",
         type: "device",
@@ -104,6 +103,15 @@ export class DeskthingStore {
           label: d.name,
         })),
       ]);
+      if (!this.sessionStore.hasOpenClients()) return
+
+      DeskThing.send({
+        app: "spotify",
+        type: "deviceList",
+        payload: devices,
+      });
     });
+
+
   }
 }

@@ -16,6 +16,8 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
   private is_refreshing = false;
   private is_logging_in = false;
 
+  private has_received_info = false
+
   constructor() {
     super();
     this.initializeAuth();
@@ -52,22 +54,35 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
   setClientId(client_id: string) {
     this.client_id = client_id;
     this.checkAuth();
+    this.has_received_info = true;
   }
 
   setClientSecret(client_secret: string) {
     this.client_secret = client_secret;
     this.checkAuth();
+    this.has_received_info = true;
   }
 
   setRedirectUri(redirect_uri: string) {
     this.redirect_uri = redirect_uri;
     this.checkAuth();
+    this.has_received_info = true;
   }
 
   private debounceTimeout: NodeJS.Timeout | null = null;
 
   private async checkAuth() {
     if (!this.client_id || !this.client_secret || !this.redirect_uri) {
+      
+      // check if the app has received any data yet at all from deskthing 
+
+      if (!this.has_received_info) {
+        console.log("AuthStore: Waiting for user to provide auth info");
+        return false;
+      }
+
+
+      // else send notif
       const descriptionText = `Missing credentials: ${!this.client_id ? "Client ID, " : ""}${!this.client_secret ? "Client Secret, " : ""}${!this.redirect_uri ? "Redirect URI" : ""}`.replace(
         /, $/,
         ""
@@ -122,7 +137,7 @@ export class AuthStore extends EventEmitter<authStoreEvents> {
 
     try {
       const scope =
-        "user-read-currently-playing user-library-read user-read-playback-state user-library-modify user-modify-playback-state playlist-modify-public playlist-modify-private";
+        "user-read-currently-playing user-library-read user-read-playback-state playlist-read-collaborative playlist-read-private user-library-modify user-modify-playback-state playlist-modify-public playlist-modify-private";
       const state = "thisisarandomstringthatshouldbechangedlater";
       const auth_url =
         `https://accounts.spotify.com/authorize?` +
