@@ -1,0 +1,23 @@
+{
+  "name": "DeskThing-Apps",
+  "description": "Chrome Audio Control Platform (CACP) - Universal Chrome extension for audio control in DeskThing, featuring SoundCloud and multi-site support",
+  "topics": [
+    "deskthing",
+    "chrome-extension",
+    "audio-control",
+    "soundcloud",
+    "youtube",
+    "browser-automation",
+    "cacp",
+    "multimedia"
+  ],
+  "website": "",
+  "visibility": "public",
+  "has_issues": true,
+  "has_wiki": true,
+  "has_projects": false,
+  "is_fork": true,
+  "upstream": "ItsRiprod/DeskThing-Apps",
+  "contribution_notes": "Primary developer of CACP universal audio control system"
+}
+
