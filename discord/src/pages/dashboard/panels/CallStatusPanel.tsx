@@ -10,9 +10,12 @@ export const CallStatusPanel = () => {
     <PanelWrapper>
       <div className="w-full h-full">
         {callStatus && callStatus.participants.length > 0 ? (
-          <div className="p-6 flex flex-wrap justify-center">
+          <div className="flex flex-wrap items-center justify-center gap-4 p-4 md:p-6">
             {callStatus?.participants.map((participant) => (
-              <ObserverWrapper key={participant.id} className="p-2 w-32 h-32">
+              <ObserverWrapper
+                key={participant.id}
+                className="p-2 w-24 h-24 sm:w-28 sm:h-28"
+              >
                 <ParticipantBox participant={participant} />
               </ObserverWrapper>
             ))}

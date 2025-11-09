@@ -39,17 +39,15 @@ export function Dashboard(): JSX.Element {
     <div className="relative w-full h-full max-h-screen">
       {widgets.includes(DASHBOARD_ELEMENTS.BG_ALBUM) && <BgAlbumArtWidget />}
       <div className="flex z-10 flex-col w-full h-full">
-        <div className="flex flex-grow max-h-full overflow-hidden items-center justify-center">
+        {widgets.includes(DASHBOARD_ELEMENTS.CALL_CONTROLS) && <CallControlsWidget />}
+        <div className="flex flex-grow max-h-full overflow-hidden items-center justify-center flex-row-reverse">
           {showLeft && LeftPanelComponent && <LeftPanelComponent />}
-          {showRight && RightPanelComponent &&  <RightPanelComponent />}
+          {showRight && RightPanelComponent && <RightPanelComponent />}
         </div>
-        {widgets.includes(DASHBOARD_ELEMENTS.CALL_CONTROLS) && (
-          <CallControlsWidget />
-        )}
       </div>
 
       {/* Widgets rendered absolutely */}
-      {clock_setting != CLOCK_OPTIONS.DISABLED && <ClockWidget />}
+      {clock_setting !== CLOCK_OPTIONS.DISABLED && <ClockWidget />}
       {widgets.includes(DASHBOARD_ELEMENTS.MINI_CALL) && <MiniCallWidget />}
       {widgets.includes(DASHBOARD_ELEMENTS.NOTIFICATIONS) && (
         <NotificationWidget />

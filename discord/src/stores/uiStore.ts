@@ -65,9 +65,9 @@ export const useUIStore = create<UIStore>((set, get) => ({
   settings: null,
   song_controls: SONG_CONTROLS.BOTTOM,
   leftPanel: PANEL_ELEMENTS.GUILD_LIST,
-  rightPanel: PANEL_ELEMENTS.CHAT,
+  rightPanel: PANEL_ELEMENTS.BLANK,
   widgets: [],
-  clock_options: CLOCK_OPTIONS.TOP_CENTER,
+  clock_options: CLOCK_OPTIONS.DISABLED,
   dimensions: {
     width: window.innerWidth,
     height: window.innerHeight,

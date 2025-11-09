@@ -53,7 +53,7 @@ export const CallControlsWidget = () => {
       <div
         className={`flex items-center z-10 bg-neutral-900/95 h-full w-full border border-neutral-600 shadow-lg rounded-2xl ${
           XL_CONTROLS_ENABLED
-            ? "justify-evenly gap-10 px-8 py-6 overflow-visible"
+            ? "justify-between gap-16 px-14 py-6 overflow-visible max-w-4xl mx-auto"
             : "justify-between space-x-5 p-1"
         }`}
       >
