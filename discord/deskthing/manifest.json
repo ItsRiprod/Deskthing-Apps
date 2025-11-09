@@ -1,20 +1,20 @@
 {
-  "id": "discord",
+  "id": "discord-xl-controls",
   "isWebApp": true,
   "requires": [
     ""
   ],
-  "label": "Discord App",
-  "version": "0.11.7",
+  "label": "Discord (XL Controls)",
+  "version": "0.11.8-xl6",
   "description": "The ultimate completely recoded discord app",
-  "author": "Riprod",
+  "author": "Benny (forked from Riprod)",
   "platforms": [
     "windows",
     "macos",
     "linux"
   ],
   "homepage": "https://deskthing.app",
-  "repository": "https://github.com/ItsRiprod/Deskthing-Apps",
+  "repository": "https://github.com/BennyKok/Deskthing-Apps",
   "tags": [
     false,
     false
@@ -23,5 +23,5 @@
     "server": ">=0.11.13",
     "client": ">=0.11.2"
   },
-  "updateUrl": "https://github.com/ItsRiprod/deskthing-apps"
+  "updateUrl": "https://github.com/BennyKok/Deskthing-Apps"
 }
