@@ -57,25 +57,26 @@ export const CallControlsWidget = () => {
     ? { ["--xl-control-button-size" as const]: `${XL_CONTROL_BUTTON_SIZE}px` }
     : undefined;
 
+  const containerClassName = XL_CONTROLS_ENABLED
+    ? "relative z-40 px-6 pt-6 pb-4 mb-8"
+    : "relative z-20 p-2 mb-2";
+
+  const innerWrapperClasses = XL_CONTROLS_ENABLED
+    ? "grid w-full h-full max-w-6xl mx-auto grid-cols-3 items-center justify-items-center gap-12 sm:gap-16 lg:gap-20 px-6 sm:px-10 py-6"
+    : "flex items-center justify-between space-x-5 p-1";
+
   return (
-    <div
-      style={containerStyle}
-      className={`relative ${XL_CONTROLS_ENABLED ? "z-30 px-6 pt-6 pb-4" : "z-10 p-2"}`}
-    >
+    <div style={containerStyle} className={containerClassName}>
       <div
         style={innerWrapperStyle}
-        className={`flex items-center z-10 bg-neutral-900/95 h-full w-full border border-neutral-600 shadow-lg rounded-2xl overflow-visible pointer-events-auto ${
-          XL_CONTROLS_ENABLED
-            ? "justify-evenly gap-20 px-10 sm:px-16 md:px-24 py-6 max-w-5xl mx-auto"
-            : "justify-between space-x-5 p-1"
-        }`}
+        className={`z-10 bg-neutral-900/95 h-full w-full border border-neutral-600 shadow-lg rounded-2xl overflow-visible pointer-events-auto ${innerWrapperClasses}`}
       >
         {displayOrder.map((control) => (
           <div
             key={control}
             className={
               XL_CONTROLS_ENABLED
-                ? "flex items-center justify-center shrink-0"
+                ? "flex items-center justify-center pointer-events-auto"
                 : "flex h-full w-full items-center justify-center"
             }
             style={
@@ -83,6 +84,8 @@ export const CallControlsWidget = () => {
                 ? {
                     width: "var(--xl-control-button-size)",
                     height: "var(--xl-control-button-size)",
+                    maxWidth: "100%",
+                    maxHeight: "100%",
                   }
                 : undefined
             }
