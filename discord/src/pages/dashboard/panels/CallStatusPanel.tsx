@@ -13,6 +13,7 @@ import { useUIStore } from "@src/stores/uiStore";
 export const CallStatusPanel = () => {
   const callStatus = useCallStore((state) => state.callStatus);
   const panelDimensions = useUIStore((state) => state.dimensions.panel);
+  const controlDimensions = useUIStore((state) => state.dimensions.controls);
   const participants = callStatus?.participants ?? [];
 
   const { participantTileStyle, layoutStyles } = useMemo(() => {
@@ -33,8 +34,15 @@ export const CallStatusPanel = () => {
 
     const computedSize = Math.max(minTileSize, Math.min(sizeByWidth, sizeByHeight));
 
+    const baseControlSize = XL_CONTROLS_ENABLED
+      ? Math.max(XL_CONTROL_BUTTON_SIZE, controlDimensions.height)
+      : computedSize;
+
     const normalizedSize = XL_CONTROLS_ENABLED
-      ? Math.min(Math.max(computedSize, XL_CONTROL_BUTTON_SIZE * 0.85), XL_CONTROL_BUTTON_SIZE * 1.1)
+      ? Math.min(
+          Math.max(computedSize, baseControlSize * 0.85),
+          baseControlSize * 1.35,
+        )
       : computedSize;
 
     const tileStyle: CSSProperties = {
@@ -43,15 +51,21 @@ export const CallStatusPanel = () => {
     };
 
     const wrapperStyle: CSSProperties = {
-      gridTemplateColumns: `repeat(${columns}, minmax(${minTileSize}px, 1fr))`,
+      gridTemplateColumns: `repeat(${columns}, minmax(${normalizedSize}px, 1fr))`,
+      gridAutoRows: normalizedSize,
       gap,
     };
 
     return { participantTileStyle: tileStyle, layoutStyles: wrapperStyle };
-  }, [panelDimensions.height, panelDimensions.width, participants.length]);
+  }, [
+    controlDimensions.height,
+    panelDimensions.height,
+    panelDimensions.width,
+    participants.length,
+  ]);
 
   return (
-    <div className="mt-12 flex w-full justify-center">
+    <div className="relative z-0 mt-10 flex w-full justify-center px-4">
       <PanelWrapper>
         <div className="w-full h-full">
           {participants.length > 0 ? (

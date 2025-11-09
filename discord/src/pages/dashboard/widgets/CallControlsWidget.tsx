@@ -43,13 +43,12 @@ export const CallControlsWidget = () => {
 
   const containerStyle: CSSProperties = XL_CONTROLS_ENABLED
     ? {
-        boxShadow: "0 6px 16px -4px rgba(0,0,0,0.7)",
         minHeight: controlHeight,
       }
     : {
-        boxShadow: "0 6px 16px -4px rgba(0,0,0,0.7)",
         height: controlHeight,
         maxHeight: dimensions.controls.height,
+        boxShadow: "0 6px 16px -4px rgba(0,0,0,0.7)",
       };
 
   const innerWrapperStyle: CSSProperties | undefined = XL_CONTROLS_ENABLED
@@ -57,18 +56,18 @@ export const CallControlsWidget = () => {
     : undefined;
 
   const containerClassName = XL_CONTROLS_ENABLED
-    ? "relative z-40 flex-shrink-0 px-6 pt-6 pb-10 mb-10"
+    ? "relative z-40 flex-shrink-0 w-full px-6 pt-8 pb-6 mb-12"
     : "relative z-20 p-2 mb-2";
 
   const innerWrapperClasses = XL_CONTROLS_ENABLED
-    ? "flex w-full max-w-5xl mx-auto items-center justify-between gap-10 sm:gap-14 lg:gap-20 px-8 sm:px-12 py-6"
+    ? "grid grid-cols-3 w-full max-w-6xl mx-auto items-center justify-items-center gap-14 xl:gap-20 px-10 sm:px-14 py-8"
     : "flex items-center justify-between space-x-5 p-1";
 
   return (
     <div style={containerStyle} className={containerClassName}>
       <div
         style={innerWrapperStyle}
-        className={`z-10 bg-neutral-900/95 w-full border border-neutral-600 shadow-lg rounded-2xl overflow-visible pointer-events-auto ${innerWrapperClasses}`}
+        className={`z-10 bg-neutral-900/95 w-full border border-neutral-600 shadow-lg rounded-3xl overflow-visible pointer-events-auto ${innerWrapperClasses}`}
       >
         {displayOrder.map((control) => (
           <div
@@ -83,8 +82,8 @@ export const CallControlsWidget = () => {
                 ? {
                     width: "var(--xl-control-button-size)",
                     height: "var(--xl-control-button-size)",
-                    maxWidth: "100%",
-                    maxHeight: "100%",
+                    maxWidth: "var(--xl-control-button-size)",
+                    maxHeight: "var(--xl-control-button-size)",
                   }
                 : undefined
             }
