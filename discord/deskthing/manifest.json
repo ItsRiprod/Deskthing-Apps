@@ -14,7 +14,7 @@
     "linux"
   ],
   "homepage": "https://deskthing.app",
-  "repository": "https://github.com/BennyKok/Deskthing-Apps",
+  "repository": "https://github.com/BennyKok/Deskthing-Apps.git",
   "tags": [
     false,
     false
@@ -23,5 +23,5 @@
     "server": ">=0.11.13",
     "client": ">=0.11.2"
   },
-  "updateUrl": "https://github.com/BennyKok/Deskthing-Apps"
+  "updateUrl": "https://github.com/BennyKok/Deskthing-Apps/releases/download/discord-xl-controls/discord-v0.11.8-xl6.zip"
 }

@@ -1,0 +1,67 @@
+name: Package Discord XL Controls
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Optional release tag override (defaults to discord-xl-controls)'
+        required: false
+        default: ''
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: discord/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: discord
+
+      - name: Package Discord XL Controls
+        run: npm run build
+        working-directory: discord
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: discord-xl-controls
+          if-no-files-found: error
+          path: |
+            discord/dist/*.zip
+            discord/dist/latest.json
+
+      - name: Publish release assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.version_tag }}"
+          if [ -z "$TAG" ]; then
+            MANIFEST_VERSION=$(jq -r '.version' deskthing/manifest.json)
+            TAG="discord-xl-controls"
+            TITLE="Discord (XL Controls)"
+            NOTES="Automated package for Discord (XL Controls) version ${MANIFEST_VERSION}."
+          else
+            TITLE="Discord (XL Controls) ${TAG}"
+            NOTES="Automated package for Discord (XL Controls)."
+          fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Updating existing release $TAG"
+          else
+            echo "Creating release $TAG"
+            gh release create "$TAG" --title "$TITLE" --notes "$NOTES" --prerelease
+          fi
+
+          gh release upload "$TAG" discord/dist/*.zip discord/dist/latest.json --clobber
+        working-directory: discord
