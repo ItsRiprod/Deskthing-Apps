@@ -31,6 +31,11 @@ jobs:
           cache: 'npm'
           cache-dependency-path: discord/package-lock.json
 
+      - name: Prepare release metadata
+        run: |
+          VERSION_TAG="${{ github.event.inputs.version_tag || '' }}"
+          echo "VERSION_TAG=${VERSION_TAG}" >> "$GITHUB_ENV"
+
       - name: Install dependencies
         run: npm ci
         working-directory: discord
@@ -51,9 +56,10 @@ jobs:
       - name: Publish release assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          TAG="${{ inputs.version_tag }}"
+          TAG="${VERSION_TAG:-}"
           if [ -z "$TAG" ]; then
             MANIFEST_VERSION=$(jq -r '.version' deskthing/manifest.json)
             TAG="discord-xl-controls"
