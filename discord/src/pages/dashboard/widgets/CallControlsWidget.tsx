@@ -45,7 +45,6 @@ export const CallControlsWidget = () => {
     ? {
         boxShadow: "0 6px 16px -4px rgba(0,0,0,0.7)",
         minHeight: controlHeight,
-        height: controlHeight,
       }
     : {
         boxShadow: "0 6px 16px -4px rgba(0,0,0,0.7)",
@@ -58,18 +57,18 @@ export const CallControlsWidget = () => {
     : undefined;
 
   const containerClassName = XL_CONTROLS_ENABLED
-    ? "relative z-40 px-6 pt-6 pb-4 mb-8"
+    ? "relative z-40 flex-shrink-0 px-6 pt-6 pb-10 mb-10"
     : "relative z-20 p-2 mb-2";
 
   const innerWrapperClasses = XL_CONTROLS_ENABLED
-    ? "grid w-full h-full max-w-6xl mx-auto grid-cols-3 items-center justify-items-center gap-12 sm:gap-16 lg:gap-20 px-6 sm:px-10 py-6"
+    ? "flex w-full max-w-5xl mx-auto items-center justify-between gap-10 sm:gap-14 lg:gap-20 px-8 sm:px-12 py-6"
     : "flex items-center justify-between space-x-5 p-1";
 
   return (
     <div style={containerStyle} className={containerClassName}>
       <div
         style={innerWrapperStyle}
-        className={`z-10 bg-neutral-900/95 h-full w-full border border-neutral-600 shadow-lg rounded-2xl overflow-visible pointer-events-auto ${innerWrapperClasses}`}
+        className={`z-10 bg-neutral-900/95 w-full border border-neutral-600 shadow-lg rounded-2xl overflow-visible pointer-events-auto ${innerWrapperClasses}`}
       >
         {displayOrder.map((control) => (
           <div

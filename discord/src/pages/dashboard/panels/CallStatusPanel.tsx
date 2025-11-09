@@ -16,10 +16,6 @@ export const CallStatusPanel = () => {
   const participants = callStatus?.participants ?? [];
 
   const { participantTileStyle, layoutStyles } = useMemo(() => {
-    const baseTileSize = XL_CONTROLS_ENABLED
-      ? Math.round(XL_CONTROL_BUTTON_SIZE * 0.85)
-      : 112;
-
     const minTileSize = 72;
     const gap = 24; // gap-6
     const horizontalPadding = 48; // approximate padding from p-4/md:p-6
@@ -35,14 +31,15 @@ export const CallStatusPanel = () => {
     const sizeByWidth = Math.floor((availableWidth - gap * (columns - 1)) / columns);
     const sizeByHeight = Math.floor((availableHeight - gap * (rows - 1)) / rows);
 
-    const computedSize = Math.max(
-      minTileSize,
-      Math.min(baseTileSize, sizeByWidth, sizeByHeight),
-    );
+    const computedSize = Math.max(minTileSize, Math.min(sizeByWidth, sizeByHeight));
+
+    const normalizedSize = XL_CONTROLS_ENABLED
+      ? Math.min(Math.max(computedSize, XL_CONTROL_BUTTON_SIZE * 0.85), XL_CONTROL_BUTTON_SIZE * 1.1)
+      : computedSize;
 
     const tileStyle: CSSProperties = {
-      width: computedSize,
-      height: computedSize,
+      width: normalizedSize,
+      height: normalizedSize,
     };
 
     const wrapperStyle: CSSProperties = {
@@ -54,7 +51,7 @@ export const CallStatusPanel = () => {
   }, [panelDimensions.height, panelDimensions.width, participants.length]);
 
   return (
-    <div className="mt-6 flex w-full justify-center">
+    <div className="mt-12 flex w-full justify-center">
       <PanelWrapper>
         <div className="w-full h-full">
           {participants.length > 0 ? (
