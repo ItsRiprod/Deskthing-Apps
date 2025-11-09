@@ -5,7 +5,7 @@ import { MuteButton } from "@src/components/controls/MuteButton";
 import { useUIStore } from "@src/stores/uiStore";
 
 const XL_CONTROLS_ENABLED = true;
-const XL_CONTROL_MIN_HEIGHT = 128;
+const XL_CONTROL_MIN_HEIGHT = 256;
 const FALLBACK_ORDER: CONTROL_OPTIONS[] = [
   CONTROL_OPTIONS.MUTE,
   CONTROL_OPTIONS.DEAFEN,
@@ -52,7 +52,9 @@ export const CallControlsWidget = () => {
     >
       <div
         className={`flex items-center z-10 bg-neutral-900/95 h-full w-full border border-neutral-600 shadow-lg rounded-2xl ${
-          XL_CONTROLS_ENABLED ? "justify-center gap-6 px-6 py-4 overflow-visible" : "justify-between space-x-5 p-1"
+          XL_CONTROLS_ENABLED
+            ? "justify-evenly gap-10 px-8 py-6 overflow-visible"
+            : "justify-between space-x-5 p-1"
         }`}
       >
         {displayOrder.map((control) => (
@@ -60,7 +62,7 @@ export const CallControlsWidget = () => {
             key={control}
             className={
               XL_CONTROLS_ENABLED
-                ? "flex h-24 w-24 items-center justify-center"
+                ? "flex h-24 w-24 items-center justify-center shrink-0"
                 : "flex h-full w-full items-center justify-center"
             }
           >
