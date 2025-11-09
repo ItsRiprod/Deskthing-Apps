@@ -1,20 +1,35 @@
+import type { CSSProperties } from "react";
 import { ParticipantBox } from "@src/components/ParticipantBox";
 import { useCallStore } from "@src/stores/callStore";
 import { PanelWrapper } from "./PanelWrapper";
 import ObserverWrapper from "@src/components/ObserverWrapper";
+import {
+  XL_CONTROL_BUTTON_SIZE,
+  XL_CONTROLS_ENABLED,
+} from "@src/constants/xlControls";
 
 export const CallStatusPanel = () => {
   const callStatus = useCallStore((state) => state.callStatus);
+
+  const participantTileSize = XL_CONTROLS_ENABLED
+    ? Math.round(XL_CONTROL_BUTTON_SIZE * 0.85)
+    : 96;
+
+  const participantTileStyle: CSSProperties = {
+    width: participantTileSize,
+    height: participantTileSize,
+  };
 
   return (
     <PanelWrapper>
       <div className="w-full h-full">
         {callStatus && callStatus.participants.length > 0 ? (
-          <div className="flex flex-wrap items-center justify-center gap-4 p-4 md:p-6">
+          <div className="flex flex-wrap items-center justify-center gap-6 p-4 md:p-6">
             {callStatus?.participants.map((participant) => (
               <ObserverWrapper
                 key={participant.id}
-                className="p-2 w-24 h-24 sm:w-28 sm:h-28"
+                className="p-2 flex items-center justify-center"
+                style={participantTileStyle}
               >
                 <ParticipantBox participant={participant} />
               </ObserverWrapper>

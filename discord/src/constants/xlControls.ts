@@ -1,0 +1,10 @@
+import { CONTROL_OPTIONS } from "@shared/types/discord";
+
+export const XL_CONTROLS_ENABLED = true;
+export const XL_CONTROL_MIN_HEIGHT = 256;
+export const XL_CONTROL_BUTTON_SIZE = 112; // px
+export const XL_CONTROL_FALLBACK_ORDER: CONTROL_OPTIONS[] = [
+  CONTROL_OPTIONS.MUTE,
+  CONTROL_OPTIONS.DEAFEN,
+  CONTROL_OPTIONS.DISCONNECT,
+];
