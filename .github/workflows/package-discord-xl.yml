@@ -1,6 +1,12 @@
 name: Package Discord XL Controls
 
 on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'discord/**'
+      - '.github/workflows/package-discord-xl.yml'
   workflow_dispatch:
     inputs:
       version_tag:
@@ -11,6 +17,8 @@ on:
 jobs:
   package:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
