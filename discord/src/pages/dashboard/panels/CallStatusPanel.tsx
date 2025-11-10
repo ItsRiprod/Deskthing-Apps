@@ -4,20 +4,11 @@ import { ParticipantBox } from "@src/components/ParticipantBox";
 import { useCallStore } from "@src/stores/callStore";
 import { PanelWrapper } from "./PanelWrapper";
 import ObserverWrapper from "@src/components/ObserverWrapper";
-import {
-  XL_CONTROL_BUTTON_SIZE,
-  XL_CONTROL_MARGIN_BOTTOM,
-  XL_CONTROL_PADDING_BOTTOM,
-  XL_CONTROL_PADDING_TOP,
-  XL_CONTROLS_ENABLED,
-  XL_CONTROL_MIN_HEIGHT,
-} from "@src/constants/xlControls";
 import { useUIStore } from "@src/stores/uiStore";
 
 export const CallStatusPanel = () => {
   const callStatus = useCallStore((state) => state.callStatus);
   const panelDimensions = useUIStore((state) => state.dimensions.panel);
-  const controlDimensions = useUIStore((state) => state.dimensions.controls);
   const participants = callStatus?.participants ?? [];
 
   const { participantTileStyle, layoutStyles } = useMemo(() => {
@@ -38,26 +29,15 @@ export const CallStatusPanel = () => {
 
     const computedSize = Math.max(minTileSize, Math.min(sizeByWidth, sizeByHeight));
 
-    const controlSurfaceHeight = XL_CONTROLS_ENABLED
-      ? Math.max(
-          XL_CONTROL_MIN_HEIGHT,
-          controlDimensions.height -
-            (XL_CONTROL_PADDING_TOP +
-              XL_CONTROL_PADDING_BOTTOM +
-              XL_CONTROL_MARGIN_BOTTOM),
-        )
-      : controlDimensions.height;
+    const availableTileHeight = Math.max(
+      minTileSize,
+      Math.floor((availableHeight - gap * (rows - 1)) / rows),
+    );
 
-    const baseControlSize = XL_CONTROLS_ENABLED
-      ? Math.max(XL_CONTROL_BUTTON_SIZE, controlSurfaceHeight)
-      : computedSize;
-
-    const normalizedSize = XL_CONTROLS_ENABLED
-      ? Math.min(
-          Math.max(computedSize, baseControlSize * 0.85),
-          baseControlSize * 1.35,
-        )
-      : computedSize;
+    const normalizedSize = Math.max(
+      minTileSize,
+      Math.min(computedSize, availableTileHeight),
+    );
 
     const tileStyle: CSSProperties = {
       width: normalizedSize,
@@ -71,12 +51,7 @@ export const CallStatusPanel = () => {
     };
 
     return { participantTileStyle: tileStyle, layoutStyles: wrapperStyle };
-  }, [
-    controlDimensions.height,
-    panelDimensions.height,
-    panelDimensions.width,
-    participants.length,
-  ]);
+  }, [panelDimensions.height, panelDimensions.width, participants.length]);
 
   return (
     <div className="relative z-0 flex w-full justify-center px-4">
