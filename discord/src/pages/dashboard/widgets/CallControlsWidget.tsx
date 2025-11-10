@@ -9,6 +9,7 @@ import {
   XL_CONTROL_FALLBACK_ORDER,
   XL_CONTROL_MARGIN_BOTTOM,
   XL_CONTROL_MIN_HEIGHT,
+  XL_CONTROL_INNER_PADDING_Y,
   XL_CONTROL_PADDING_BOTTOM,
   XL_CONTROL_PADDING_TOP,
   XL_CONTROL_TOTAL_HEIGHT,
@@ -65,7 +66,11 @@ export const CallControlsWidget = () => {
       };
 
   const innerWrapperStyle: CSSProperties | undefined = XL_CONTROLS_ENABLED
-    ? { ["--xl-control-button-size" as const]: `${XL_CONTROL_BUTTON_SIZE}px` }
+    ? {
+        ["--xl-control-button-size" as const]: `${XL_CONTROL_BUTTON_SIZE}px`,
+        paddingTop: XL_CONTROL_INNER_PADDING_Y,
+        paddingBottom: XL_CONTROL_INNER_PADDING_Y,
+      }
     : undefined;
 
   const containerClassName = XL_CONTROLS_ENABLED
@@ -73,7 +78,7 @@ export const CallControlsWidget = () => {
     : "relative z-20 p-2 mb-2";
 
   const innerWrapperClasses = XL_CONTROLS_ENABLED
-    ? "grid grid-cols-3 w-full max-w-6xl mx-auto items-center justify-items-center gap-14 xl:gap-20 px-5 sm:px-8 py-3"
+    ? "grid grid-cols-3 w-full max-w-6xl mx-auto items-center justify-items-center gap-14 xl:gap-20 px-5 sm:px-8"
     : "flex items-center justify-between space-x-5 p-1";
 
   return (
