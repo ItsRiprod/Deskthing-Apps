@@ -2,7 +2,15 @@ import { create } from "zustand";
 import { createDeskThing } from "@deskthing/client";
 import { DiscordEvents, ToClientTypes, ToServerTypes } from "@shared/types/transit";
 import { AppSettings, DEVICE_CLIENT } from "@deskthing/types";
-import { AppSettingIDs, CLOCK_OPTIONS, DASHBOARD_ELEMENTS, DiscordSettings, PANEL_ELEMENTS, SONG_CONTROLS } from "@shared/types/discord";
+import {
+  AppSettingIDs,
+  CLOCK_OPTIONS,
+  DASHBOARD_ELEMENTS,
+  DiscordSettings,
+  PANEL_ELEMENTS,
+  SONG_CONTROLS,
+} from "@shared/types/discord";
+import { XL_CONTROL_TOTAL_HEIGHT, XL_CONTROLS_ENABLED } from "@src/constants/xlControls";
 import { validateDiscordSettings } from "@src/utils/settingValidator";
 
 export type Page = "chat" | "browsing" | "call" | "dashboard";
@@ -57,6 +65,48 @@ type UIStore = {
 
 const DeskThing = createDeskThing<ToClientTypes, ToServerTypes>();
 
+const defaultWidgets: DASHBOARD_ELEMENTS[] = [];
+const baseControlHeight = XL_CONTROLS_ENABLED ? XL_CONTROL_TOTAL_HEIGHT : 75;
+
+const getInitialDimensions = (): Dimensions => {
+  if (typeof window === "undefined") {
+    return {
+      width: 0,
+      height: 0,
+      panel: {
+        width: 0,
+        height: 0,
+      },
+      controls: {
+        width: 0,
+        height: 0,
+      },
+    };
+  }
+
+  const defaultControlsHeight = defaultWidgets.includes(
+    DASHBOARD_ELEMENTS.CALL_CONTROLS,
+  )
+    ? baseControlHeight
+    : 0;
+
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+
+  return {
+    width,
+    height,
+    panel: {
+      width: width / 2,
+      height: Math.max(height - defaultControlsHeight, 0),
+    },
+    controls: {
+      width,
+      height: defaultControlsHeight,
+    },
+  };
+};
+
 export const useUIStore = create<UIStore>((set, get) => ({
   currentPage: "dashboard",
   initialized: false,
@@ -66,20 +116,9 @@ export const useUIStore = create<UIStore>((set, get) => ({
   song_controls: SONG_CONTROLS.BOTTOM,
   leftPanel: PANEL_ELEMENTS.GUILD_LIST,
   rightPanel: PANEL_ELEMENTS.BLANK,
-  widgets: [],
+  widgets: [...defaultWidgets],
   clock_options: CLOCK_OPTIONS.DISABLED,
-  dimensions: {
-    width: window.innerWidth,
-    height: window.innerHeight,
-    panel: {
-      width: window.innerWidth / 2,
-      height: window.innerHeight - 75,
-    },
-    controls: {
-      width: window.innerWidth,
-      height: 75,
-    }
-  },
+  dimensions: getInitialDimensions(),
 
   initialize: () => {
     if (get().initialized) return;

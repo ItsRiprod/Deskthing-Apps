@@ -7,7 +7,11 @@ import { useUIStore } from "@src/stores/uiStore";
 import {
   XL_CONTROL_BUTTON_SIZE,
   XL_CONTROL_FALLBACK_ORDER,
+  XL_CONTROL_MARGIN_BOTTOM,
   XL_CONTROL_MIN_HEIGHT,
+  XL_CONTROL_PADDING_BOTTOM,
+  XL_CONTROL_PADDING_TOP,
+  XL_CONTROL_TOTAL_HEIGHT,
   XL_CONTROLS_ENABLED,
 } from "@src/constants/xlControls";
 
@@ -37,16 +41,25 @@ export const CallControlsWidget = () => {
   ];
   const displayOrder = prioritizedOrder.length ? prioritizedOrder : XL_CONTROL_FALLBACK_ORDER;
 
-  const controlHeight = XL_CONTROLS_ENABLED
-    ? Math.max(dimensions.controls.height, XL_CONTROL_MIN_HEIGHT)
+  const reservedHeight = XL_CONTROLS_ENABLED
+    ? Math.max(dimensions.controls.height, XL_CONTROL_TOTAL_HEIGHT)
     : dimensions.controls.height;
 
   const containerStyle: CSSProperties = XL_CONTROLS_ENABLED
     ? {
-        minHeight: controlHeight,
+        minHeight: Math.max(
+          reservedHeight -
+            (XL_CONTROL_PADDING_TOP +
+              XL_CONTROL_PADDING_BOTTOM +
+              XL_CONTROL_MARGIN_BOTTOM),
+          XL_CONTROL_MIN_HEIGHT,
+        ),
+        paddingTop: XL_CONTROL_PADDING_TOP,
+        paddingBottom: XL_CONTROL_PADDING_BOTTOM,
+        marginBottom: XL_CONTROL_MARGIN_BOTTOM,
       }
     : {
-        height: controlHeight,
+        height: reservedHeight,
         maxHeight: dimensions.controls.height,
         boxShadow: "0 6px 16px -4px rgba(0,0,0,0.7)",
       };
@@ -56,7 +69,7 @@ export const CallControlsWidget = () => {
     : undefined;
 
   const containerClassName = XL_CONTROLS_ENABLED
-    ? "relative z-40 flex-shrink-0 w-full px-6 pt-8 pb-6 mb-12"
+    ? "relative z-40 flex-shrink-0 w-full px-6"
     : "relative z-20 p-2 mb-2";
 
   const innerWrapperClasses = XL_CONTROLS_ENABLED
