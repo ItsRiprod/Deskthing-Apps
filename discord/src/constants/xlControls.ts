@@ -2,8 +2,8 @@ import { CONTROL_OPTIONS } from "@shared/types/discord";
 
 export const XL_CONTROLS_ENABLED = true;
 export const XL_CONTROL_MIN_HEIGHT = 256;
-export const XL_CONTROL_PADDING_TOP = 20;
-export const XL_CONTROL_PADDING_BOTTOM = 16;
+export const XL_CONTROL_PADDING_TOP = 8;
+export const XL_CONTROL_PADDING_BOTTOM = 6;
 export const XL_CONTROL_MARGIN_BOTTOM = 0;
 export const XL_CONTROL_TOTAL_HEIGHT =
   XL_CONTROL_MIN_HEIGHT +

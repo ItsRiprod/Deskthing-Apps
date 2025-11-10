@@ -69,11 +69,11 @@ export const CallControlsWidget = () => {
     : undefined;
 
   const containerClassName = XL_CONTROLS_ENABLED
-    ? "relative z-40 flex-shrink-0 w-full px-6"
+    ? "relative z-40 flex-shrink-0 w-full px-3 sm:px-4"
     : "relative z-20 p-2 mb-2";
 
   const innerWrapperClasses = XL_CONTROLS_ENABLED
-    ? "grid grid-cols-3 w-full max-w-6xl mx-auto items-center justify-items-center gap-14 xl:gap-20 px-10 sm:px-14 py-6"
+    ? "grid grid-cols-3 w-full max-w-6xl mx-auto items-center justify-items-center gap-14 xl:gap-20 px-5 sm:px-8 py-3"
     : "flex items-center justify-between space-x-5 p-1";
 
   return (
