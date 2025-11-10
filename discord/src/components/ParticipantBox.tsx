@@ -31,7 +31,7 @@ export const ParticipantBox = ({ participant }: ParticipantBoxProps) => {
         <img
           src={profileUrl}
           alt={participant.username}
-          className="h-3/5 object-cover rounded-full"
+          className="h-[55%] object-cover rounded-full"
         />
       )}
       <p
