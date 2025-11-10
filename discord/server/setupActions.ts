@@ -9,7 +9,7 @@ const voiceActions: Action[] = [
   {
     name: "Mute",
     description: "Toggles the mute status of the current user",
-    id: "mute",
+    id: DISCORD_ACTIONS.MUTE,
     icon: "mic", // or mic_off
     value: "toggle",
     value_options: ["mute", "unmute", "toggle"],
@@ -21,7 +21,7 @@ const voiceActions: Action[] = [
   {
     name: "Deafen",
     description: "Toggles the deaf state of the current user",
-    id: "deafen",
+    id: DISCORD_ACTIONS.DEAFEN,
     icon: "deafen", // or deafen_off
     value: "toggle",
     value_options: ["deafen", "undeafen", "toggle"],
@@ -33,7 +33,7 @@ const voiceActions: Action[] = [
   {
     name: "Disconnect",
     description: "Disconnects the user from the call",
-    id: "disconnect",
+    id: DISCORD_ACTIONS.DISCONNECT,
     icon: "disconnect",
     version: "0.11.2",
     tag: "basic",
