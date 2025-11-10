@@ -1,6 +1,9 @@
 import { create } from 'zustand';
-import { DeskThing } from '@deskthing/client';
+import { createDeskThing } from '@deskthing/client';
 import { DISCORD_ACTIONS } from '@shared/types/discord';
+import { ToClientTypes, ToServerTypes } from '@shared/types/transit';
+
+const DeskThing = createDeskThing<ToClientTypes, ToServerTypes>();
 
 interface ControlStore {
   mute: () => void;
