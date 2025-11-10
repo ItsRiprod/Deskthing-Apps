@@ -1,9 +1,11 @@
+import { IconMicDiscord, IconMicOffDiscord } from "@src/assets/icons"
+import { useInitializeCallStore } from "@src/hooks/useInitializeCallStore"
 import { useCallStore } from "@src/stores/callStore"
 import { useControlStore } from "@src/stores/controlStore"
 import { ControlWrapper } from "./ControlWrapper"
-import { IconMicDiscord, IconMicOffDiscord } from "@src/assets/icons"
 
 export const MuteButton = () => {
+  useInitializeCallStore()
   const toggleMute = useControlStore((state) => state.toggleMute)
   const isMuted = useCallStore((state) => state.callStatus?.user?.isMuted) || false
 
