@@ -9,7 +9,7 @@ const voiceActions: Action[] = [
   {
     name: "Mute",
     description: "Toggles the mute status of the current user",
-    id: "mute",
+    id: DISCORD_ACTIONS.MUTE,
     icon: "mic", // or mic_off
     value: "toggle",
     value_options: ["mute", "unmute", "toggle"],
@@ -21,7 +21,7 @@ const voiceActions: Action[] = [
   {
     name: "Deafen",
     description: "Toggles the deaf state of the current user",
-    id: "deafen",
+    id: DISCORD_ACTIONS.DEAFEN,
     icon: "deafen", // or deafen_off
     value: "toggle",
     value_options: ["deafen", "undeafen", "toggle"],
@@ -33,7 +33,7 @@ const voiceActions: Action[] = [
   {
     name: "Disconnect",
     description: "Disconnects the user from the call",
-    id: "disconnect",
+    id: DISCORD_ACTIONS.DISCONNECT,
     icon: "disconnect",
     version: "0.11.2",
     tag: "basic",
@@ -99,11 +99,11 @@ export const setupActions = () => {
   ])
 };
 
-type actionHandler = (value: string | undefined) => void;
+type actionHandler = (value: string | undefined) => Promise<void>;
 
 const actionHandlers: Record<string, actionHandler> = {
   // Voice
-  [DISCORD_ACTIONS.MUTE]: (value) => {
+  [DISCORD_ACTIONS.MUTE]: async (value) => {
     switch (value) {
       case "mute":
         return StoreProvider.getCallControls().mute();
@@ -114,7 +114,7 @@ const actionHandlers: Record<string, actionHandler> = {
         return StoreProvider.getCallControls().toggleMute();
     }
   },
-  [DISCORD_ACTIONS.DEAFEN]: (value) => {
+  [DISCORD_ACTIONS.DEAFEN]: async (value) => {
     switch (value) {
       case "deafen":
         return StoreProvider.getCallControls().deafen();
@@ -125,13 +125,13 @@ const actionHandlers: Record<string, actionHandler> = {
         return StoreProvider.getCallControls().toggleDeafen();
     }
   },
-  [DISCORD_ACTIONS.DISCONNECT]: () => {
+  [DISCORD_ACTIONS.DISCONNECT]: async () => {
     return StoreProvider.getCallControls().disconnect();
   },
 
   // Utility
   [DISCORD_ACTIONS.REAUTH]: async () => {
-    StoreProvider.getAuth().authenticate();
+    await StoreProvider.getAuth().authenticate();
   },
 
   [DISCORD_ACTIONS.REPRESENCE]: async () => {
@@ -157,12 +157,17 @@ const actionHandlers: Record<string, actionHandler> = {
   },
 };
 
-DeskThing.on(DESKTHING_EVENTS.ACTION, (actionData) => {
+DeskThing.on(DESKTHING_EVENTS.ACTION, async (actionData) => {
   const { id, value } = actionData.payload;
   const handler = actionHandlers[id];
 
   if (handler) {
     console.log(`Received ${id} action`);
-    handler(value);
+    try {
+      await handler(value);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Error handling ${id}: ${message}`);
+    }
   }
 });
