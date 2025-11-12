@@ -28,7 +28,7 @@ export class StoreProvider {
     this.rpc = new DiscordRPCStore();
     this.tokenStorage = new TokenStorage();
     this.auth = new DiscordAuth(this.rpc, this.tokenStorage);
-    this.callControls = new CallControls(this.rpc);
+    this.callControls = new CallControls(this.rpc, this.auth);
     this.callStatus = new CallStatusManager(this.rpc);
     this.guildList = new GuildListManager(this.rpc);
     this.chatStatus = new ChatStatusManager(this.rpc, this.guildList);
