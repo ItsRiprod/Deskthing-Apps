@@ -75,6 +75,14 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
           isMuted: this.currentStatus.user?.isMuted || false,
           isSpeaking: false,
         }
+      const subscribed = await this.rpc.subscribe(
+        RPCEvents.VOICE_SETTINGS_UPDATE
+      );
+      if (!subscribed) {
+        console.warn(
+          "Voice settings subscription pending retry after READY event"
+        );
+      }
       this.updateCurrentUser(participant)
     })
 
@@ -121,6 +129,21 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
       this.updateCurrentUser(this.rpc.user || undefined);
     });
 
+    this.rpc.on(RPCEvents.VOICE_SETTINGS_UPDATE, (settings) => {
+      const isMuted = Boolean(settings.deaf || settings.mute);
+      const isDeafened = Boolean(settings.deaf);
+
+      if (this.currentStatus.user) {
+        this.updateCurrentUser({
+          ...this.currentStatus.user,
+          isMuted,
+          isDeafened,
+        });
+      } else {
+        this.updateCurrentUser();
+      }
+    });
+
     this.rpc.subscribe(RPCEvents.VOICE_CONNECTION_STATUS);
   }
 
@@ -164,6 +187,15 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     }
 
     this.currentStatus.user = participant;
+    const userIndex = this.currentStatus.participants.findIndex(
+      (p) => p.id === participant.id
+    );
+    if (userIndex !== -1) {
+      this.currentStatus.participants[userIndex] = {
+        ...this.currentStatus.participants[userIndex],
+        ...participant,
+      };
+    }
     this.emit("update", this.currentStatus);
   }
 
@@ -191,7 +223,7 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
 
   public async setConnectionStatus(isConnected: boolean) {
     if (this.currentStatus.isConnected != isConnected) {
-      this.clearOldSubscriptions()
+      await this.clearOldSubscriptions()
       this.currentStatus.isConnected = isConnected;
       this.currentStatus.participants = [];
       this.currentStatus.channelId = null;
@@ -209,7 +241,7 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
         )) as Channel;
         if (channel) {
           this.emit("channelChanged", channel);
-          this.setupNewChannel(channel);
+          await this.setupNewChannel(channel);
         }
       }
     }
@@ -219,27 +251,44 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     if (!this.activeSubscriptions) return
     this.activeSubscriptions = false
     console.debug('Clearing old subscriptions')
-    this.rpc.unsubscribe(RPCEvents.VOICE_STATE_CREATE);
-    this.rpc.unsubscribe(RPCEvents.VOICE_STATE_UPDATE);
-    this.rpc.unsubscribe(RPCEvents.VOICE_STATE_DELETE);
-    this.rpc.unsubscribe(RPCEvents.SPEAKING_START);
-    this.rpc.unsubscribe(RPCEvents.SPEAKING_STOP);
+    await Promise.all([
+      this.rpc.unsubscribe(RPCEvents.VOICE_STATE_CREATE),
+      this.rpc.unsubscribe(RPCEvents.VOICE_STATE_UPDATE),
+      this.rpc.unsubscribe(RPCEvents.VOICE_STATE_DELETE),
+      this.rpc.unsubscribe(RPCEvents.SPEAKING_START),
+      this.rpc.unsubscribe(RPCEvents.SPEAKING_STOP),
+    ]);
   }
 
 
   private async setupChannelSpecificSubscriptions(channelId: string) {
     await this.clearOldSubscriptions()
-    this.rpc.subscribe(RPCEvents.VOICE_STATE_CREATE, channelId);
-    this.rpc.subscribe(RPCEvents.VOICE_STATE_UPDATE, channelId);
-    this.rpc.subscribe(RPCEvents.VOICE_STATE_DELETE, channelId);
-    this.rpc.subscribe(RPCEvents.SPEAKING_START, channelId);
-    this.rpc.subscribe(RPCEvents.SPEAKING_STOP, channelId);
-    this.activeSubscriptions = true
+    try {
+      const results = await Promise.all([
+        this.rpc.subscribe(RPCEvents.VOICE_STATE_CREATE, channelId),
+        this.rpc.subscribe(RPCEvents.VOICE_STATE_UPDATE, channelId),
+        this.rpc.subscribe(RPCEvents.VOICE_STATE_DELETE, channelId),
+        this.rpc.subscribe(RPCEvents.SPEAKING_START, channelId),
+        this.rpc.subscribe(RPCEvents.SPEAKING_STOP, channelId),
+      ]);
+      this.activeSubscriptions = results.some((result) => result);
+      if (!this.activeSubscriptions) {
+        console.warn(
+          "Voice state subscriptions pending retry after initial failure"
+        );
+      }
+    } catch (error) {
+      this.activeSubscriptions = false;
+      console.error(
+        `Failed to subscribe to voice events for channel ${channelId}: ${error}`
+      );
+      throw error;
+    }
   }
 
   public async setupNewChannel(channel: Channel) {
     this.updateChannelId(channel.id);
-    this.setupChannelSpecificSubscriptions(channel.id);
+    await this.setupChannelSpecificSubscriptions(channel.id);
     this.currentStatus.channelId = channel.id;
     if (channel.voice_states) {
       for (const voiceState of channel.voice_states) {
