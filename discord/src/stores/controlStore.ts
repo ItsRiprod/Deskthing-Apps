@@ -2,10 +2,12 @@ import { create } from 'zustand';
 import { createDeskThing } from '@deskthing/client';
 import { DISCORD_ACTIONS } from '@shared/types/discord';
 import { ToClientTypes, ToServerTypes } from '@shared/types/transit';
-import manifest from '../../deskthing/manifest.json';
+import { DISCORD_APP_ID } from '@src/constants/app';
 
 const DeskThing = createDeskThing<ToClientTypes, ToServerTypes>();
-const APP_ID = manifest.id;
+const APP_ID = DISCORD_APP_ID;
+
+DeskThing.debug(`Initializing Discord control store with app id: ${APP_ID}`);
 
 interface ControlStore {
   mute: () => void;
