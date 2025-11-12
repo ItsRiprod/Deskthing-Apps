@@ -55,7 +55,7 @@ export const CallStatusPanel = () => {
 
   return (
     <div className="relative z-0 flex w-full justify-center px-4">
-      <PanelWrapper>
+      <PanelWrapper scrollable={false}>
         <div className="w-full h-full">
           {participants.length > 0 ? (
             <div
