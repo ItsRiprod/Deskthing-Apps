@@ -249,7 +249,11 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
   }
 
   /** Subscribes to the RPC directly */
-  async subscribe(event: RPCEvents, channelId?: string): Promise<void> {
+  async subscribe(
+    event: RPCEvents,
+    channelId?: string,
+    attempt = 1
+  ): Promise<boolean> {
     try {
       if (!this.rpcClient) {
         console.error(`RPC client is not connected`);
@@ -258,7 +262,7 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
           channelId,
           unsubscribe: async () => true,
         };
-        return;
+        return false;
       }
       this.ensureConnected();
       if (this.subscriptions[event]) {
@@ -279,16 +283,38 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
           channelId,
         };
         console.error(`Failed to subscribe to ${event}. Timed out!`);
-        return;
+        if (attempt < 5) {
+          const nextAttempt = attempt + 1;
+          const delay = Math.min(5000, 500 * nextAttempt);
+          setTimeout(() => {
+            this.subscribe(event, channelId, nextAttempt).catch((error) =>
+              console.error(
+                `Retry ${nextAttempt} failed for ${event}: ${String(error)}`
+              )
+            );
+          }, delay);
+        }
+        return false;
       }
       await new Promise((resolve) => setTimeout(resolve, 300));
       this.subscriptions[event] = { ...subscription, channelId };
       console.log(
         `Subscribed to ${event}${channelId ? ` for channel ${channelId}` : ""}`
       );
+      return true;
     } catch (error) {
       this.subscriptions[event] = { unsubscribe: async () => true, channelId };
       console.error(`Error subscribing to ${event}: ${error}`);
+      if (attempt < 5) {
+        const nextAttempt = attempt + 1;
+        const delay = Math.min(5000, 500 * nextAttempt);
+        setTimeout(() => {
+          this.subscribe(event, channelId, nextAttempt).catch((err) =>
+            console.error(`Retry ${nextAttempt} failed for ${event}: ${String(err)}`)
+          );
+        }, delay);
+        return false;
+      }
       throw error
     }
   }

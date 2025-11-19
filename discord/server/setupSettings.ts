@@ -127,7 +127,7 @@ export const setupSettings = () => {
       version: "0.11.6",
       description: "What elements to show on the dashboard?",
       label: "Right Panel",
-      value: PANEL_ELEMENTS.SONG,
+      value: PANEL_ELEMENTS.BLANK,
       options: [
         {
           value: PANEL_ELEMENTS.CALL_STATUS,
@@ -254,7 +254,7 @@ export const setupSettings = () => {
       version: "0.11.4",
       description: "The position of the clock widget",
       label: "Clock Widget Position",
-      value: CLOCK_OPTIONS.TOP_CENTER,
+      value: CLOCK_OPTIONS.DISABLED,
       options: [
         {
           value: CLOCK_OPTIONS.TOP_LEFT,
