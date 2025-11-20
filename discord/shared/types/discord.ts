@@ -132,8 +132,7 @@ export enum AppSettingIDs {
     CONTROLS_ORDER = 'controls_order',
     SPEAKING_COLOR = 'speaking_color',
     CLOCK_OPTIONS = 'clock_options',
-    SONG_OPTIONS = 'song_options',
-    NOTIFICATION_TOASTS = 'notification_toasts'
+    SONG_OPTIONS = 'song_options'
 }
 
 export enum PANEL_ELEMENTS {
