@@ -2,10 +2,12 @@ import { useUIStore } from "@src/stores/uiStore";
 
 type PanelWrapperProps = {
   children: React.ReactNode;
+  scrollable?: boolean;
 };
 
-export const PanelWrapper = ({ children }: PanelWrapperProps) => {
+export const PanelWrapper = ({ children, scrollable = true }: PanelWrapperProps) => {
   const dimensions = useUIStore((state) => state.dimensions);
+  const overflowClass = scrollable ? "overflow-y-auto" : "overflow-hidden";
 
   return (
     <div
@@ -18,7 +20,9 @@ export const PanelWrapper = ({ children }: PanelWrapperProps) => {
       }}
       className="flex justify-center p-2"
     >
-      <div className="w-full h-full overflow-y-auto relative flex justify-center rounded-3xl bg-neutral-900/95 border border-neutral-600 shadow-lg">
+      <div
+        className={`w-full h-full ${overflowClass} relative flex justify-center rounded-3xl bg-neutral-900/95 border border-neutral-600 shadow-lg`}
+      >
         {children}
       </div>
     </div>

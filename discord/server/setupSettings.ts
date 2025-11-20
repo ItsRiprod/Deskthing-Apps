@@ -180,6 +180,14 @@ export const setupSettings = () => {
         },
       ],
     },
+    [AppSettingIDs.NOTIFICATION_TOASTS]: {
+      id: AppSettingIDs.NOTIFICATION_TOASTS,
+      type: SETTING_TYPES.BOOLEAN,
+      version: "0.11.7",
+      description: "Show floating notification toasts on the dashboard",
+      label: "Notification Toasts",
+      value: true,
+    },
     [AppSettingIDs.SCROLL_TO_BOTTOM]: {
       id: AppSettingIDs.SCROLL_TO_BOTTOM,
       type: SETTING_TYPES.BOOLEAN,
@@ -197,6 +205,14 @@ export const setupSettings = () => {
           isValue: PANEL_ELEMENTS.CHAT,
         },
       ],
+    },
+    [AppSettingIDs.NOTIFICATION_TOASTS]: {
+      id: AppSettingIDs.NOTIFICATION_TOASTS,
+      type: SETTING_TYPES.BOOLEAN,
+      version: "0.11.10",
+      description: "Show Discord notifications as DeskThing toasts",
+      label: "Notification Toasts",
+      value: true,
     },
     [AppSettingIDs.CONTROLS_ORDER]: {
       id: AppSettingIDs.CONTROLS_ORDER,

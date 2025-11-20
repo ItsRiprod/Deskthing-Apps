@@ -113,6 +113,7 @@ export enum DISCORD_ACTIONS {
   SELECT_TEXT_CHANNEL = 'selectTextChannel',
   MARK_NOTIFICATION_AS_READ = 'markNotificationAsRead',
   MARK_ALL_NOTIFICATIONS_AS_READ = 'markAllNotificationsAsRead',
+  SEND_TEST_NOTIFICATION = 'sendTestNotification',
 }
 
 export enum AppSettingIDs {
@@ -127,10 +128,12 @@ export enum AppSettingIDs {
     RIGHT_DASHBOARD_PANEL = 'right_dashboard_panel',
     DASHBOARD_ELEMENTS = 'dashboard_elements',
     SCROLL_TO_BOTTOM = 'scroll_to_bottom',
+    NOTIFICATION_TOASTS = 'notification_toasts',
     CONTROLS_ORDER = 'controls_order',
     SPEAKING_COLOR = 'speaking_color',
     CLOCK_OPTIONS = 'clock_options',
-    SONG_OPTIONS = 'song_options'
+    SONG_OPTIONS = 'song_options',
+    NOTIFICATION_TOASTS = 'notification_toasts'
 }
 
 export enum PANEL_ELEMENTS {
@@ -195,6 +198,10 @@ type SelectSongOptions = SettingsSelect & {
   options: { value: SONG_CONTROLS; label: string }[];
 }
 
+type NotificationToastSetting = SettingsBoolean & {
+  id: AppSettingIDs.NOTIFICATION_TOASTS;
+}
+
 type OrderSettings = SettingsRanked & {
   id: AppSettingIDs.CONTROLS_ORDER;
   value: CONTROL_OPTIONS[];
@@ -213,8 +220,10 @@ export type DiscordSettings = {
   [AppSettingIDs.RIGHT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.RIGHT_DASHBOARD_PANEL, value: PANEL_ELEMENTS };
   [AppSettingIDs.DASHBOARD_ELEMENTS]: MultiSelectSetting & { id: AppSettingIDs.DASHBOARD_ELEMENTS, value: DASHBOARD_ELEMENTS[]  };
   [AppSettingIDs.SCROLL_TO_BOTTOM]: SettingsBoolean & { id: AppSettingIDs.SCROLL_TO_BOTTOM };
+  [AppSettingIDs.NOTIFICATION_TOASTS]: SettingsBoolean & { id: AppSettingIDs.NOTIFICATION_TOASTS };
   [AppSettingIDs.CONTROLS_ORDER]: OrderSettings & { id: AppSettingIDs.CONTROLS_ORDER };
   [AppSettingIDs.SPEAKING_COLOR]: SettingsColor & { id: AppSettingIDs.SPEAKING_COLOR };
   [AppSettingIDs.CLOCK_OPTIONS]: SelectClockOptions & { id: AppSettingIDs.CLOCK_OPTIONS };
   [AppSettingIDs.SONG_OPTIONS]: SelectSongOptions & { id: AppSettingIDs.SONG_OPTIONS };
+  [AppSettingIDs.NOTIFICATION_TOASTS]: NotificationToastSetting & { id: AppSettingIDs.NOTIFICATION_TOASTS };
 };

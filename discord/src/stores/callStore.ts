@@ -13,6 +13,8 @@ type CallStoreState = {
   refreshCallStatus: () => void;
   setCallStatus: (callStatus: CallStatus) => void;
   setTalkingStatus: (userId: string, isSpeaking: boolean) => void;
+  refreshCallStatus: () => void;
+  pollingIntervalId: ReturnType<typeof setInterval> | null;
 };
 
 const normalizeCallStatus = (
@@ -105,13 +107,13 @@ export const useCallStore = create<CallStoreState>((set, get) => ({
   initialized: false,
   isLoading: true,
   callStatus: null,
-  selfUserId: null,
   pollingIntervalId: null,
 
   initialize: () => {
     if (get().initialized) return;
     set({ initialized: true });
 
+    // Initial fetch for call status
     get().refreshCallStatus();
 
     // Listen for call status updates
@@ -187,25 +189,6 @@ export const useCallStore = create<CallStoreState>((set, get) => ({
     }
   },
 
-  refreshCallStatus: () => {
-    DeskThing.fetch(
-      { type: DiscordEvents.GET, request: "call" },
-      { type: DiscordEvents.CALL, request: "set" },
-      (callStatus) => {
-        if (!callStatus?.payload) return;
-
-        set((state) => {
-          const normalized = normalizeCallStatus(callStatus.payload, state);
-          return {
-            callStatus: normalized.callStatus,
-            selfUserId: normalized.selfUserId,
-            isLoading: false,
-          };
-        });
-      }
-    );
-  },
-
   setCallStatus: (callStatus) => {
     set((state) => {
       const normalized = normalizeCallStatus(callStatus, state);
@@ -215,6 +198,18 @@ export const useCallStore = create<CallStoreState>((set, get) => ({
         isLoading: false,
       };
     });
+  },
+
+  refreshCallStatus: () => {
+    DeskThing.fetch(
+      { type: DiscordEvents.GET, request: "call" },
+      { type: DiscordEvents.CALL, request: "set" },
+      (callStatus) => {
+        if (callStatus) {
+          set({ callStatus: callStatus.payload, isLoading: false });
+        }
+      }
+    );
   },
 
   setTalkingStatus: (userId, isSpeaking) => {
