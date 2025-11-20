@@ -158,7 +158,6 @@ export const setupSettings = () => {
       description: "What elements to show on the dashboard?",
       label: "Dashboard Elements",
       value: [
-        DASHBOARD_ELEMENTS.NOTIFICATIONS,
         DASHBOARD_ELEMENTS.CALL_CONTROLS,
       ],
       options: [
