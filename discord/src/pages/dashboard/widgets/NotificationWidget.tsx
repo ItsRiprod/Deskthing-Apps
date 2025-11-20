@@ -26,14 +26,16 @@ export const NotificationWidget = () => {
   const toastsEnabled = useUIStore((state) => state.notification_toasts_enabled);
   const [isToggling, setIsToggling] = useState(false);
 
+  const unreadNotifications = useMemo(
+    () => notifications.filter((notification) => !notification.read),
+    [notifications],
+  );
+
   const recentNotifications = useMemo(() => {
     return [...notifications].sort((a, b) => b.timestamp - a.timestamp).slice(0, 4);
   }, [notifications]);
 
-  const unreadCount = useMemo(
-    () => notifications.filter((notification) => !notification.read).length,
-    [notifications],
-  );
+  const unreadCount = unreadNotifications.length;
 
   const handleToggle = useCallback(() => {
     if (isToggling) return;
@@ -128,7 +130,7 @@ export const NotificationWidget = () => {
         )}
       </div>
 
-      {recentNotifications.length > 0 && (
+      {recentNotifications.length > 0 && unreadCount > 0 && (
         <button
           type="button"
           onClick={markAllNotificationsAsRead}
