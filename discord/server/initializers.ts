@@ -118,6 +118,7 @@ DeskThing.on(DiscordEvents.GET, async (socketData) => {
 DeskThing.on(DiscordEvents.SET, async (socketData) => {
   const guildStore = StoreProvider.getGuildList();
   const chatStore = StoreProvider.getChatStatus();
+  const notificationStore = StoreProvider.getNotificationStatus();
 
   switch (socketData.request) {
     case "guild":
@@ -156,6 +157,16 @@ DeskThing.on(DiscordEvents.SET, async (socketData) => {
           console.error("Failed to update notification toast setting", error);
         }
       }
+      break;
+    case "notificationRead": {
+      const notificationId = socketData.payload?.notificationId;
+      if (notificationId) {
+        notificationStore.markNotificationAsRead(notificationId);
+      }
+      break;
+    }
+    case "notificationsReadAll":
+      notificationStore.markAllNotificationsAsRead();
       break;
   }
 });
