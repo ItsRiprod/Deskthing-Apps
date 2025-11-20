@@ -24,6 +24,7 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
     super()
     this.rpc = rpc;
     this.setupEventListeners();
+    this.subscribeToNotificationEvents();
   }
 
   private setupEventListeners(): void {
@@ -33,6 +34,17 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
         await this.addNewNotification(notif);
       }
     );
+  }
+
+  private subscribeToNotificationEvents(): void {
+    this.rpc
+      .subscribe(RPCEvents.NOTIFICATION_CREATE)
+      .catch((error) =>
+        console.error(
+          "Failed to subscribe to notification events:",
+          error
+        )
+      );
   }
 
   public updateClient = () => {
