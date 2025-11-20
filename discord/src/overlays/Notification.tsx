@@ -11,7 +11,7 @@ interface NotificationProps {
 export default function NotificationOverlay({
   notification,
   onClose,
-  autoHideDuration = 5000
+  autoHideDuration = 10000
 }: NotificationProps): JSX.Element {
   const [isVisible, setIsVisible] = useState(true);
 
