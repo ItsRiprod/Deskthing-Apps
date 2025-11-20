@@ -8,6 +8,7 @@ export function validateDiscordSettings(obj: AppSettings): asserts obj is Discor
     AppSettingIDs.LEFT_DASHBOARD_PANEL,
     AppSettingIDs.RIGHT_DASHBOARD_PANEL,
     AppSettingIDs.DASHBOARD_ELEMENTS,
+    AppSettingIDs.NOTIFICATION_TOASTS,
   ];
 
   for (const id of requiredIds) {
