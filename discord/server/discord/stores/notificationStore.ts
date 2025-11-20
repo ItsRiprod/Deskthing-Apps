@@ -1,6 +1,6 @@
 import { DeskThing } from "@deskthing/server";
 import { MessageObject, NotificationCreate, RPCEvents } from "../types/discordApiTypes";
-import { getEncodedImage, ImageType } from "../utils/imageFetch";
+import { getEncodedImage, getImageFromHash, ImageType } from "../utils/imageFetch";
 import { Notification, NotificationStatus } from "../../../shared/types/discord";
 import { DiscordRPCStore } from "./rpcStore";
 import { EventEmitter } from "node:events"
@@ -27,9 +27,12 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
   }
 
   private setupEventListeners(): void {
-    this.rpc.on(RPCEvents.NOTIFICATION_CREATE, (notif: NotificationCreate) => {
-      this.addNewNotification(notif);
-    });
+    this.rpc.on(
+      RPCEvents.NOTIFICATION_CREATE,
+      async (notif: NotificationCreate) => {
+        await this.addNewNotification(notif);
+      }
+    );
   }
 
   public updateClient = () => {
@@ -55,6 +58,23 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
   public async addNewNotificationMessage(message: MessageObject, title: string = "") {
     console.log("Adding new notification message");
     
+    let profileUrl: string | undefined;
+
+    try {
+      profileUrl = await getEncodedImage(
+        message.author?.avatar,
+        ImageType.UserAvatar,
+        message.author.id
+      );
+    } catch (error) {
+      console.error("Failed to fetch avatar image for notification", error);
+      profileUrl = getImageFromHash(
+        message.author.id,
+        ImageType.DefaultUserAvatar,
+        message.author.id
+      );
+    }
+
     const newNotification: Notification = {
       id: message.id,
       title: title,
@@ -62,11 +82,7 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
       author: {
         id: message.author.id,
         username: message.author.username,
-        profileUrl: await getEncodedImage(
-          message.author?.avatar,
-          ImageType.UserAvatar,
-          message.author.id
-        ),
+        profileUrl,
       },
       content: message.content,
       timestamp: Date.parse(message.timestamp),
@@ -87,7 +103,21 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
       return;
     }
 
-    this.addNewNotificationMessage(notification.message, notification.title);
+    try {
+      await this.addNewNotificationMessage(notification.message, notification.title);
+    } catch (error) {
+      console.error(
+        "Failed to add new notification, retrying with fallback avatar",
+        error
+      );
+      await this.addNewNotificationMessage(
+        {
+          ...notification.message,
+          author: { ...notification.message.author, avatar: undefined },
+        },
+        notification.title
+      );
+    }
   }
 
   public markNotificationAsRead(notificationId: string) {
