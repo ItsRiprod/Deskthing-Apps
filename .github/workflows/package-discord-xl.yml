@@ -44,14 +44,24 @@ jobs:
         run: npm run build
         working-directory: discord
 
+      - name: Verify packaged manifest exists
+        run: |
+          PACKAGE_FILE=$(ls discord/dist/*.zip | head -n 1)
+          echo "Checking manifest inside $PACKAGE_FILE"
+          unzip -l "$PACKAGE_FILE" | grep -q "manifest.json" || { echo "manifest.json not found in package"; exit 1; }
+
+      - name: Prepare artifacts for upload
+        run: |
+          mkdir -p artifacts/discord
+          cp discord/dist/*.zip artifacts/discord/
+          cp discord/dist/latest.json artifacts/discord/
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: discord-xl-controls
           if-no-files-found: error
-          path: |
-            discord/dist/*.zip
-            discord/dist/latest.json
+          path: artifacts/discord/*
 
       - name: Publish release assets
         if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
