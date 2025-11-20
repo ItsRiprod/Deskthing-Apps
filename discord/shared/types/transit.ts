@@ -9,6 +9,8 @@ export type ToServerTypes =
     | { type: DiscordEvents.SET, request: 'guild', payload: { guildId: string } }
     | { type: DiscordEvents.SET, request: 'channel', payload: { channelId: string } }
     | { type: DiscordEvents.SET, request: 'notificationToasts', payload: { enabled: boolean } }
+    | { type: DiscordEvents.SET, request: 'notificationRead', payload: { notificationId: string } }
+    | { type: DiscordEvents.SET, request: 'notificationsReadAll' }
     | { type: DiscordEvents.GET, request: 'settings', clientId?: string }
 
 export enum DiscordEvents {
