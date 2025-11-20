@@ -115,7 +115,7 @@ DeskThing.on(DiscordEvents.GET, async (socketData) => {
   }
 });
 
-DeskThing.on(DiscordEvents.SET, (socketData) => {
+DeskThing.on(DiscordEvents.SET, async (socketData) => {
   const guildStore = StoreProvider.getGuildList();
   const chatStore = StoreProvider.getChatStatus();
 
@@ -128,6 +128,33 @@ DeskThing.on(DiscordEvents.SET, (socketData) => {
     case "channel":
       {
         chatStore.selectTextChannel(socketData.payload.channelId);
+      }
+      break;
+    case "notificationToasts":
+      {
+        try {
+          const settings = await DeskThing.getSettings() as DiscordSettings | undefined;
+          const toastSetting = settings?.[AppSettingIDs.NOTIFICATION_TOASTS];
+          if (!toastSetting) return;
+
+          await DeskThing.setSettings({
+            [AppSettingIDs.NOTIFICATION_TOASTS]: {
+              ...toastSetting,
+              value: Boolean(socketData.payload?.enabled),
+            },
+          });
+
+          const updatedSettings = await DeskThing.getSettings() as DiscordSettings | undefined;
+          if (updatedSettings) {
+            DeskThing.send({
+              type: DiscordEvents.SETTINGS,
+              request: "set",
+              payload: updatedSettings,
+            });
+          }
+        } catch (error) {
+          console.error("Failed to update notification toast setting", error);
+        }
       }
       break;
   }

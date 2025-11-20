@@ -37,7 +37,7 @@ type UIStore = {
   song_controls: SONG_CONTROLS;
   widgets: DASHBOARD_ELEMENTS[]
   clock_options: CLOCK_OPTIONS
-  showNotificationToasts: boolean;
+  notification_toasts_enabled: boolean
 
   dimensions: {
     width: number;
@@ -119,7 +119,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   rightPanel: PANEL_ELEMENTS.BLANK,
   widgets: [...defaultWidgets],
   clock_options: CLOCK_OPTIONS.DISABLED,
-  showNotificationToasts: true,
+  notification_toasts_enabled: true,
   dimensions: getInitialDimensions(),
 
   initialize: () => {
@@ -172,7 +172,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
           rightPanel: settings[AppSettingIDs.RIGHT_DASHBOARD_PANEL].value,
           widgets: settings[AppSettingIDs.DASHBOARD_ELEMENTS].value,
           song_controls: settings[AppSettingIDs.SONG_OPTIONS].value,
-          showNotificationToasts: settings[AppSettingIDs.NOTIFICATION_TOASTS].value,
+          notification_toasts_enabled: settings[AppSettingIDs.NOTIFICATION_TOASTS].value,
           settings: settings as DiscordSettings,
         });
       }
