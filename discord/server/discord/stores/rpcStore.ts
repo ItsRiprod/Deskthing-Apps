@@ -63,6 +63,8 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
   private eventHandlers: Record<string, Set<EventCallback>> = {};
   public user: CallParticipant | undefined = undefined;
   private loggingInID: string | undefined;
+  private readyPromise: Promise<void> | null = null;
+  private resolveReady: (() => void) | null = null;
 
   constructor() {
     super();
@@ -110,6 +112,30 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
   }
 
   updateUser = async (): Promise<CallParticipant | undefined> => {
+    const waitForReady = async () => {
+      if (this.rpcClient?.user) {
+        return;
+      }
+
+      try {
+        if (this.readyPromise) {
+          await Promise.race([
+            this.readyPromise,
+            new Promise((resolve) => setTimeout(resolve, 1500)),
+          ]);
+        }
+      } catch (error) {
+        console.warn(`Error waiting for RPC ready event: ${error}`);
+      }
+
+      const timeoutMs = 1500;
+      const intervalMs = 100;
+      const start = Date.now();
+      while (!this.rpcClient?.user && Date.now() - start < timeoutMs) {
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      }
+    };
+
     const update = async () => {
       if (this.rpcClient?.user) {
         const voiceSettings = await this.rpcClient.getVoiceSettings();
@@ -128,18 +154,14 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
         return this.user;
       }
     };
-    if (this.rpcClient?.user) {
-      try {
-        return await update();
-      } catch (error) {
-        console.warn(`Error updating user: ${error}`);
-      }
-    } else {
-      // Wait a second before trying again
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    try {
+      await waitForReady();
       if (this.rpcClient?.user) {
         return await update();
       }
+    } catch (error) {
+      console.warn(`Error updating user: ${error}`);
     }
   };
 
@@ -161,6 +183,9 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
     }
 
     try {
+      this.readyPromise = new Promise<void>((resolve) => {
+        this.resolveReady = resolve;
+      });
       const client = new Client({ transport: "ipc" });
       console.log("Created new Discord RPC client");
 
@@ -170,6 +195,7 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
           this._isConnected = true;
           this.emit(RPCEvents.READY, { user: client.user });
           console.log("Connected to Discord RPC");
+          this.resolveReady?.();
           resolve();
         });
 
@@ -189,6 +215,8 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
           this._isConnected = false;
           console.log("Discord RPC disconnected");
           this.rpcClient = null;
+          this.readyPromise = null;
+          this.resolveReady = null;
         });
 
         client.login({ clientId }).catch(reject);
@@ -198,6 +226,8 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
     } catch (error) {
       this._isConnected = false;
       console.error(`Failed to connect to Discord RPC: ${error}`);
+      this.readyPromise = null;
+      this.resolveReady = null;
       throw error;
     } finally {
       this.loggingInID = undefined;
@@ -211,6 +241,8 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
         this.rpcClient.destroy();
         this.rpcClient = null;
         this._isConnected = false;
+        this.readyPromise = null;
+        this.resolveReady = null;
         console.log("Disconnected from Discord RPC");
       } catch (error) {
         console.error(`Error disconnecting from Discord RPC: ${error}`);
