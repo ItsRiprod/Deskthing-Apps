@@ -7,11 +7,98 @@ type CallStoreState = {
   initialized: boolean;
   isLoading: boolean;
   callStatus: CallStatus | null;
+  selfUserId: string | null;
+  pollingIntervalId: ReturnType<typeof setInterval> | null;
   initialize: () => void;
+  refreshCallStatus: () => void;
   setCallStatus: (callStatus: CallStatus) => void;
   setTalkingStatus: (userId: string, isSpeaking: boolean) => void;
   refreshCallStatus: () => void;
   pollingIntervalId: ReturnType<typeof setInterval> | null;
+};
+
+const normalizeCallStatus = (
+  incoming: CallStatus,
+  state: Pick<CallStoreState, "callStatus" | "selfUserId">
+): { callStatus: CallStatus; selfUserId: string | null } => {
+  const previousStatus = state.callStatus;
+  const resolvedSelfId =
+    state.selfUserId ??
+    incoming.user?.id ??
+    previousStatus?.user?.id ??
+    (incoming.participants.length === 1
+      ? incoming.participants[0]?.id ?? null
+      : null);
+
+  if (!resolvedSelfId) {
+    return { callStatus: incoming, selfUserId: null };
+  }
+
+  const incomingParticipants = incoming.participants ?? [];
+  const incomingParticipant = incomingParticipants.find(
+    (participant) => participant.id === resolvedSelfId
+  );
+  const previousParticipant = previousStatus?.participants.find(
+    (participant) => participant.id === resolvedSelfId
+  );
+
+  const resolvedUser =
+    incoming.user && incoming.user.id === resolvedSelfId
+      ? incoming.user
+      : incomingParticipant ??
+        incoming.user ??
+        previousParticipant ??
+        previousStatus?.user ??
+        null;
+
+  const participantSource =
+    resolvedUser ?? incomingParticipant ?? previousParticipant ?? null;
+
+  const participants = participantSource
+    ? incomingParticipants.map((participant) =>
+        participant.id === resolvedSelfId
+          ? {
+              ...participant,
+              isMuted:
+                participantSource.isMuted ?? participant.isMuted,
+              isDeafened:
+                participantSource.isDeafened ?? participant.isDeafened,
+            }
+          : participant
+      )
+    : incomingParticipants;
+
+  const updatedParticipant = participants.find(
+    (participant) => participant.id === resolvedSelfId
+  );
+
+  const user = (() => {
+    if (!resolvedUser && !updatedParticipant) {
+      return undefined;
+    }
+
+    const base = resolvedUser ?? updatedParticipant!;
+    return {
+      ...base,
+      isMuted:
+        updatedParticipant?.isMuted ??
+        resolvedUser?.isMuted ??
+        base.isMuted,
+      isDeafened:
+        updatedParticipant?.isDeafened ??
+        resolvedUser?.isDeafened ??
+        base.isDeafened,
+    };
+  })();
+
+  return {
+    callStatus: {
+      ...incoming,
+      participants,
+      ...(user ? { user } : {}),
+    },
+    selfUserId: resolvedSelfId,
+  };
 };
 
 const DeskThing = createDeskThing<ToClientTypes, ToServerTypes>();
@@ -32,27 +119,62 @@ export const useCallStore = create<CallStoreState>((set, get) => ({
     // Listen for call status updates
     DeskThing.on(DiscordEvents.CALL, (event) => {
       if (event.request === "set" && event.payload) {
-        set({ callStatus: event.payload, isLoading: false });
+        set((state) => {
+          const normalized = normalizeCallStatus(event.payload, state);
+          return {
+            callStatus: normalized.callStatus,
+            selfUserId: normalized.selfUserId,
+            isLoading: false,
+          };
+        });
       } else if (event.request === "update" && event.payload) {
         get().setTalkingStatus(event.payload.userId, event.payload.isSpeaking);
       }
     });
 
-    // Listen for call status updates
     DeskThing.on(DiscordEvents.VOICE_STATE, (event) => {
       if (event.request === "update" && event.payload) {
         set((state) => {
-          if (!state.callStatus || !state.callStatus.user) return {};
-          // Ensure all required fields are present and not undefined
+          if (!state.callStatus) return {};
+
+          const participants = state.callStatus.participants.map(
+            (participant) =>
+              participant.id === event.payload.userId
+                ? {
+                    ...participant,
+                    isDeafened: event.payload.isDeafened,
+                    isMuted: event.payload.isMuted,
+                  }
+                : participant
+          );
+
+          const shouldUpdateUser =
+            state.callStatus.user?.id === event.payload.userId ||
+            state.selfUserId === event.payload.userId;
+
+          const nextUser = shouldUpdateUser
+            ? state.callStatus.user &&
+              state.callStatus.user.id === event.payload.userId
+              ? {
+                  ...state.callStatus.user,
+                  isDeafened: event.payload.isDeafened,
+                  isMuted: event.payload.isMuted,
+                }
+              :
+                participants.find(
+                  (participant) => participant.id === event.payload.userId
+                ) ?? state.callStatus.user
+            : state.callStatus.user;
+
           return {
             callStatus: {
               ...state.callStatus,
-              user: {
-                ...state.callStatus.user,
-                isDeafened: event.payload.isDeafened,
-                isMuted: event.payload.isMuted,
-              },
+              participants,
+              ...(nextUser ? { user: nextUser } : {}),
             },
+            selfUserId: shouldUpdateUser
+              ? event.payload.userId
+              : state.selfUserId,
           };
         });
       }
@@ -68,7 +190,14 @@ export const useCallStore = create<CallStoreState>((set, get) => ({
   },
 
   setCallStatus: (callStatus) => {
-    set({ callStatus });
+    set((state) => {
+      const normalized = normalizeCallStatus(callStatus, state);
+      return {
+        callStatus: normalized.callStatus,
+        selfUserId: normalized.selfUserId,
+        isLoading: false,
+      };
+    });
   },
 
   refreshCallStatus: () => {
@@ -86,18 +215,30 @@ export const useCallStore = create<CallStoreState>((set, get) => ({
   setTalkingStatus: (userId, isSpeaking) => {
     set((state) => {
       if (!state.callStatus) return {};
+
+      const participants = state.callStatus.participants.map((participant) =>
+        participant.id === userId
+          ? { ...participant, isSpeaking }
+          : participant
+      );
+
+      const shouldUpdateUser =
+        state.callStatus.user?.id === userId || state.selfUserId === userId;
+
+      const nextUser = shouldUpdateUser
+        ? state.callStatus.user && state.callStatus.user.id === userId
+          ? { ...state.callStatus.user, isSpeaking }
+          : participants.find((participant) => participant.id === userId) ??
+            state.callStatus.user
+        : state.callStatus.user;
+
       return {
         callStatus: {
           ...state.callStatus,
-          participants: state.callStatus.participants.map((participant) =>
-            participant.id === userId
-              ? { ...participant, isSpeaking }
-              : participant
-          ),
-          user: state.callStatus.user?.id === userId
-            ? { ...state.callStatus.user, isSpeaking }
-            : state.callStatus.user,
+          participants,
+          ...(nextUser ? { user: nextUser } : {}),
         },
+        selfUserId: shouldUpdateUser ? userId : state.selfUserId,
       };
     });
   },
