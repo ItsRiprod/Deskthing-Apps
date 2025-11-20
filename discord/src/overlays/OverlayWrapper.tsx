@@ -24,7 +24,7 @@ export default function OverlayWrapper() {
       className="pointer-events-none fixed inset-x-0 z-40 flex justify-end px-6"
       style={{ bottom: '12vh' }}
     >
-      <div className="flex w-full max-w-sm flex-col items-stretch gap-3">
+      <div className="flex w-full max-w-[60vw] flex-col items-stretch gap-3">
         {unreadNotifications.map((notification) => (
           <NotificationOverlay
             key={notification.id}
