@@ -1,8 +1,8 @@
 import { DeskThing } from "@deskthing/server";
 import { DESKTHING_EVENTS, Action } from "@deskthing/types";
 import StoreProvider from "./storeProvider";
-import { AppSettingIDs } from "../shared/types/discord"
 import { DISCORD_ACTIONS } from "../shared/types/discord"
+import { MessageObject, MessageType } from "./discord/types/discordApiTypes";
 
 // Organize actions by category
 const voiceActions: Action[] = [
@@ -41,6 +41,28 @@ const voiceActions: Action[] = [
   },
 ];
 
+const createTestNotificationMessage = (body?: string): MessageObject => ({
+  id: `deskthing-test-${Date.now()}`,
+  channel_id: "deskthing-test-channel",
+  author: {
+    id: "deskthing-test-user",
+    username: "DeskThing Tester",
+    discriminator: "0000",
+    avatar: null,
+  },
+  content: body?.trim() || "This is a test notification from DeskThing.",
+  timestamp: new Date().toISOString(),
+  edited_timestamp: null,
+  tts: false,
+  mention_everyone: false,
+  mentions: [],
+  mention_roles: [],
+  attachments: [],
+  embeds: [],
+  pinned: false,
+  type: MessageType.DEFAULT,
+});
+
 const notificationActions: Action[] = [
   {
     name: "Mark Notification As Read",
@@ -61,6 +83,15 @@ const notificationActions: Action[] = [
     version: "0.11.2",
     tag: "basic",
     enabled: false,
+  },
+  {
+    name: "Send Test Notification",
+    description: "Creates a mock Discord notification so you can preview the toast UI",
+    id: DISCORD_ACTIONS.SEND_TEST_NOTIFICATION,
+    icon: "notification", // placeholder icon until a bell icon exists
+    version: "0.11.2",
+    tag: "basic",
+    enabled: true,
   },
 ];
 
@@ -154,6 +185,11 @@ const actionHandlers: Record<string, actionHandler> = {
   },
   [DISCORD_ACTIONS.MARK_ALL_NOTIFICATIONS_AS_READ]: () => {
     return StoreProvider.getNotificationStatus().markAllNotificationsAsRead();
+  },
+  [DISCORD_ACTIONS.SEND_TEST_NOTIFICATION]: async (value) => {
+    const notificationStore = StoreProvider.getNotificationStatus();
+    const message = createTestNotificationMessage(value);
+    await notificationStore.addNewNotificationMessage(message, "Test Notification");
   },
 };
 

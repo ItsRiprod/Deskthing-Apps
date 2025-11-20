@@ -113,6 +113,7 @@ export enum DISCORD_ACTIONS {
   SELECT_TEXT_CHANNEL = 'selectTextChannel',
   MARK_NOTIFICATION_AS_READ = 'markNotificationAsRead',
   MARK_ALL_NOTIFICATIONS_AS_READ = 'markAllNotificationsAsRead',
+  SEND_TEST_NOTIFICATION = 'sendTestNotification',
 }
 
 export enum AppSettingIDs {
