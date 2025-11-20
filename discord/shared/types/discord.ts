@@ -63,6 +63,8 @@ export interface Notification {
   id: string;
   title: string
   channelId: string;
+  channelName?: string;
+  guildName?: string;
   author: {
     id: string;
     username: string;

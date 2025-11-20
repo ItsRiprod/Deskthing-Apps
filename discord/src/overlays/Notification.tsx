@@ -55,6 +55,13 @@ export default function NotificationOverlay({
         </div>
         <div className="grow">
           <p className="text-xs uppercase tracking-wide text-white/60">{notification.author.username}</p>
+          {(notification.guildName || notification.channelName) && (
+            <p className="text-[11px] font-medium text-white/60">
+              {notification.guildName && <span>{notification.guildName}</span>}
+              {notification.guildName && notification.channelName && <span className="px-1">•</span>}
+              {notification.channelName && <span>#{notification.channelName}</span>}
+            </p>
+          )}
           <h4 className="mt-1 text-sm font-semibold leading-tight">{notification.title}</h4>
           <p
             className="mt-1 text-sm text-white/80"

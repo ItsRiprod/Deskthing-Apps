@@ -3,6 +3,7 @@ import { MessageObject, NotificationCreate, RPCEvents } from "../types/discordAp
 import { getEncodedImage, getImageFromHash, ImageType } from "../utils/imageFetch";
 import { Notification, NotificationStatus } from "../../../shared/types/discord";
 import { DiscordRPCStore } from "./rpcStore";
+import { GuildListManager } from "./guildStore";
 import { EventEmitter } from "node:events"
 
 interface notificationStatusEvents {
@@ -19,10 +20,12 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
   };
   private debounceTimeoutId: NodeJS.Timeout | null = null;
   private rpc: DiscordRPCStore;
+  private guildStore: GuildListManager;
 
-  constructor(rpc: DiscordRPCStore) {
+  constructor(rpc: DiscordRPCStore, guildStore: GuildListManager) {
     super()
     this.rpc = rpc;
+    this.guildStore = guildStore;
     this.setupEventListeners();
     this.subscribeToNotificationEvents();
   }
@@ -67,7 +70,11 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
     }, 1000); // update with a second delay
   };
 
-  public async addNewNotificationMessage(message: MessageObject, title: string = "") {
+  public async addNewNotificationMessage(
+    message: MessageObject,
+    title: string = "",
+    context?: { channelName?: string; guildName?: string }
+  ) {
     console.log("Adding new notification message");
     
     let profileUrl: string | undefined;
@@ -99,6 +106,8 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
       content: message.content,
       timestamp: Date.parse(message.timestamp),
       read: false,
+      channelName: context?.channelName,
+      guildName: context?.guildName,
     };
 
     this.currentStatus.notifications.push(newNotification);
@@ -109,14 +118,29 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
     this.debounceUpdateClient();
   }
 
+  private getNotificationContext(channelId: string) {
+    const { guilds, textChannels } = this.guildStore.getStatus();
+    const channel = textChannels.find((c) => c.id === channelId);
+
+    if (!channel) return { channelName: undefined, guildName: undefined };
+
+    const guildName = channel.guild_id
+      ? guilds.find((guild) => guild.id === channel.guild_id)?.name
+      : undefined;
+
+    return { channelName: channel.name, guildName };
+  }
+
   public async addNewNotification(notification: NotificationCreate) {
     // Check if we already have this notification to prevent duplicates
     if (this.currentStatus.notifications.some((n) => n.id === notification.message.id)) {
       return;
     }
 
+    const context = this.getNotificationContext(notification.message.channel_id);
+
     try {
-      await this.addNewNotificationMessage(notification.message, notification.title);
+      await this.addNewNotificationMessage(notification.message, notification.title, context);
     } catch (error) {
       console.error(
         "Failed to add new notification, retrying with fallback avatar",
@@ -127,7 +151,8 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
           ...notification.message,
           author: { ...notification.message.author, avatar: undefined },
         },
-        notification.title
+        notification.title,
+        context
       );
     }
   }
