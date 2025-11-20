@@ -37,6 +37,7 @@ type UIStore = {
   song_controls: SONG_CONTROLS;
   widgets: DASHBOARD_ELEMENTS[]
   clock_options: CLOCK_OPTIONS
+  notification_toasts_enabled: boolean
 
   dimensions: {
     width: number;
@@ -118,6 +119,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   rightPanel: PANEL_ELEMENTS.BLANK,
   widgets: [...defaultWidgets],
   clock_options: CLOCK_OPTIONS.DISABLED,
+  notification_toasts_enabled: true,
   dimensions: getInitialDimensions(),
 
   initialize: () => {
@@ -163,7 +165,16 @@ export const useUIStore = create<UIStore>((set, get) => ({
 
       if (settings) {
         validateDiscordSettings(settings);
-        set({ clock_options: settings[AppSettingIDs.CLOCK_OPTIONS].value, isLoading: false, leftPanel: settings[AppSettingIDs.LEFT_DASHBOARD_PANEL].value, rightPanel: settings[AppSettingIDs.RIGHT_DASHBOARD_PANEL].value, widgets: settings[AppSettingIDs.DASHBOARD_ELEMENTS].value, song_controls: settings[AppSettingIDs.SONG_OPTIONS].value, settings: settings as DiscordSettings });
+        set({
+          clock_options: settings[AppSettingIDs.CLOCK_OPTIONS].value,
+          isLoading: false,
+          leftPanel: settings[AppSettingIDs.LEFT_DASHBOARD_PANEL].value,
+          rightPanel: settings[AppSettingIDs.RIGHT_DASHBOARD_PANEL].value,
+          widgets: settings[AppSettingIDs.DASHBOARD_ELEMENTS].value,
+          song_controls: settings[AppSettingIDs.SONG_OPTIONS].value,
+          notification_toasts_enabled: settings[AppSettingIDs.NOTIFICATION_TOASTS].value,
+          settings: settings as DiscordSettings,
+        });
       }
     } catch (error) {
       console.error("Error validating settings:", error);
