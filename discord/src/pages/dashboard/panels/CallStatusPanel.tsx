@@ -31,13 +31,17 @@ export const CallStatusPanel = () => {
     const gap = 24; // gap-6
     const horizontalPadding = 48; // approximate padding from p-4/md:p-6
     const verticalPadding = 48;
+    const headerHeight = 64; // approximate height of the header block including padding/border
 
     const count = participants.length || 1;
     const columns = Math.min(count, Math.max(1, Math.ceil(Math.sqrt(count))));
     const rows = Math.max(1, Math.ceil(count / columns));
 
     const availableWidth = Math.max(panelDimensions.width - horizontalPadding, minTileSize);
-    const availableHeight = Math.max(panelDimensions.height - verticalPadding, minTileSize);
+    const availableHeight = Math.max(
+      panelDimensions.height - verticalPadding - headerHeight,
+      minTileSize,
+    );
 
     const sizeByWidth = Math.floor((availableWidth - gap * (columns - 1)) / columns);
     const sizeByHeight = Math.floor((availableHeight - gap * (rows - 1)) / rows);
