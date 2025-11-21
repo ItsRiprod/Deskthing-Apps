@@ -88,5 +88,5 @@ jobs:
             gh release create "$TAG" --title "$TITLE" --notes "$NOTES" --prerelease
           fi
 
-          gh release upload "$TAG" discord/dist/*.zip discord/dist/latest.json --clobber
+          gh release upload "$TAG" dist/*.zip dist/latest.json --clobber
         working-directory: discord
