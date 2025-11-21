@@ -190,12 +190,19 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     const userIndex = this.currentStatus.participants.findIndex(
       (p) => p.id === participant.id
     );
-    if (userIndex !== -1) {
-      this.currentStatus.participants[userIndex] = {
-        ...this.currentStatus.participants[userIndex],
-        ...participant,
-      };
+    if (this.currentStatus.isConnected) {
+      if (userIndex !== -1) {
+        this.currentStatus.participants[userIndex] = {
+          ...this.currentStatus.participants[userIndex],
+          ...participant,
+        };
+      } else {
+        this.currentStatus.participants.push(participant);
+      }
+    } else if (userIndex !== -1) {
+      this.currentStatus.participants.splice(userIndex, 1);
     }
+
     this.emit("update", this.currentStatus);
   }
 
