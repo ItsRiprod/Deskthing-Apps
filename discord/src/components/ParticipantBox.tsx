@@ -31,7 +31,13 @@ export const ParticipantBox = ({ participant }: ParticipantBoxProps) => {
         <img
           src={profileUrl}
           alt={participant.username}
-          className="h-[55%] object-cover rounded-full"
+          style={{
+            maxWidth: "80%",
+            maxHeight: "80%",
+            width: "70%",
+            height: "70%",
+          }}
+          className="object-cover rounded-full"
         />
       )}
       <p
