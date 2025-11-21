@@ -13,8 +13,6 @@ type CallStoreState = {
   refreshCallStatus: () => void;
   setCallStatus: (callStatus: CallStatus) => void;
   setTalkingStatus: (userId: string, isSpeaking: boolean) => void;
-  refreshCallStatus: () => void;
-  pollingIntervalId: ReturnType<typeof setInterval> | null;
 };
 
 const normalizeCallStatus = (
@@ -103,143 +101,172 @@ const normalizeCallStatus = (
 
 const DeskThing = createDeskThing<ToClientTypes, ToServerTypes>();
 
-export const useCallStore = create<CallStoreState>((set, get) => ({
-  initialized: false,
-  isLoading: true,
-  callStatus: null,
-  pollingIntervalId: null,
+export const useCallStore = create<CallStoreState>((set, get) => {
+  const startPolling = () => {
+    if (get().pollingIntervalId) return;
 
-  initialize: () => {
-    if (get().initialized) return;
-    set({ initialized: true });
+    const intervalId = setInterval(() => {
+      get().refreshCallStatus();
+    }, 2000);
 
-    // Initial fetch for call status
-    get().refreshCallStatus();
+    set({ pollingIntervalId: intervalId });
+  };
 
-    // Listen for call status updates
-    DeskThing.on(DiscordEvents.CALL, (event) => {
-      if (event.request === "set" && event.payload) {
-        set((state) => {
-          const normalized = normalizeCallStatus(event.payload, state);
-          return {
-            callStatus: normalized.callStatus,
-            selfUserId: normalized.selfUserId,
-            isLoading: false,
-          };
-        });
-      } else if (event.request === "update" && event.payload) {
-        get().setTalkingStatus(event.payload.userId, event.payload.isSpeaking);
-      }
-    });
+  const stopPolling = () => {
+    const intervalId = get().pollingIntervalId;
 
-    DeskThing.on(DiscordEvents.VOICE_STATE, (event) => {
-      if (event.request === "update" && event.payload) {
-        set((state) => {
-          if (!state.callStatus) return {};
+    if (intervalId) {
+      clearInterval(intervalId);
+      set({ pollingIntervalId: null });
+    }
+  };
 
-          const participants = state.callStatus.participants.map(
-            (participant) =>
-              participant.id === event.payload.userId
+  return {
+    initialized: false,
+    isLoading: true,
+    callStatus: null,
+    pollingIntervalId: null,
+
+    initialize: () => {
+      if (get().initialized) return;
+      set({ initialized: true });
+
+      // Initial fetch for call status
+      get().refreshCallStatus();
+
+      // Listen for call status updates
+      DeskThing.on(DiscordEvents.CALL, (event) => {
+        if (event.request === "set" && event.payload) {
+          get().setCallStatus(event.payload);
+        } else if (event.request === "update" && event.payload) {
+          get().setTalkingStatus(event.payload.userId, event.payload.isSpeaking);
+        }
+      });
+
+      DeskThing.on(DiscordEvents.VOICE_STATE, (event) => {
+        if (event.request === "update" && event.payload) {
+          set((state) => {
+            if (!state.callStatus) return {};
+
+            const participants = state.callStatus.participants.map(
+              (participant) =>
+                participant.id === event.payload.userId
+                  ? {
+                      ...participant,
+                      isDeafened: event.payload.isDeafened,
+                      isMuted: event.payload.isMuted,
+                    }
+                  : participant
+            );
+
+            const shouldUpdateUser =
+              state.callStatus.user?.id === event.payload.userId ||
+              state.selfUserId === event.payload.userId;
+
+            const nextUser = shouldUpdateUser
+              ? state.callStatus.user &&
+                state.callStatus.user.id === event.payload.userId
                 ? {
-                    ...participant,
+                    ...state.callStatus.user,
                     isDeafened: event.payload.isDeafened,
                     isMuted: event.payload.isMuted,
                   }
-                : participant
-          );
+                :
+                  participants.find(
+                    (participant) => participant.id === event.payload.userId
+                  ) ?? state.callStatus.user
+              : state.callStatus.user;
 
-          const shouldUpdateUser =
-            state.callStatus.user?.id === event.payload.userId ||
-            state.selfUserId === event.payload.userId;
-
-          const nextUser = shouldUpdateUser
-            ? state.callStatus.user &&
-              state.callStatus.user.id === event.payload.userId
-              ? {
-                  ...state.callStatus.user,
-                  isDeafened: event.payload.isDeafened,
-                  isMuted: event.payload.isMuted,
-                }
-              :
-                participants.find(
-                  (participant) => participant.id === event.payload.userId
-                ) ?? state.callStatus.user
-            : state.callStatus.user;
-
-          return {
-            callStatus: {
-              ...state.callStatus,
-              participants,
-              ...(nextUser ? { user: nextUser } : {}),
-            },
-            selfUserId: shouldUpdateUser
-              ? event.payload.userId
-              : state.selfUserId,
-          };
-        });
-      }
-    });
-
-    if (!get().pollingIntervalId) {
-      const intervalId = setInterval(() => {
-        get().refreshCallStatus();
-      }, 2000);
-
-      set({ pollingIntervalId: intervalId });
-    }
-  },
-
-  setCallStatus: (callStatus) => {
-    set((state) => {
-      const normalized = normalizeCallStatus(callStatus, state);
-      return {
-        callStatus: normalized.callStatus,
-        selfUserId: normalized.selfUserId,
-        isLoading: false,
-      };
-    });
-  },
-
-  refreshCallStatus: () => {
-    DeskThing.fetch(
-      { type: DiscordEvents.GET, request: "call" },
-      { type: DiscordEvents.CALL, request: "set" },
-      (callStatus) => {
-        if (callStatus) {
-          set({ callStatus: callStatus.payload, isLoading: false });
+            return {
+              callStatus: {
+                ...state.callStatus,
+                participants,
+                ...(nextUser ? { user: nextUser } : {}),
+              },
+              selfUserId: shouldUpdateUser
+                ? event.payload.userId
+                : state.selfUserId,
+            };
+          });
         }
+      });
+
+      startPolling();
+    },
+
+    setCallStatus: (callStatus) => {
+      if (!callStatus.isConnected) {
+        stopPolling();
+        set({ callStatus: null, selfUserId: null, isLoading: false });
+        return;
       }
-    );
-  },
 
-  setTalkingStatus: (userId, isSpeaking) => {
-    set((state) => {
-      if (!state.callStatus) return {};
+      set((state) => {
+        const normalized = normalizeCallStatus(callStatus, state);
+        return {
+          callStatus: normalized.callStatus,
+          selfUserId: normalized.selfUserId,
+          isLoading: false,
+        };
+      });
 
-      const participants = state.callStatus.participants.map((participant) =>
-        participant.id === userId
-          ? { ...participant, isSpeaking }
-          : participant
+      startPolling();
+    },
+
+    refreshCallStatus: () => {
+      DeskThing.fetch(
+        { type: DiscordEvents.GET, request: "call" },
+        { type: DiscordEvents.CALL, request: "set" },
+        (callStatus) => {
+          if (!callStatus || !callStatus.payload?.isConnected) {
+            stopPolling();
+            set({ callStatus: null, selfUserId: null, isLoading: false });
+            return;
+          }
+
+          set((state) => {
+            const normalized = normalizeCallStatus(callStatus.payload, state);
+            return {
+              callStatus: normalized.callStatus,
+              selfUserId: normalized.selfUserId,
+              isLoading: false,
+            };
+          });
+
+          startPolling();
+        }
       );
+    },
 
-      const shouldUpdateUser =
-        state.callStatus.user?.id === userId || state.selfUserId === userId;
+    setTalkingStatus: (userId, isSpeaking) => {
+      set((state) => {
+        if (!state.callStatus) return {};
 
-      const nextUser = shouldUpdateUser
-        ? state.callStatus.user && state.callStatus.user.id === userId
-          ? { ...state.callStatus.user, isSpeaking }
-          : participants.find((participant) => participant.id === userId) ??
-            state.callStatus.user
-        : state.callStatus.user;
+        const participants = state.callStatus.participants.map((participant) =>
+          participant.id === userId
+            ? { ...participant, isSpeaking }
+            : participant
+        );
 
-      return {
-        callStatus: {
-          ...state.callStatus,
-          participants,
-          ...(nextUser ? { user: nextUser } : {}),
-        },
-        selfUserId: shouldUpdateUser ? userId : state.selfUserId,
-      };
-    });
-  },
-}));
+        const shouldUpdateUser =
+          state.callStatus.user?.id === userId || state.selfUserId === userId;
+
+        const nextUser = shouldUpdateUser
+          ? state.callStatus.user && state.callStatus.user.id === userId
+            ? { ...state.callStatus.user, isSpeaking }
+            : participants.find((participant) => participant.id === userId) ??
+              state.callStatus.user
+          : state.callStatus.user;
+
+        return {
+          callStatus: {
+            ...state.callStatus,
+            participants,
+            ...(nextUser ? { user: nextUser } : {}),
+          },
+          selfUserId: shouldUpdateUser ? userId : state.selfUserId,
+        };
+      });
+    },
+  };
+});
