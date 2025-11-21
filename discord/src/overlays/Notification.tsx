@@ -43,28 +43,21 @@ export default function NotificationOverlay({
         isVisible ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
       }`}
     >
-      <div className="flex w-full items-start rounded-2xl border border-white/5 bg-[#1b1f25]/95 p-4 text-white shadow-2xl shadow-black/60 backdrop-blur">
+      <div className="flex w-full items-start rounded-2xl border border-white/5 bg-[#1b1f25]/95 p-5 text-white shadow-2xl shadow-black/60 backdrop-blur">
         <div className="mr-3 flex-shrink-0">
           {notification.author.profileUrl && (
             <img
               src={notification.author.profileUrl}
               alt={notification.author.username}
-              className="h-8 w-8 rounded-full"
+              className="h-10 w-10 rounded-full"
             />
           )}
         </div>
         <div className="grow">
-          <p className="text-xs uppercase tracking-wide text-white/60">{notification.author.username}</p>
-          {(notification.guildName || notification.channelName) && (
-            <p className="text-[11px] font-medium text-white/60">
-              {notification.guildName && <span>{notification.guildName}</span>}
-              {notification.guildName && notification.channelName && <span className="px-1">•</span>}
-              {notification.channelName && <span>#{notification.channelName}</span>}
-            </p>
-          )}
-          <h4 className="mt-1 text-sm font-semibold leading-tight">{notification.title}</h4>
+          <p className="text-sm font-semibold text-white">{notification.author.username}</p>
+          <h4 className="mt-1 text-base font-semibold leading-tight">{notification.title}</h4>
           <p
-            className="mt-1 text-sm text-white/80"
+            className="mt-2 text-base font-normal text-white/80"
             style={{
               display: '-webkit-box',
               WebkitLineClamp: 3,
@@ -74,6 +67,13 @@ export default function NotificationOverlay({
           >
             {notification.content}
           </p>
+          {(notification.guildName || notification.channelName) && (
+            <p className="mt-2 text-xs text-white/50">
+              {notification.guildName ?? ''}
+              {notification.guildName && notification.channelName ? ' | ' : ''}
+              {notification.channelName ? `#${notification.channelName}` : ''}
+            </p>
+          )}
         </div>
         <button
           onClick={handleClose}
