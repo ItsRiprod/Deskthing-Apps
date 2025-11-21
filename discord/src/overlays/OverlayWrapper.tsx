@@ -7,6 +7,7 @@ export default function OverlayWrapper() {
   const markNotificationAsRead = useChatStore((state) => state.markNotificationAsRead)
   const notifications = useChatStore((state) => state.notificationStatus?.notifications)
   const toastsEnabled = useUIStore((state) => state.notification_toasts_enabled)
+  const toastDurationSeconds = useUIStore((state) => state.notification_toast_duration_seconds)
 
   const unreadNotifications = useMemo(() => {
     if (!notifications) return []
@@ -30,6 +31,7 @@ export default function OverlayWrapper() {
             key={notification.id}
             notification={notification}
             onClose={markNotificationAsRead}
+            autoHideDuration={toastDurationSeconds * 1000}
           />
         ))}
       </div>
