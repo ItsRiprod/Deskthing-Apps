@@ -94,6 +94,8 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
       );
     }
 
+    const content = this.formatContentWithDisplayNames(message);
+
     const newNotification: Notification = {
       id: message.id,
       title: title,
@@ -103,7 +105,7 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
         username: message.author.username,
         profileUrl,
       },
-      content: message.content,
+      content,
       timestamp: Date.parse(message.timestamp),
       read: false,
       channelName: context?.channelName,
@@ -129,6 +131,20 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
       : undefined;
 
     return { channelName: channel.name, guildName };
+  }
+
+  private formatContentWithDisplayNames(message: MessageObject): string {
+    const mentionMap = new Map(
+      (message.mentions ?? []).map((mention) => [
+        mention.id,
+        mention.global_name ?? mention.username,
+      ])
+    );
+
+    return message.content.replace(/<@!?(\d+)>/g, (match, userId) => {
+      const displayName = mentionMap.get(userId);
+      return displayName ? `@${displayName}` : match;
+    });
   }
 
   public async addNewNotification(notification: NotificationCreate) {
