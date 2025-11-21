@@ -72,17 +72,12 @@ export const CallStatusPanel = () => {
     <div className="relative z-0 flex w-full justify-center px-4">
       <PanelWrapper scrollable={false}>
         <div className="w-full h-full flex flex-col">
-          <div className="px-4 md:px-6 pt-4 md:pt-6 pb-3 border-b border-neutral-800">
-            <div className="text-xs uppercase tracking-wide text-neutral-400 mb-1">
-              Guild
+          <div className="px-4 md:px-6 pt-3 md:pt-4 pb-2 border-b border-neutral-800">
+            <div className="flex items-center gap-2 text-sm text-neutral-200">
+              <span className="font-semibold text-neutral-100">{guildName}</span>
+              <span className="text-neutral-500">|</span>
+              <span className="text-neutral-300">{channelName}</span>
             </div>
-            <div className="text-lg font-semibold text-neutral-100 mb-2">
-              {guildName}
-            </div>
-            <div className="text-xs uppercase tracking-wide text-neutral-400 mb-1">
-              Channel
-            </div>
-            <div className="text-base text-neutral-200">{channelName}</div>
           </div>
           <div className="flex-1">
             {participants.length > 0 ? (
