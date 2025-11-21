@@ -38,6 +38,7 @@ type UIStore = {
   widgets: DASHBOARD_ELEMENTS[]
   clock_options: CLOCK_OPTIONS
   notification_toasts_enabled: boolean
+  notification_toast_duration_seconds: number
 
   dimensions: {
     width: number;
@@ -120,6 +121,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   widgets: [...defaultWidgets],
   clock_options: CLOCK_OPTIONS.DISABLED,
   notification_toasts_enabled: true,
+  notification_toast_duration_seconds: 10,
   dimensions: getInitialDimensions(),
 
   initialize: () => {
@@ -173,6 +175,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
           widgets: settings[AppSettingIDs.DASHBOARD_ELEMENTS].value,
           song_controls: settings[AppSettingIDs.SONG_OPTIONS].value,
           notification_toasts_enabled: settings[AppSettingIDs.NOTIFICATION_TOASTS].value,
+          notification_toast_duration_seconds: settings[AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS].value,
           settings: settings as DiscordSettings,
         });
       }
