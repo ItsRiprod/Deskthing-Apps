@@ -3,6 +3,7 @@ import { createDeskThing } from '@deskthing/client';
 import { DISCORD_ACTIONS } from '@shared/types/discord';
 import { ToClientTypes, ToServerTypes } from '@shared/types/transit';
 import { DISCORD_APP_ID } from '@src/constants/app';
+import { useCallStore } from './callStore';
 
 const DeskThing = createDeskThing<ToClientTypes, ToServerTypes>();
 const APP_ID = DISCORD_APP_ID;
@@ -28,26 +29,36 @@ interface ControlStore {
 export const useControlStore = create<ControlStore>(() => ({
   mute: () => {
     DeskThing.debug('Muting user');
+    useCallStore.getState().updateLocalVoiceState({ isMuted: true });
     DeskThing.triggerAction({ id: DISCORD_ACTIONS.MUTE, value: 'mute', source: APP_ID });
   },
   unmute: () => {
     DeskThing.debug('Unmuting user');
+    useCallStore.getState().updateLocalVoiceState({ isMuted: false });
     DeskThing.triggerAction({ id: DISCORD_ACTIONS.MUTE, value: 'unmute', source: APP_ID });
   },
   toggleMute: () => {
     DeskThing.debug('Toggling mute');
+    const currentState = useCallStore.getState();
+    const isMuted = currentState.callStatus?.user?.isMuted ?? false;
+    currentState.updateLocalVoiceState({ isMuted: !isMuted });
     DeskThing.triggerAction({ id: DISCORD_ACTIONS.MUTE, value: 'toggle', source: APP_ID });
   },
   deafen: () => {
     DeskThing.debug('Deafening user');
+    useCallStore.getState().updateLocalVoiceState({ isDeafened: true });
     DeskThing.triggerAction({ id: DISCORD_ACTIONS.DEAFEN, value: 'deafen', source: APP_ID });
   },
   undeafen: () => {
     DeskThing.debug('Undeafening user');
+    useCallStore.getState().updateLocalVoiceState({ isDeafened: false });
     DeskThing.triggerAction({ id: DISCORD_ACTIONS.DEAFEN, value: 'undeafen', source: APP_ID });
   },
   toggleDeafen: () => {
     DeskThing.debug('Toggling deafen');
+    const currentState = useCallStore.getState();
+    const isDeafened = currentState.callStatus?.user?.isDeafened ?? false;
+    currentState.updateLocalVoiceState({ isDeafened: !isDeafened });
     DeskThing.triggerAction({ id: DISCORD_ACTIONS.DEAFEN, value: 'toggle', source: APP_ID });
   },
   disconnect: () => {
