@@ -6,25 +6,46 @@ import { useChatStore } from "@src/stores/chatStore";
 import { PanelWrapper } from "./PanelWrapper";
 import ObserverWrapper from "@src/components/ObserverWrapper";
 import { useUIStore } from "@src/stores/uiStore";
+import { ChannelStatus } from "@shared/types/discord";
 
 export const CallStatusPanel = () => {
   const callStatus = useCallStore((state) => state.callStatus);
   const panelDimensions = useUIStore((state) => state.dimensions.panel);
   const guildList = useChatStore((state) => state.guildList);
+  const selectedChannelId = useChatStore((state) => state.selectedChannelId);
   const participants = callStatus?.participants ?? [];
 
   const { guildName, channelName } = useMemo(() => {
-    const channelGuildId = callStatus?.channel?.guild_id;
-    const resolvedGuildName = channelGuildId
-      ? guildList?.guilds.find((guild) => guild.id === channelGuildId)?.name ??
+    const guildChannels =
+      (
+        guildList as (typeof guildList & { channels?: ChannelStatus[] })
+      )?.channels ?? guildList?.textChannels ?? [];
+    const resolvedChannelId =
+      callStatus?.channel?.id ?? callStatus?.channelId ?? selectedChannelId;
+
+    const resolvedChannel =
+      guildChannels.find((channel) => channel.id === resolvedChannelId) ??
+      callStatus?.channel ??
+      null;
+
+    const resolvedGuildId = resolvedChannel?.guild_id ?? callStatus?.channel?.guild_id;
+    const resolvedGuildName = resolvedGuildId
+      ? guildList?.guilds.find((guild) => guild.id === resolvedGuildId)?.name ??
         "Unknown Server"
       : "Direct Message";
 
     return {
       guildName: resolvedGuildName,
-      channelName: callStatus?.channel?.name ?? "Unknown Channel",
+      channelName: resolvedChannel?.name ?? "Unknown Channel",
     };
-  }, [callStatus?.channel?.guild_id, callStatus?.channel?.name, guildList?.guilds]);
+  }, [
+    callStatus?.channel?.guild_id,
+    callStatus?.channel?.id,
+    callStatus?.channel?.name,
+    callStatus?.channelId,
+    guildList,
+    selectedChannelId,
+  ]);
 
   const { participantTileStyle, layoutStyles } = useMemo(() => {
     const minTileSize = 72;
