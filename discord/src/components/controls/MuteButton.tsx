@@ -7,7 +7,12 @@ import { ControlWrapper } from "./ControlWrapper"
 export const MuteButton = () => {
   useInitializeCallStore()
   const toggleMute = useControlStore((state) => state.toggleMute)
-  const isMuted = useCallStore((state) => state.callStatus?.user?.isMuted) || false
+  const { callStatus, isLoading } = useCallStore((state) => ({
+    callStatus: state.callStatus,
+    isLoading: state.isLoading,
+  }))
+  const isMuted = callStatus?.user?.isMuted || false
+  const showLoading = isLoading && !callStatus
 
   return (
     <ControlWrapper
@@ -15,6 +20,7 @@ export const MuteButton = () => {
       iconDisabled={<IconMicOffDiscord className="w-full h-full text-red-500 fill-red-500" />}
       onClick={toggleMute}
       isEnabled={!isMuted}
+      isLoading={showLoading}
     />
   )
 }

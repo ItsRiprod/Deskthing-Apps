@@ -7,7 +7,12 @@ import { ControlWrapper } from "./ControlWrapper"
 export const DeafenButton = () => {
   useInitializeCallStore()
   const toggleDeafen = useControlStore((state) => state.toggleDeafen)
-  const isDeafened = useCallStore((state) => state.callStatus?.user?.isDeafened) || false
+  const { callStatus, isLoading } = useCallStore((state) => ({
+    callStatus: state.callStatus,
+    isLoading: state.isLoading,
+  }))
+  const isDeafened = callStatus?.user?.isDeafened || false
+  const showLoading = isLoading && !callStatus
 
   return (
     <ControlWrapper
@@ -15,6 +20,7 @@ export const DeafenButton = () => {
       iconDisabled={<IconDeafenedDiscord className="w-full h-full text-red-500 fill-red-500" />}
       onClick={toggleDeafen}
       isEnabled={!isDeafened}
+      isLoading={showLoading}
     />
   )
 }

@@ -9,6 +9,10 @@ type CallStoreState = {
   callStatus: CallStatus | null;
   selfUserId: string | null;
   pollingIntervalId: ReturnType<typeof setInterval> | null;
+  updateLocalVoiceState: (update: {
+    isMuted?: boolean;
+    isDeafened?: boolean;
+  }) => void;
   initialize: () => void;
   refreshCallStatus: () => void;
   setCallStatus: (callStatus: CallStatus) => void;
@@ -127,6 +131,73 @@ export const useCallStore = create<CallStoreState>((set, get) => {
     callStatus: null,
     pollingIntervalId: null,
 
+    updateLocalVoiceState: (update) => {
+      set((state) => {
+        if (!state.callStatus) return {};
+
+        const targetUserId = state.callStatus.user?.id ?? state.selfUserId;
+        if (!targetUserId) return {};
+
+        const participantExists = state.callStatus.participants.some(
+          (participant) => participant.id === targetUserId
+        );
+
+        const updatedParticipants = state.callStatus.participants.map(
+          (participant) =>
+            participant.id === targetUserId
+              ? {
+                  ...participant,
+                  ...(update.isMuted !== undefined
+                    ? { isMuted: update.isMuted }
+                    : {}),
+                  ...(update.isDeafened !== undefined
+                    ? { isDeafened: update.isDeafened }
+                    : {}),
+                }
+              : participant
+        );
+
+        const participants = participantExists
+          ? updatedParticipants
+          : [
+              ...updatedParticipants,
+              {
+                id: targetUserId,
+                username:
+                  state.callStatus.user?.username ??
+                  state.callStatus.user?.id ??
+                  targetUserId,
+                profileUrl: state.callStatus.user?.profileUrl,
+                isSpeaking: false,
+                isMuted: update.isMuted ?? false,
+                isDeafened: update.isDeafened ?? false,
+              },
+            ];
+
+        const nextUser =
+          state.callStatus.user && state.callStatus.user.id === targetUserId
+            ? {
+                ...state.callStatus.user,
+                ...(update.isMuted !== undefined
+                  ? { isMuted: update.isMuted }
+                  : {}),
+                ...(update.isDeafened !== undefined
+                  ? { isDeafened: update.isDeafened }
+                  : {}),
+              }
+            : state.callStatus.user;
+
+        return {
+          callStatus: {
+            ...state.callStatus,
+            participants,
+            ...(nextUser ? { user: nextUser } : {}),
+          },
+          selfUserId: targetUserId,
+        };
+      });
+    },
+
     initialize: () => {
       if (get().initialized) return;
       set({ initialized: true });
@@ -215,6 +286,7 @@ export const useCallStore = create<CallStoreState>((set, get) => {
               selfUserId: shouldUpdateUser
                 ? event.payload.userId
                 : state.selfUserId,
+              isLoading: false,
             };
           });
         }
