@@ -148,32 +148,61 @@ export const useCallStore = create<CallStoreState>((set, get) => {
           set((state) => {
             if (!state.callStatus) return {};
 
-            const participants = state.callStatus.participants.map(
+            const payload = event.payload as {
+              userId?: string;
+              username?: string;
+              profileUrl?: string;
+              isSpeaking?: boolean;
+              isMuted?: boolean;
+              isDeafened?: boolean;
+            };
+
+            if (!payload.userId) return {};
+
+            const participantExists = state.callStatus.participants.some(
+              (participant) => participant.id === payload.userId
+            );
+
+            const updatedParticipants = state.callStatus.participants.map(
               (participant) =>
-                participant.id === event.payload.userId
+                participant.id === payload.userId
                   ? {
                       ...participant,
-                      isDeafened: event.payload.isDeafened,
-                      isMuted: event.payload.isMuted,
+                      isDeafened: payload.isDeafened,
+                      isMuted: payload.isMuted,
                     }
                   : participant
             );
 
+            const participants = participantExists
+              ? updatedParticipants
+              : [
+                  ...updatedParticipants,
+                  {
+                    id: payload.userId,
+                    username: payload.username ?? payload.userId,
+                    profileUrl: payload.profileUrl,
+                    isSpeaking: payload.isSpeaking ?? false,
+                    isMuted: payload.isMuted ?? false,
+                    isDeafened: payload.isDeafened ?? false,
+                  },
+                ];
+
             const shouldUpdateUser =
-              state.callStatus.user?.id === event.payload.userId ||
-              state.selfUserId === event.payload.userId;
+              state.callStatus.user?.id === payload.userId ||
+              state.selfUserId === payload.userId;
 
             const nextUser = shouldUpdateUser
               ? state.callStatus.user &&
-                state.callStatus.user.id === event.payload.userId
+                state.callStatus.user.id === payload.userId
                 ? {
                     ...state.callStatus.user,
-                    isDeafened: event.payload.isDeafened,
-                    isMuted: event.payload.isMuted,
+                    isDeafened: payload.isDeafened,
+                    isMuted: payload.isMuted,
                   }
                 :
                   participants.find(
-                    (participant) => participant.id === event.payload.userId
+                    (participant) => participant.id === payload.userId
                   ) ?? state.callStatus.user
               : state.callStatus.user;
 
