@@ -32,6 +32,10 @@ export interface CallStatus {
 export interface CallParticipant {
   id: string;
   profileUrl?: string;
+  /**
+   * Preferred display name (e.g., Discord display name or nick). Falls back to username.
+   */
+  displayName?: string;
   username: string;
   isSpeaking: boolean;
   isMuted: boolean;
