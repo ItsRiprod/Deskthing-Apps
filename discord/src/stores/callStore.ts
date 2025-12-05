@@ -3,6 +3,19 @@ import { CallStatus } from "@shared/types/discord";
 import { createDeskThing } from "@deskthing/client";
 import { DiscordEvents, ToClientTypes, ToServerTypes } from "@shared/types/transit";
 
+let lastCallStatusHash = "";
+
+const hashCallStatus = (status: CallStatus | null) => {
+  if (!status) return "";
+  // Serialize only the fields we care about to avoid noisy updates.
+  return JSON.stringify({
+    isConnected: status.isConnected,
+    channel: status.channel,
+    participants: status.participants,
+    user: status.user,
+  });
+};
+
 type CallStoreState = {
   initialized: boolean;
   isLoading: boolean;
@@ -61,6 +74,12 @@ const normalizeCallStatus = (
         participant.id === resolvedSelfId
           ? {
               ...participant,
+              displayName:
+                participant.displayName ??
+                participantSource?.displayName ??
+                previousParticipant?.displayName ??
+                previousStatus?.user?.displayName ??
+                participant.username,
               isMuted:
                 participantSource.isMuted ?? participant.isMuted,
               isDeafened:
@@ -70,7 +89,13 @@ const normalizeCallStatus = (
       )
     : incomingParticipants;
 
-  const updatedParticipant = participants.find(
+  // Ensure every participant has a displayName fallback.
+  const participantsWithDisplayName = participants.map((participant) => ({
+    ...participant,
+    displayName: participant.displayName ?? participant.username ?? participant.id,
+  }));
+
+  const updatedParticipant = participantsWithDisplayName.find(
     (participant) => participant.id === resolvedSelfId
   );
 
@@ -82,6 +107,12 @@ const normalizeCallStatus = (
     const base = resolvedUser ?? updatedParticipant!;
     return {
       ...base,
+      displayName:
+        base.displayName ??
+        resolvedUser?.displayName ??
+        previousParticipant?.displayName ??
+        previousStatus?.user?.displayName ??
+        base.username,
       isMuted:
         updatedParticipant?.isMuted ??
         resolvedUser?.isMuted ??
@@ -96,7 +127,7 @@ const normalizeCallStatus = (
   return {
     callStatus: {
       ...incoming,
-      participants,
+      participants: participantsWithDisplayName,
       ...(user ? { user } : {}),
     },
     selfUserId: resolvedSelfId,
@@ -168,6 +199,7 @@ export const useCallStore = create<CallStoreState>((set, get) => {
                   state.callStatus.user?.id ??
                   targetUserId,
                 profileUrl: state.callStatus.user?.profileUrl,
+                displayName: state.callStatus.user?.displayName,
                 isSpeaking: false,
                 isMuted: update.isMuted ?? false,
                 isDeafened: update.isDeafened ?? false,
@@ -207,10 +239,17 @@ export const useCallStore = create<CallStoreState>((set, get) => {
 
       // Listen for call status updates
       DeskThing.on(DiscordEvents.CALL, (event) => {
-        if (event.request === "set" && event.payload) {
-          get().setCallStatus(event.payload);
-        } else if (event.request === "update" && event.payload) {
-          get().setTalkingStatus(event.payload.userId, event.payload.isSpeaking);
+        const payload = event.payload as CallStatus | { userId: string; isSpeaking: boolean } | undefined;
+
+        // If we got a full call payload (either "set" or "update" carrying call state), normalize it.
+        if (payload && "isConnected" in payload) {
+          get().setCallStatus(payload as CallStatus);
+          return;
+        }
+
+        // Otherwise treat as a talking status update.
+        if (event.request === "update" && payload && "userId" in payload) {
+          get().setTalkingStatus(payload.userId, (payload as any).isSpeaking);
         }
       });
 
@@ -253,6 +292,7 @@ export const useCallStore = create<CallStoreState>((set, get) => {
                     id: payload.userId,
                     username: payload.username ?? payload.userId,
                     profileUrl: payload.profileUrl,
+                    displayName: (payload as any).displayName ?? payload.username ?? payload.userId,
                     isSpeaking: payload.isSpeaking ?? false,
                     isMuted: payload.isMuted ?? false,
                     isDeafened: payload.isDeafened ?? false,
@@ -287,6 +327,10 @@ export const useCallStore = create<CallStoreState>((set, get) => {
                 ? event.payload.userId
                 : state.selfUserId,
               isLoading: false,
+              // If everyone is gone, clear the call status.
+              ...(participants.length === 0
+                ? { callStatus: null, selfUserId: null }
+                : {}),
             };
           });
         }
@@ -296,14 +340,26 @@ export const useCallStore = create<CallStoreState>((set, get) => {
     },
 
     setCallStatus: (callStatus) => {
-      if (!callStatus.isConnected) {
+      const nextHash = hashCallStatus(callStatus);
+      if (nextHash === lastCallStatusHash) {
+        return;
+      }
+
+      const isDisconnected =
+        callStatus.isConnected === false ||
+        !callStatus.channelId ||
+        (callStatus.participants?.length ?? 0) === 0;
+
+      if (isDisconnected) {
         stopPolling();
+        lastCallStatusHash = "";
         set({ callStatus: null, selfUserId: null, isLoading: false });
         return;
       }
 
       set((state) => {
         const normalized = normalizeCallStatus(callStatus, state);
+        lastCallStatusHash = nextHash;
         return {
           callStatus: normalized.callStatus,
           selfUserId: normalized.selfUserId,
@@ -319,20 +375,33 @@ export const useCallStore = create<CallStoreState>((set, get) => {
         { type: DiscordEvents.GET, request: "call" },
         { type: DiscordEvents.CALL, request: "set" },
         (callStatus) => {
-          if (!callStatus || !callStatus.payload?.isConnected) {
+          const payload = callStatus?.payload;
+
+          const isDisconnected =
+            !payload ||
+            payload.isConnected === false ||
+            !payload.channelId ||
+            (payload.participants?.length ?? 0) === 0;
+
+          if (isDisconnected) {
             stopPolling();
+            lastCallStatusHash = "";
             set({ callStatus: null, selfUserId: null, isLoading: false });
             return;
           }
 
-          set((state) => {
-            const normalized = normalizeCallStatus(callStatus.payload, state);
-            return {
-              callStatus: normalized.callStatus,
-              selfUserId: normalized.selfUserId,
-              isLoading: false,
-            };
-          });
+          const nextHash = hashCallStatus(payload);
+          if (nextHash !== lastCallStatusHash) {
+            set((state) => {
+              const normalized = normalizeCallStatus(payload, state);
+              lastCallStatusHash = nextHash;
+              return {
+                callStatus: normalized.callStatus,
+                selfUserId: normalized.selfUserId,
+                isLoading: false,
+              };
+            });
+          }
 
           startPolling();
         }

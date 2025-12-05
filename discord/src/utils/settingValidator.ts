@@ -14,7 +14,8 @@ export function validateDiscordSettings(obj: AppSettings): asserts obj is Discor
 
   for (const id of requiredIds) {
     if (!(id in obj)) {
-      throw new Error(`Missing setting: ${id}`);
+      // Soft warning; defaults will be applied by uiStore.
+      console.warn(`Missing setting: ${id}`);
     }
   }
 }

@@ -1,6 +1,7 @@
 import { Notification } from '@shared/types/discord';
-import { useState, useEffect, JSX } from 'react';
+import { useState, useEffect, useMemo, JSX } from 'react';
 import { IconX } from '../assets/icons'
+import { DeskThing } from '@deskthing/client';
 
 interface NotificationProps {
   notification: Notification;
@@ -14,6 +15,10 @@ export default function NotificationOverlay({
   autoHideDuration = 10000
 }: NotificationProps): JSX.Element {
   const [isVisible, setIsVisible] = useState(true);
+  const proxiedProfileUrl = useMemo(() => {
+    if (!notification.author.profileUrl) return null;
+    return DeskThing.useProxy(notification.author.profileUrl);
+  }, [notification.author.profileUrl]);
 
   useEffect(() => {
     setIsVisible(true);
@@ -45,9 +50,9 @@ export default function NotificationOverlay({
     >
       <div className="flex w-full items-start rounded-2xl border border-white/5 bg-[#1b1f25]/95 p-5 text-white shadow-2xl shadow-black/60 backdrop-blur">
         <div className="mr-3 flex-shrink-0">
-          {notification.author.profileUrl && (
+          {proxiedProfileUrl && (
             <img
-              src={notification.author.profileUrl}
+              src={proxiedProfileUrl}
               alt={notification.author.username}
               className="h-10 w-10 rounded-full"
             />

@@ -14,6 +14,10 @@ export const ParticipantBox = ({ participant }: ParticipantBoxProps) => {
     if (!participant.profileUrl) return null;
     return DeskThing.useProxy(participant.profileUrl);
   }, [participant.profileUrl, participant.username]);
+  const displayName =
+    participant.displayName?.trim() ||
+    participant.username ||
+    participant.id;
   const activeColor = useUIStore((state) => state.settings?.[AppSettingIDs.SPEAKING_COLOR].value)
 
   const bgColor = useProfileColor(profileUrl)
@@ -46,7 +50,7 @@ export const ParticipantBox = ({ participant }: ParticipantBoxProps) => {
         }}
         className="absolute text-white bottom-2 left-2 text-ellipsis whitespace-nowrap overflow-hidden max-w-[80%] font-semibold text-sm"
       >
-        {participant.username || participant.id}
+        {displayName}
       </p>
       <div  className="absolute flex text-white bottom-2 right-2">
         {participant.isMuted && (
