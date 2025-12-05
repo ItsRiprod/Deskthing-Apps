@@ -1,4 +1,4 @@
-import { SETTING_TYPES, SettingsBoolean, SettingsColor, SettingsMultiSelect, SettingsRanked, SettingsSelect, SettingsString } from "@deskthing/types";
+import { SETTING_TYPES, SettingsBoolean, SettingsColor, SettingsMultiSelect, SettingsNumber, SettingsRanked, SettingsSelect, SettingsString } from "@deskthing/types";
 
 export interface CallStatus {
   channelId: string | null;
@@ -32,6 +32,10 @@ export interface CallStatus {
 export interface CallParticipant {
   id: string;
   profileUrl?: string;
+  /**
+   * Preferred display name (e.g., Discord display name or nick). Falls back to username.
+   */
+  displayName?: string;
   username: string;
   isSpeaking: boolean;
   isMuted: boolean;
@@ -61,8 +65,10 @@ export interface NotificationStatus {
 }
 export interface Notification {
   id: string;
-  title: string
+  title: string;
   channelId: string;
+  channelName?: string;
+  guildName?: string;
   author: {
     id: string;
     username: string;
@@ -93,81 +99,84 @@ export interface GuildListStatus {
 }
 
 export type DMListStatus = {
-  selectedDMId: string | null
-  dms: DMStatus[]
-  channels: ChannelStatus[]
-}
+  selectedDMId: string | null;
+  dms: DMStatus[];
+  channels: ChannelStatus[];
+};
 
 export type DMStatus = {
-  id: string
-}
+  id: string;
+};
 
 export enum DISCORD_ACTIONS {
-  MUTE = 'mute',
-  DEAFEN = 'deafen',
-  DISCONNECT = 'disconnect',
-  REAUTH = 'reauth',
-  REPRESENCE = 'represence',
-  EXPAND_CHAT = 'expandChat',
-  COLLAPSE_CHAT = 'collapseChat',
-  SELECT_TEXT_CHANNEL = 'selectTextChannel',
-  MARK_NOTIFICATION_AS_READ = 'markNotificationAsRead',
-  MARK_ALL_NOTIFICATIONS_AS_READ = 'markAllNotificationsAsRead',
+  MUTE = "mute",
+  DEAFEN = "deafen",
+  DISCONNECT = "disconnect",
+  REAUTH = "reauth",
+  REPRESENCE = "represence",
+  EXPAND_CHAT = "expandChat",
+  COLLAPSE_CHAT = "collapseChat",
+  SELECT_TEXT_CHANNEL = "selectTextChannel",
+  MARK_NOTIFICATION_AS_READ = "markNotificationAsRead",
+  MARK_ALL_NOTIFICATIONS_AS_READ = "markAllNotificationsAsRead",
+  SEND_TEST_NOTIFICATION = "sendTestNotification",
 }
 
 export enum AppSettingIDs {
-    CLIENT_ID = 'client_id',
-    CLIENT_SECRET = 'client_secret',
-    REDIRECT_URL = 'redirect_url',
-    RICH_PRESENCE = 'rich_presence',
-    SET_MAIN_TEXT = 'set_main_text',
-    SET_SECONDARY_TEXT = 'set_secondary_text',
-    HAVE_TIMER = 'have_timer',
-    LEFT_DASHBOARD_PANEL = 'left_dashboard_panel',
-    RIGHT_DASHBOARD_PANEL = 'right_dashboard_panel',
-    DASHBOARD_ELEMENTS = 'dashboard_elements',
-    SCROLL_TO_BOTTOM = 'scroll_to_bottom',
-    CONTROLS_ORDER = 'controls_order',
-    SPEAKING_COLOR = 'speaking_color',
-    CLOCK_OPTIONS = 'clock_options',
-    SONG_OPTIONS = 'song_options'
+  CLIENT_ID = "client_id",
+  CLIENT_SECRET = "client_secret",
+  REDIRECT_URL = "redirect_url",
+  RICH_PRESENCE = "rich_presence",
+  SET_MAIN_TEXT = "set_main_text",
+  SET_SECONDARY_TEXT = "set_secondary_text",
+  HAVE_TIMER = "have_timer",
+  LEFT_DASHBOARD_PANEL = "left_dashboard_panel",
+  RIGHT_DASHBOARD_PANEL = "right_dashboard_panel",
+  DASHBOARD_ELEMENTS = "dashboard_elements",
+  SCROLL_TO_BOTTOM = "scroll_to_bottom",
+  NOTIFICATION_TOASTS = "notification_toasts",
+  NOTIFICATION_TOAST_DURATION_SECONDS = "notification_toast_duration_seconds",
+  CONTROLS_ORDER = "controls_order",
+  SPEAKING_COLOR = "speaking_color",
+  CLOCK_OPTIONS = "clock_options",
+  SONG_OPTIONS = "song_options",
 }
 
 export enum PANEL_ELEMENTS {
-  CALL_STATUS = 'call_status',
-  GUILD_LIST = 'guild_list',
-  CHAT = 'chat',
-  SONG = 'song',
-  CLOCK = 'clock',
-  BLANK = 'blank'
+  CALL_STATUS = "call_status",
+  GUILD_LIST = "guild_list",
+  CHAT = "chat",
+  SONG = "song",
+  CLOCK = "clock",
+  BLANK = "blank",
 }
 
 export enum DASHBOARD_ELEMENTS {
-  MINI_CALL = 'mini_call',
-  CALL_CONTROLS = 'call_controls',
-  NOTIFICATIONS = 'notifications',
-  BG_ALBUM = 'bg_album'
+  MINI_CALL = "mini_call",
+  CALL_CONTROLS = "call_controls",
+  NOTIFICATIONS = "notifications",
+  BG_ALBUM = "bg_album",
 }
 
 export enum CONTROL_OPTIONS {
-  MUTE = 'mute',
-  DEAFEN = 'deafen',
-  DISCONNECT = 'disconnect'
+  MUTE = "mute",
+  DEAFEN = "deafen",
+  DISCONNECT = "disconnect",
 }
 
 export enum CLOCK_OPTIONS {
-  TOP_LEFT = 'top_left',
-  TOP_RIGHT = 'top_right',
-  TOP_CENTER = 'top_center',
-  CUSTOM = 'custom',
-  DISABLED = 'disabled'
+  TOP_LEFT = "top_left",
+  TOP_RIGHT = "top_right",
+  TOP_CENTER = "top_center",
+  CUSTOM = "custom",
+  DISABLED = "disabled",
 }
 
 export enum SONG_CONTROLS {
-  DISABLED = 'disabled',
-  FREE = 'free',
-  TOP = 'top',
-  BOTTOM = 'bottom',
+  DISABLED = "disabled",
+  FREE = "free",
+  TOP = "top",
+  BOTTOM = "bottom",
 }
 
 type SelectSetting = SettingsSelect & {
@@ -187,13 +196,21 @@ type SelectClockOptions = SettingsSelect & {
   id: AppSettingIDs.CLOCK_OPTIONS;
   value: CLOCK_OPTIONS;
   options: { value: CLOCK_OPTIONS; label: string }[];
-}
+};
 
 type SelectSongOptions = SettingsSelect & {
   id: AppSettingIDs.SONG_OPTIONS;
   value: SONG_CONTROLS;
   options: { value: SONG_CONTROLS; label: string }[];
-}
+};
+
+type NotificationToastSetting = SettingsBoolean & {
+  id: AppSettingIDs.NOTIFICATION_TOASTS;
+};
+
+type NotificationToastDurationSetting = SettingsNumber & {
+  id: AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS;
+};
 
 type OrderSettings = SettingsRanked & {
   id: AppSettingIDs.CONTROLS_ORDER;
@@ -209,10 +226,12 @@ export type DiscordSettings = {
   // [AppSettingIDs.SET_MAIN_TEXT]: SettingsString & { id: AppSettingIDs.SET_MAIN_TEXT };
   // [AppSettingIDs.SET_SECONDARY_TEXT]: SettingsString & { id: AppSettingIDs.SET_SECONDARY_TEXT };
   // [AppSettingIDs.HAVE_TIMER]: SettingsBoolean & { id: AppSettingIDs.HAVE_TIMER };
-  [AppSettingIDs.LEFT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.LEFT_DASHBOARD_PANEL, value: PANEL_ELEMENTS };
-  [AppSettingIDs.RIGHT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.RIGHT_DASHBOARD_PANEL, value: PANEL_ELEMENTS };
-  [AppSettingIDs.DASHBOARD_ELEMENTS]: MultiSelectSetting & { id: AppSettingIDs.DASHBOARD_ELEMENTS, value: DASHBOARD_ELEMENTS[]  };
+  [AppSettingIDs.LEFT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.LEFT_DASHBOARD_PANEL; value: PANEL_ELEMENTS };
+  [AppSettingIDs.RIGHT_DASHBOARD_PANEL]: SelectSetting & { id: AppSettingIDs.RIGHT_DASHBOARD_PANEL; value: PANEL_ELEMENTS };
+  [AppSettingIDs.DASHBOARD_ELEMENTS]: MultiSelectSetting & { id: AppSettingIDs.DASHBOARD_ELEMENTS; value: DASHBOARD_ELEMENTS[] };
   [AppSettingIDs.SCROLL_TO_BOTTOM]: SettingsBoolean & { id: AppSettingIDs.SCROLL_TO_BOTTOM };
+  [AppSettingIDs.NOTIFICATION_TOASTS]: NotificationToastSetting & { id: AppSettingIDs.NOTIFICATION_TOASTS };
+  [AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS]: NotificationToastDurationSetting & { id: AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS };
   [AppSettingIDs.CONTROLS_ORDER]: OrderSettings & { id: AppSettingIDs.CONTROLS_ORDER };
   [AppSettingIDs.SPEAKING_COLOR]: SettingsColor & { id: AppSettingIDs.SPEAKING_COLOR };
   [AppSettingIDs.CLOCK_OPTIONS]: SelectClockOptions & { id: AppSettingIDs.CLOCK_OPTIONS };

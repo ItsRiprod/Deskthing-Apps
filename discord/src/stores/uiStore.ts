@@ -37,6 +37,8 @@ type UIStore = {
   song_controls: SONG_CONTROLS;
   widgets: DASHBOARD_ELEMENTS[]
   clock_options: CLOCK_OPTIONS
+  notification_toasts_enabled: boolean
+  notification_toast_duration_seconds: number
 
   dimensions: {
     width: number;
@@ -67,6 +69,12 @@ const DeskThing = createDeskThing<ToClientTypes, ToServerTypes>();
 
 const defaultWidgets: DASHBOARD_ELEMENTS[] = [];
 const baseControlHeight = XL_CONTROLS_ENABLED ? XL_CONTROL_TOTAL_HEIGHT : 75;
+const defaultLeftPanel = PANEL_ELEMENTS.GUILD_LIST;
+const defaultRightPanel = PANEL_ELEMENTS.BLANK;
+const defaultClockOption = CLOCK_OPTIONS.DISABLED;
+const defaultSongControls = SONG_CONTROLS.BOTTOM;
+const defaultToastEnabled = true;
+const defaultToastDuration = 10;
 
 const getInitialDimensions = (): Dimensions => {
   if (typeof window === "undefined") {
@@ -107,6 +115,24 @@ const getInitialDimensions = (): Dimensions => {
   };
 };
 
+let lastSettingsHash = "";
+
+const hashSettings = (settings: AppSettings | DiscordSettings | undefined) => {
+  if (!settings) return "";
+  // Only hash the fields we actually read to avoid noisy updates.
+  const relevant = {
+    clock_options: settings[AppSettingIDs.CLOCK_OPTIONS]?.value,
+    leftPanel: settings[AppSettingIDs.LEFT_DASHBOARD_PANEL]?.value,
+    rightPanel: settings[AppSettingIDs.RIGHT_DASHBOARD_PANEL]?.value,
+    widgets: settings[AppSettingIDs.DASHBOARD_ELEMENTS]?.value,
+    song_controls: settings[AppSettingIDs.SONG_OPTIONS]?.value,
+    notification_toasts_enabled: settings[AppSettingIDs.NOTIFICATION_TOASTS]?.value,
+    notification_toast_duration_seconds:
+      settings[AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS]?.value,
+  };
+  return JSON.stringify(relevant);
+};
+
 export const useUIStore = create<UIStore>((set, get) => ({
   currentPage: "dashboard",
   initialized: false,
@@ -118,6 +144,8 @@ export const useUIStore = create<UIStore>((set, get) => ({
   rightPanel: PANEL_ELEMENTS.BLANK,
   widgets: [...defaultWidgets],
   clock_options: CLOCK_OPTIONS.DISABLED,
+  notification_toasts_enabled: defaultToastEnabled,
+  notification_toast_duration_seconds: defaultToastDuration,
   dimensions: getInitialDimensions(),
 
   initialize: () => {
@@ -134,12 +162,12 @@ export const useUIStore = create<UIStore>((set, get) => ({
       request: 'settings'
     })
 
-    // Listen for settings updates
+    // Listen for settings updates (client channel)
     DeskThing.on(DEVICE_CLIENT.SETTINGS, (event) => {
-      get().setSettings(event.payload)
+      get().setSettings(event.payload);
     });
 
-    // Listen for settings updates
+    // Listen for time updates
     DeskThing.on(DEVICE_CLIENT.TIME, (event) => {
       if (typeof event.payload == 'string') {
         set({ currentTime: event.payload });
@@ -153,17 +181,70 @@ export const useUIStore = create<UIStore>((set, get) => ({
       }
     });
 
-    DeskThing.on(DiscordEvents.SETTINGS, (event) => {
-      get().setSettings(event.payload)
-    });
   },
 
   setSettings: (settings: AppSettings | DiscordSettings | undefined) => {
     try {
 
       if (settings) {
-        validateDiscordSettings(settings);
-        set({ clock_options: settings[AppSettingIDs.CLOCK_OPTIONS].value, isLoading: false, leftPanel: settings[AppSettingIDs.LEFT_DASHBOARD_PANEL].value, rightPanel: settings[AppSettingIDs.RIGHT_DASHBOARD_PANEL].value, widgets: settings[AppSettingIDs.DASHBOARD_ELEMENTS].value, song_controls: settings[AppSettingIDs.SONG_OPTIONS].value, settings: settings as DiscordSettings });
+        // Build a safe settings object by filling missing fields with current state or defaults.
+        const safeSettings = {
+          [AppSettingIDs.CLOCK_OPTIONS]:
+            settings[AppSettingIDs.CLOCK_OPTIONS] ??
+            { value: get().clock_options, id: AppSettingIDs.CLOCK_OPTIONS },
+          [AppSettingIDs.LEFT_DASHBOARD_PANEL]:
+            settings[AppSettingIDs.LEFT_DASHBOARD_PANEL] ??
+            { value: get().leftPanel ?? defaultLeftPanel, id: AppSettingIDs.LEFT_DASHBOARD_PANEL },
+          [AppSettingIDs.RIGHT_DASHBOARD_PANEL]:
+            settings[AppSettingIDs.RIGHT_DASHBOARD_PANEL] ??
+            { value: get().rightPanel ?? defaultRightPanel, id: AppSettingIDs.RIGHT_DASHBOARD_PANEL },
+          [AppSettingIDs.DASHBOARD_ELEMENTS]:
+            settings[AppSettingIDs.DASHBOARD_ELEMENTS] ??
+            { value: get().widgets ?? defaultWidgets, id: AppSettingIDs.DASHBOARD_ELEMENTS },
+          [AppSettingIDs.SONG_OPTIONS]:
+            settings[AppSettingIDs.SONG_OPTIONS] ??
+            { value: get().song_controls ?? defaultSongControls, id: AppSettingIDs.SONG_OPTIONS },
+          [AppSettingIDs.NOTIFICATION_TOASTS]:
+            settings[AppSettingIDs.NOTIFICATION_TOASTS] ??
+            {
+              value: get().notification_toasts_enabled ?? defaultToastEnabled,
+              id: AppSettingIDs.NOTIFICATION_TOASTS,
+            },
+          [AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS]:
+            settings[AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS] ??
+            {
+              value:
+                get().notification_toast_duration_seconds ?? defaultToastDuration,
+              id: AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS,
+            },
+          // Pass through any additional settings untouched.
+          ...settings,
+        } as DiscordSettings;
+
+        // Skip if nothing changed.
+        const nextHash = hashSettings(safeSettings);
+        if (nextHash === lastSettingsHash) return;
+
+        // Validate only after defaults applied so missing fields don't throw.
+        try {
+          validateDiscordSettings(safeSettings);
+        } catch (err) {
+          console.warn("Settings validation warning (filled defaults):", err);
+        }
+
+        set({
+          clock_options: safeSettings[AppSettingIDs.CLOCK_OPTIONS].value,
+          isLoading: false,
+          leftPanel: safeSettings[AppSettingIDs.LEFT_DASHBOARD_PANEL].value,
+          rightPanel: safeSettings[AppSettingIDs.RIGHT_DASHBOARD_PANEL].value,
+          widgets: safeSettings[AppSettingIDs.DASHBOARD_ELEMENTS].value,
+          song_controls: safeSettings[AppSettingIDs.SONG_OPTIONS].value,
+          notification_toasts_enabled: safeSettings[AppSettingIDs.NOTIFICATION_TOASTS].value,
+          notification_toast_duration_seconds:
+            safeSettings[AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS].value,
+          settings: safeSettings as DiscordSettings,
+        });
+        lastSettingsHash = nextHash;
       }
     } catch (error) {
       console.error("Error validating settings:", error);

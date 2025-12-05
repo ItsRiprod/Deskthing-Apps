@@ -1,8 +1,9 @@
 import { DeskThing } from "@deskthing/server";
 import { MessageObject, NotificationCreate, RPCEvents } from "../types/discordApiTypes";
-import { getEncodedImage, ImageType } from "../utils/imageFetch";
+import { getEncodedImage, getImageFromHash, ImageType } from "../utils/imageFetch";
 import { Notification, NotificationStatus } from "../../../shared/types/discord";
 import { DiscordRPCStore } from "./rpcStore";
+import { GuildListManager } from "./guildStore";
 import { EventEmitter } from "node:events"
 
 interface notificationStatusEvents {
@@ -19,17 +20,34 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
   };
   private debounceTimeoutId: NodeJS.Timeout | null = null;
   private rpc: DiscordRPCStore;
+  private guildStore: GuildListManager;
 
-  constructor(rpc: DiscordRPCStore) {
+  constructor(rpc: DiscordRPCStore, guildStore: GuildListManager) {
     super()
     this.rpc = rpc;
+    this.guildStore = guildStore;
     this.setupEventListeners();
+    this.subscribeToNotificationEvents();
   }
 
   private setupEventListeners(): void {
-    this.rpc.on(RPCEvents.NOTIFICATION_CREATE, (notif: NotificationCreate) => {
-      this.addNewNotification(notif);
-    });
+    this.rpc.on(
+      RPCEvents.NOTIFICATION_CREATE,
+      async (notif: NotificationCreate) => {
+        await this.addNewNotification(notif);
+      }
+    );
+  }
+
+  private subscribeToNotificationEvents(): void {
+    this.rpc
+      .subscribe(RPCEvents.NOTIFICATION_CREATE)
+      .catch((error) =>
+        console.error(
+          "Failed to subscribe to notification events:",
+          error
+        )
+      );
   }
 
   public updateClient = () => {
@@ -52,9 +70,32 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
     }, 1000); // update with a second delay
   };
 
-  public async addNewNotificationMessage(message: MessageObject, title: string = "") {
+  public async addNewNotificationMessage(
+    message: MessageObject,
+    title: string = "",
+    context?: { channelName?: string; guildName?: string }
+  ) {
     console.log("Adding new notification message");
     
+    let profileUrl: string | undefined;
+
+    try {
+      profileUrl = await getEncodedImage(
+        message.author?.avatar,
+        ImageType.UserAvatar,
+        message.author.id
+      );
+    } catch (error) {
+      console.error("Failed to fetch avatar image for notification", error);
+      profileUrl = getImageFromHash(
+        message.author.id,
+        ImageType.DefaultUserAvatar,
+        message.author.id
+      );
+    }
+
+    const content = this.formatContentWithDisplayNames(message);
+
     const newNotification: Notification = {
       id: message.id,
       title: title,
@@ -62,15 +103,13 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
       author: {
         id: message.author.id,
         username: message.author.username,
-        profileUrl: await getEncodedImage(
-          message.author?.avatar,
-          ImageType.UserAvatar,
-          message.author.id
-        ),
+        profileUrl,
       },
-      content: message.content,
+      content,
       timestamp: Date.parse(message.timestamp),
       read: false,
+      channelName: context?.channelName,
+      guildName: context?.guildName,
     };
 
     this.currentStatus.notifications.push(newNotification);
@@ -81,13 +120,57 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
     this.debounceUpdateClient();
   }
 
+  private getNotificationContext(channelId: string) {
+    const { guilds, textChannels } = this.guildStore.getStatus();
+    const channel = textChannels.find((c) => c.id === channelId);
+
+    if (!channel) return { channelName: undefined, guildName: undefined };
+
+    const guildName = channel.guild_id
+      ? guilds.find((guild) => guild.id === channel.guild_id)?.name
+      : undefined;
+
+    return { channelName: channel.name, guildName };
+  }
+
+  private formatContentWithDisplayNames(message: MessageObject): string {
+    const mentionMap = new Map(
+      (message.mentions ?? []).map((mention) => [
+        mention.id,
+        mention.global_name ?? mention.username,
+      ])
+    );
+
+    return message.content.replace(/<@!?(\d+)>/g, (match, userId) => {
+      const displayName = mentionMap.get(userId);
+      return displayName ? `@${displayName}` : match;
+    });
+  }
+
   public async addNewNotification(notification: NotificationCreate) {
     // Check if we already have this notification to prevent duplicates
     if (this.currentStatus.notifications.some((n) => n.id === notification.message.id)) {
       return;
     }
 
-    this.addNewNotificationMessage(notification.message, notification.title);
+    const context = this.getNotificationContext(notification.message.channel_id);
+
+    try {
+      await this.addNewNotificationMessage(notification.message, notification.title, context);
+    } catch (error) {
+      console.error(
+        "Failed to add new notification, retrying with fallback avatar",
+        error
+      );
+      await this.addNewNotificationMessage(
+        {
+          ...notification.message,
+          author: { ...notification.message.author, avatar: undefined },
+        },
+        notification.title,
+        context
+      );
+    }
   }
 
   public markNotificationAsRead(notificationId: string) {

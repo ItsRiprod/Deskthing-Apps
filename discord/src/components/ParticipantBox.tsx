@@ -14,6 +14,10 @@ export const ParticipantBox = ({ participant }: ParticipantBoxProps) => {
     if (!participant.profileUrl) return null;
     return DeskThing.useProxy(participant.profileUrl);
   }, [participant.profileUrl, participant.username]);
+  const displayName =
+    participant.displayName?.trim() ||
+    participant.username ||
+    participant.id;
   const activeColor = useUIStore((state) => state.settings?.[AppSettingIDs.SPEAKING_COLOR].value)
 
   const bgColor = useProfileColor(profileUrl)
@@ -31,7 +35,13 @@ export const ParticipantBox = ({ participant }: ParticipantBoxProps) => {
         <img
           src={profileUrl}
           alt={participant.username}
-          className="h-[55%] object-cover rounded-full"
+          style={{
+            maxWidth: "80%",
+            maxHeight: "80%",
+            width: "70%",
+            height: "70%",
+          }}
+          className="object-cover rounded-full"
         />
       )}
       <p
@@ -40,7 +50,7 @@ export const ParticipantBox = ({ participant }: ParticipantBoxProps) => {
         }}
         className="absolute text-white bottom-2 left-2 text-ellipsis whitespace-nowrap overflow-hidden max-w-[80%] font-semibold text-sm"
       >
-        {participant.username || participant.id}
+        {displayName}
       </p>
       <div  className="absolute flex text-white bottom-2 right-2">
         {participant.isMuted && (

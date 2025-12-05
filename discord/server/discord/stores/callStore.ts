@@ -190,12 +190,19 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     const userIndex = this.currentStatus.participants.findIndex(
       (p) => p.id === participant.id
     );
-    if (userIndex !== -1) {
-      this.currentStatus.participants[userIndex] = {
-        ...this.currentStatus.participants[userIndex],
-        ...participant,
-      };
+    if (this.currentStatus.isConnected) {
+      if (userIndex !== -1) {
+        this.currentStatus.participants[userIndex] = {
+          ...this.currentStatus.participants[userIndex],
+          ...participant,
+        };
+      } else {
+        this.currentStatus.participants.push(participant);
+      }
+    } else if (userIndex !== -1) {
+      this.currentStatus.participants.splice(userIndex, 1);
     }
+
     this.emit("update", this.currentStatus);
   }
 
@@ -291,24 +298,31 @@ export class CallStatusManager extends EventEmitter<callStatusEvents> {
     await this.setupChannelSpecificSubscriptions(channel.id);
     this.currentStatus.channelId = channel.id;
     if (channel.voice_states) {
-      for (const voiceState of channel.voice_states) {
-        const participate: CallParticipant = {
-          id: voiceState.user.id,
-          profileUrl: await getEncodedImage(
+      const participants = await Promise.all(
+        channel.voice_states.map(async (voiceState) => {
+          const profileUrl = await getEncodedImage(
             voiceState.user?.avatar,
             ImageType.UserAvatar,
             voiceState.user.id
-          ),
-          username:
-            voiceState?.nick ||
-            voiceState?.user?.username ||
-            voiceState.user.id,
-          isSpeaking: false,
-          isMuted: voiceState.voice_state.mute,
-          isDeafened: voiceState.voice_state.deaf,
-        };
-        this.updateParticipant(participate);
-      }
+          );
+
+          const participant: CallParticipant = {
+            id: voiceState.user.id,
+            profileUrl,
+            username:
+              voiceState?.nick ||
+              voiceState?.user?.username ||
+              voiceState.user.id,
+            isSpeaking: false,
+            isMuted: voiceState.voice_state.mute,
+            isDeafened: voiceState.voice_state.deaf,
+          };
+
+          return participant;
+        })
+      );
+
+      participants.forEach((participant) => this.updateParticipant(participant));
     }
 
     this.currentStatus.channel = {

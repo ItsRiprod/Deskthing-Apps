@@ -4,6 +4,8 @@ import { DeafenButton } from "@src/components/controls/DeafenButton";
 import { EndCallButton } from "@src/components/controls/EndCallButton";
 import { MuteButton } from "@src/components/controls/MuteButton";
 import { useUIStore } from "@src/stores/uiStore";
+import { useCallStore } from "@src/stores/callStore";
+import { useInitializeCallStore } from "@src/hooks/useInitializeCallStore";
 import {
   XL_CONTROL_BUTTON_SIZE,
   XL_CONTROL_FALLBACK_ORDER,
@@ -17,6 +19,16 @@ import {
 } from "@src/constants/xlControls";
 
 export const CallControlsWidget = () => {
+  // Initialize call store once for this widget (avoid per-button init).
+  useInitializeCallStore();
+
+  // Avoid rendering controls until call state has settled; prevents render loops when
+  // call status is flapping or still loading.
+  const callStatus = useCallStore((state) => state.callStatus);
+  const callLoading = useCallStore((state) => state.isLoading);
+  const uiLoading = useUIStore((state) => state.isLoading);
+  const settings = useUIStore((state) => state.settings);
+
   const dimensions = useUIStore((state) => state.dimensions);
   const order = useUIStore((state) => state.settings?.[AppSettingIDs.CONTROLS_ORDER].value);
 
@@ -80,6 +92,17 @@ export const CallControlsWidget = () => {
   const innerWrapperClasses = XL_CONTROLS_ENABLED
     ? "grid grid-cols-3 w-full max-w-6xl mx-auto items-center justify-items-center gap-14 xl:gap-20 px-5 sm:px-8"
     : "flex items-center justify-between space-x-5 p-1";
+
+  // Do not render until both settings and call state are ready.
+  if (
+    uiLoading ||
+    !settings ||
+    callLoading ||
+    !callStatus ||
+    !callStatus.isConnected
+  ) {
+    return null;
+  }
 
   return (
     <div style={containerStyle} className={containerClassName}>

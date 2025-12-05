@@ -158,7 +158,6 @@ export const setupSettings = () => {
       description: "What elements to show on the dashboard?",
       label: "Dashboard Elements",
       value: [
-        DASHBOARD_ELEMENTS.NOTIFICATIONS,
         DASHBOARD_ELEMENTS.CALL_CONTROLS,
       ],
       options: [
@@ -197,6 +196,24 @@ export const setupSettings = () => {
           isValue: PANEL_ELEMENTS.CHAT,
         },
       ],
+    },
+    [AppSettingIDs.NOTIFICATION_TOASTS]: {
+      id: AppSettingIDs.NOTIFICATION_TOASTS,
+      type: SETTING_TYPES.BOOLEAN,
+      version: "0.11.10",
+      description: "Show Discord notifications as DeskThing toasts",
+      label: "Notification Toasts",
+      value: true,
+    },
+    [AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS]: {
+      id: AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS,
+      type: SETTING_TYPES.NUMBER,
+      version: "0.11.14",
+      description: "How long notification toasts stay visible (in seconds)",
+      label: "Notification Toast Duration",
+      value: 10,
+      min: 1,
+      max: 60,
     },
     [AppSettingIDs.CONTROLS_ORDER]: {
       id: AppSettingIDs.CONTROLS_ORDER,
