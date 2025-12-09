@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { AppSettingIDs, CONTROL_OPTIONS } from "@shared/types/discord";
+import { AppSettingIDs, CONTROL_OPTIONS, CONTROL_SIZE } from "@shared/types/discord";
 import { DeafenButton } from "@src/components/controls/DeafenButton";
 import { EndCallButton } from "@src/components/controls/EndCallButton";
 import { MuteButton } from "@src/components/controls/MuteButton";
@@ -7,15 +7,9 @@ import { useUIStore } from "@src/stores/uiStore";
 import { useCallStore } from "@src/stores/callStore";
 import { useInitializeCallStore } from "@src/hooks/useInitializeCallStore";
 import {
-  XL_CONTROL_BUTTON_SIZE,
   XL_CONTROL_FALLBACK_ORDER,
-  XL_CONTROL_MARGIN_BOTTOM,
-  XL_CONTROL_MIN_HEIGHT,
-  XL_CONTROL_INNER_PADDING_Y,
-  XL_CONTROL_PADDING_BOTTOM,
-  XL_CONTROL_PADDING_TOP,
-  XL_CONTROL_TOTAL_HEIGHT,
   XL_CONTROLS_ENABLED,
+  getControlLayout,
 } from "@src/constants/xlControls";
 
 export const CallControlsWidget = () => {
@@ -31,6 +25,11 @@ export const CallControlsWidget = () => {
 
   const dimensions = useUIStore((state) => state.dimensions);
   const order = useUIStore((state) => state.settings?.[AppSettingIDs.CONTROLS_ORDER].value);
+  const controlSizeSetting =
+    (settings?.[AppSettingIDs.CONTROLS_SIZE]?.value as CONTROL_SIZE | undefined) ??
+    CONTROL_SIZE.MEDIUM;
+
+  const controlLayout = getControlLayout(controlSizeSetting);
 
   const controlComponents: Record<CONTROL_OPTIONS, JSX.Element> = {
     [CONTROL_OPTIONS.MUTE]: <MuteButton />,
@@ -55,21 +54,21 @@ export const CallControlsWidget = () => {
   const displayOrder = prioritizedOrder.length ? prioritizedOrder : XL_CONTROL_FALLBACK_ORDER;
 
   const reservedHeight = XL_CONTROLS_ENABLED
-    ? Math.max(dimensions.controls.height, XL_CONTROL_TOTAL_HEIGHT)
+    ? Math.max(dimensions.controls.height, controlLayout.totalHeight)
     : dimensions.controls.height;
 
   const containerStyle: CSSProperties = XL_CONTROLS_ENABLED
     ? {
         minHeight: Math.max(
           reservedHeight -
-            (XL_CONTROL_PADDING_TOP +
-              XL_CONTROL_PADDING_BOTTOM +
-              XL_CONTROL_MARGIN_BOTTOM),
-          XL_CONTROL_MIN_HEIGHT,
+            (controlLayout.paddingTop +
+              controlLayout.paddingBottom +
+              controlLayout.marginBottom),
+          controlLayout.buttonSize,
         ),
-        paddingTop: XL_CONTROL_PADDING_TOP,
-        paddingBottom: XL_CONTROL_PADDING_BOTTOM,
-        marginBottom: XL_CONTROL_MARGIN_BOTTOM,
+        paddingTop: controlLayout.paddingTop,
+        paddingBottom: controlLayout.paddingBottom,
+        marginBottom: controlLayout.marginBottom,
       }
     : {
         height: reservedHeight,
@@ -79,9 +78,11 @@ export const CallControlsWidget = () => {
 
   const innerWrapperStyle: CSSProperties | undefined = XL_CONTROLS_ENABLED
     ? {
-        ["--xl-control-button-size" as const]: `${XL_CONTROL_BUTTON_SIZE}px`,
-        paddingTop: XL_CONTROL_INNER_PADDING_Y,
-        paddingBottom: XL_CONTROL_INNER_PADDING_Y,
+        ["--xl-control-button-size" as const]: `${controlLayout.buttonSize}px`,
+        paddingTop: controlLayout.innerPaddingY,
+        paddingBottom: controlLayout.innerPaddingY,
+        columnGap: controlLayout.gap,
+        rowGap: controlLayout.gap,
       }
     : undefined;
 
@@ -90,7 +91,7 @@ export const CallControlsWidget = () => {
     : "relative z-20 p-2 mb-2";
 
   const innerWrapperClasses = XL_CONTROLS_ENABLED
-    ? "grid grid-cols-3 w-full max-w-6xl mx-auto items-center justify-items-center gap-14 xl:gap-20 px-5 sm:px-8"
+    ? "grid grid-cols-3 w-full max-w-6xl mx-auto items-center justify-items-center px-5 sm:px-8"
     : "flex items-center justify-between space-x-5 p-1";
 
   // Do not render until both settings and call state are ready.

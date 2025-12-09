@@ -140,6 +140,8 @@ export enum AppSettingIDs {
   SPEAKING_COLOR = "speaking_color",
   CLOCK_OPTIONS = "clock_options",
   SONG_OPTIONS = "song_options",
+  CONTROLS_SIZE = "controls_size",
+  CONTROLS_POSITION = "controls_position",
 }
 
 export enum PANEL_ELEMENTS {
@@ -162,6 +164,17 @@ export enum CONTROL_OPTIONS {
   MUTE = "mute",
   DEAFEN = "deafen",
   DISCONNECT = "disconnect",
+}
+
+export enum CONTROL_SIZE {
+  SMALL = "small",
+  MEDIUM = "medium",
+  LARGE = "large",
+}
+
+export enum CONTROL_POSITION {
+  TOP = "top",
+  BOTTOM = "bottom",
 }
 
 export enum CLOCK_OPTIONS {
@@ -218,6 +231,18 @@ type OrderSettings = SettingsRanked & {
   options: { value: CONTROL_OPTIONS; label: string }[];
 };
 
+type SelectControlSize = SettingsSelect & {
+  id: AppSettingIDs.CONTROLS_SIZE;
+  value: CONTROL_SIZE;
+  options: { value: CONTROL_SIZE; label: string }[];
+};
+
+type SelectControlPosition = SettingsSelect & {
+  id: AppSettingIDs.CONTROLS_POSITION;
+  value: CONTROL_POSITION;
+  options: { value: CONTROL_POSITION; label: string }[];
+};
+
 export type DiscordSettings = {
   [AppSettingIDs.CLIENT_ID]: SettingsString & { id: AppSettingIDs.CLIENT_ID };
   [AppSettingIDs.CLIENT_SECRET]: SettingsString & { id: AppSettingIDs.CLIENT_SECRET };
@@ -236,4 +261,6 @@ export type DiscordSettings = {
   [AppSettingIDs.SPEAKING_COLOR]: SettingsColor & { id: AppSettingIDs.SPEAKING_COLOR };
   [AppSettingIDs.CLOCK_OPTIONS]: SelectClockOptions & { id: AppSettingIDs.CLOCK_OPTIONS };
   [AppSettingIDs.SONG_OPTIONS]: SelectSongOptions & { id: AppSettingIDs.SONG_OPTIONS };
+  [AppSettingIDs.CONTROLS_SIZE]?: SelectControlSize & { id: AppSettingIDs.CONTROLS_SIZE };
+  [AppSettingIDs.CONTROLS_POSITION]?: SelectControlPosition & { id: AppSettingIDs.CONTROLS_POSITION };
 };

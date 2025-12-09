@@ -5,12 +5,14 @@ import { AppSettings, DEVICE_CLIENT } from "@deskthing/types";
 import {
   AppSettingIDs,
   CLOCK_OPTIONS,
+  CONTROL_POSITION,
+  CONTROL_SIZE,
   DASHBOARD_ELEMENTS,
   DiscordSettings,
   PANEL_ELEMENTS,
   SONG_CONTROLS,
 } from "@shared/types/discord";
-import { XL_CONTROL_TOTAL_HEIGHT, XL_CONTROLS_ENABLED } from "@src/constants/xlControls";
+import { XL_CONTROLS_ENABLED, getControlLayout } from "@src/constants/xlControls";
 import { validateDiscordSettings } from "@src/utils/settingValidator";
 
 export type Page = "chat" | "browsing" | "call" | "dashboard";
@@ -68,7 +70,11 @@ type UIStore = {
 const DeskThing = createDeskThing<ToClientTypes, ToServerTypes>();
 
 const defaultWidgets: DASHBOARD_ELEMENTS[] = [];
-const baseControlHeight = XL_CONTROLS_ENABLED ? XL_CONTROL_TOTAL_HEIGHT : 75;
+const defaultControlSize = CONTROL_SIZE.MEDIUM;
+const defaultControlPosition = CONTROL_POSITION.TOP;
+const baseControlHeight = XL_CONTROLS_ENABLED
+  ? getControlLayout(defaultControlSize).totalHeight
+  : 75;
 const defaultLeftPanel = PANEL_ELEMENTS.GUILD_LIST;
 const defaultRightPanel = PANEL_ELEMENTS.BLANK;
 const defaultClockOption = CLOCK_OPTIONS.DISABLED;
@@ -124,6 +130,8 @@ const hashSettings = (settings: AppSettings | DiscordSettings | undefined) => {
     clock_options: settings[AppSettingIDs.CLOCK_OPTIONS]?.value,
     leftPanel: settings[AppSettingIDs.LEFT_DASHBOARD_PANEL]?.value,
     rightPanel: settings[AppSettingIDs.RIGHT_DASHBOARD_PANEL]?.value,
+    controls_size: settings[AppSettingIDs.CONTROLS_SIZE]?.value,
+    controls_position: settings[AppSettingIDs.CONTROLS_POSITION]?.value,
     widgets: settings[AppSettingIDs.DASHBOARD_ELEMENTS]?.value,
     song_controls: settings[AppSettingIDs.SONG_OPTIONS]?.value,
     notification_toasts_enabled: settings[AppSettingIDs.NOTIFICATION_TOASTS]?.value,
@@ -204,6 +212,12 @@ export const useUIStore = create<UIStore>((set, get) => ({
           [AppSettingIDs.SONG_OPTIONS]:
             settings[AppSettingIDs.SONG_OPTIONS] ??
             { value: get().song_controls ?? defaultSongControls, id: AppSettingIDs.SONG_OPTIONS },
+          [AppSettingIDs.CONTROLS_SIZE]:
+            settings[AppSettingIDs.CONTROLS_SIZE] ??
+            { value: defaultControlSize, id: AppSettingIDs.CONTROLS_SIZE },
+          [AppSettingIDs.CONTROLS_POSITION]:
+            settings[AppSettingIDs.CONTROLS_POSITION] ??
+            { value: defaultControlPosition, id: AppSettingIDs.CONTROLS_POSITION },
           [AppSettingIDs.NOTIFICATION_TOASTS]:
             settings[AppSettingIDs.NOTIFICATION_TOASTS] ??
             {

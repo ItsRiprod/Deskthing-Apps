@@ -4,6 +4,8 @@ import {
   AppSettingIDs,
   CLOCK_OPTIONS,
   CONTROL_OPTIONS,
+  CONTROL_POSITION,
+  CONTROL_SIZE,
   DASHBOARD_ELEMENTS,
   DiscordSettings,
   PANEL_ELEMENTS,
@@ -219,7 +221,7 @@ export const setupSettings = () => {
       id: AppSettingIDs.CONTROLS_ORDER,
       type: SETTING_TYPES.RANKED,
       version: "0.11.4",
-      description: "The order of the call controls",
+      description: "The order of the call controls (appears only while you're in a call)",
       label: "Call Controls Order",
       value: [CONTROL_OPTIONS.MUTE, CONTROL_OPTIONS.DEAFEN, CONTROL_OPTIONS.DISCONNECT],
       options: [
@@ -235,6 +237,43 @@ export const setupSettings = () => {
           value: CONTROL_OPTIONS.DISCONNECT,
           label: "Disconnect",
         }
+      ],
+      dependsOn: [
+        {
+          settingId: AppSettingIDs.DASHBOARD_ELEMENTS,
+          isValue: DASHBOARD_ELEMENTS.CALL_CONTROLS,
+        }
+      ],
+    },
+    [AppSettingIDs.CONTROLS_SIZE]: {
+      id: AppSettingIDs.CONTROLS_SIZE,
+      type: SETTING_TYPES.SELECT,
+      version: "0.2.0",
+      description: "Size of the call controls widget (only appears while you're in a call)",
+      label: "Call Controls Size",
+      value: CONTROL_SIZE.MEDIUM,
+      options: [
+        { value: CONTROL_SIZE.SMALL, label: "Small" },
+        { value: CONTROL_SIZE.MEDIUM, label: "Medium" },
+        { value: CONTROL_SIZE.LARGE, label: "Large" },
+      ],
+      dependsOn: [
+        {
+          settingId: AppSettingIDs.DASHBOARD_ELEMENTS,
+          isValue: DASHBOARD_ELEMENTS.CALL_CONTROLS,
+        }
+      ],
+    },
+    [AppSettingIDs.CONTROLS_POSITION]: {
+      id: AppSettingIDs.CONTROLS_POSITION,
+      type: SETTING_TYPES.SELECT,
+      version: "0.2.0",
+      description: "Position of the call controls widget (only appears while you're in a call)",
+      label: "Call Controls Position",
+      value: CONTROL_POSITION.TOP,
+      options: [
+        { value: CONTROL_POSITION.TOP, label: "Top" },
+        { value: CONTROL_POSITION.BOTTOM, label: "Bottom" },
       ],
       dependsOn: [
         {
