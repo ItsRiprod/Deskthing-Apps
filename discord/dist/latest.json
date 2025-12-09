@@ -1,26 +1,26 @@
 {
-  "meta_version": "0.11.8",
+  "meta_version": "0.2.0",
   "meta_type": "app",
-  "repository": "https://github.com/bennybrainless/Deskthing-Apps",
-  "icon": "",
-  "size": 632344,
+  "repository": "https://github.com/Riprod/Deskthing-Apps",
+  "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjcuMTQgOTYuMzYiPjxkZWZzPjxzdHlsZT48L3N0eWxlPjwvZGVmcz48Zz48ZyBpZD0iRGlzY29yZF9Mb2dvcyIgZGF0YS1uYW1lPSJEaXNjb3JkIExvZ29zIj48ZyBpZD0iRGlzY29yZF9Mb2dvXy1fTGFyZ2VfLV9XaGl0ZSIgZGF0YS1uYW1lPSJEaXNjb3JkIExvZ28gLSBMYXJnZSAtIFdoaXRlIj48cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xMDcuNyw4LjA3QTEwNS4xNSwxMDUuMTUsMCwwLDAsODEuNDcsMGE3Mi4wNiw3Mi4wNiwwLDAsMC0zLjM2LDYuODNBOTcuNjgsOTcuNjgsMCwwLDAsNDksNi44Myw3Mi4zNyw3Mi4zNywwLDAsMCw0NS42NCwwLDEwNS44OSwxMDUuODksMCwwLDAsMTkuMzksOC4wOUMyLjc5LDMyLjY1LTEuNzEsNTYuNi41NCw4MC4yMWgwQTEwNS43MywxMDUuNzMsMCwwLDAsMzIuNzEsOTYuMzYsNzcuNyw3Ny43LDAsMCwwLDM5LjYsODUuMjVhNjguNDIsNjguNDIsMCwwLDEtMTAuODUtNS4xOGMuOTEtLjY2LDEuOC0xLjM0LDIuNjYtMmE3NS41Nyw3NS41NywwLDAsMCw2NC4zMiwwYy44Ny43MSwxLjc2LDEuMzksMi42NiwyYTY4LjY4LDY4LjY4LDAsMCwxLTEwLjg3LDUuMTksNzcsNzcsMCwwLDAsNi44OSwxMS4xQTEwNS4yNSwxMDUuMjUsMCwwLDAsMTI2LjYsODAuMjJoMEMxMjkuMjQsNTIuODQsMTIyLjA5LDI5LjExLDEwNy43LDguMDdaTTQyLjQ1LDY1LjY5QzM2LjE4LDY1LjY5LDMxLDYwLDMxLDUzczUtMTIuNzQsMTEuNDMtMTIuNzRTNTQsNDYsNTMuODksNTMsNDguODQsNjUuNjksNDIuNDUsNjUuNjlabTQyLjI0LDBDNzguNDEsNjUuNjksNzMuMjUsNjAsNzMuMjUsNTNzNS0xMi43NCwxMS40NC0xMi43NFM5Ni4yMyw0Niw5Ni4xMiw1Myw5MS4wOCw2NS42OSw4NC42OSw2NS42OVoiLz48L2c+PC9nPjwvZz48L3N2Zz4K",
+  "size": 663677,
   "appManifest": {
     "id": "discord-xl-controls",
     "isWebApp": true,
     "requires": [
       ""
     ],
-    "label": "Discord (XL Controls)",
-    "version": "0.11.8-xl6",
-    "description": "The ultimate completely recoded discord app",
-    "author": "Benny (forked from Riprod)",
+    "label": "Discord",
+    "version": "0.2.0",
+    "description": "Discord for DeskThing by Riprod",
+    "author": "Riprod",
     "platforms": [
       "windows",
       "macos",
       "linux"
     ],
-    "homepage": "https://deskthing.app",
-    "repository": "https://github.com/bennybrainless/Deskthing-Apps",
+    "homepage": "https://github.com/Riprod/Deskthing-Apps",
+    "repository": "https://github.com/Riprod/Deskthing-Apps",
     "tags": [
       false,
       false
@@ -29,10 +29,10 @@
       "server": ">=0.11.13",
       "client": ">=0.11.2"
     },
-    "updateUrl": "https://github.com/bennybrainless/Deskthing-Apps/releases/download/discord-xl-controls/discord-v0.11.8-xl6.zip"
+    "updateUrl": "https://github.com/Riprod/Deskthing-Apps/releases/download/discord-xl-controls/discord-v0.2.0.zip"
   },
-  "updateUrl": "https://github.com/bennybrainless/Deskthing-Apps/releases/latest/download/discord-v0.11.8-xl6.zip",
-  "hash": "82098f75855ab0e53a5f5d2f32a941651b1f76053ed1cc1b120f7186bc9ed7c77b137d746cedfe0a65751b7d7f0afa10bbccb7971248b0429e3895f1ed2ba763",
+  "updateUrl": "https://github.com/Riprod/Deskthing-Apps/releases/latest/download/discord-v0.2.0.zip",
+  "hash": "782db1ca152864398eab5b8757a37ae9381a38501b0e01823d3d223ff36c982b249f8c8a2d3ee4f872b283bac69c102cc55f6513346bc137d5ec89b884108be9",
   "hashAlgorithm": "sha512",
   "updatedAt": 1762742895411,
   "createdAt": 1762742895411,

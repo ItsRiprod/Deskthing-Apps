@@ -4,17 +4,17 @@
   "requires": [
     ""
   ],
-  "label": "Discord (XL Controls)",
-  "version": "0.11.8-xl6",
-  "description": "The ultimate completely recoded discord app",
-  "author": "Benny (forked from Riprod)",
+  "label": "Discord",
+  "version": "0.2.0",
+  "description": "Discord for DeskThing by Riprod",
+  "author": "Riprod",
   "platforms": [
     "windows",
     "macos",
     "linux"
   ],
-  "homepage": "https://deskthing.app",
-  "repository": "https://github.com/bennybrainless/Deskthing-Apps",
+  "homepage": "https://github.com/Riprod/Deskthing-Apps",
+  "repository": "https://github.com/Riprod/Deskthing-Apps",
   "tags": [
     false,
     false
@@ -23,5 +23,5 @@
     "server": ">=0.11.13",
     "client": ">=0.11.2"
   },
-  "updateUrl": "https://github.com/bennybrainless/Deskthing-Apps/releases/download/discord-xl-controls/discord-v0.11.8-xl6.zip"
+  "updateUrl": "https://github.com/Riprod/Deskthing-Apps/releases/download/discord-xl-controls/discord-v0.2.0.zip"
 }
