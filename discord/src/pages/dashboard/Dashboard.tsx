@@ -42,6 +42,7 @@ export function Dashboard(): JSX.Element {
   const callControlsPosition =
     (settings?.[AppSettingIDs.CONTROLS_POSITION]?.value as CONTROL_POSITION | undefined) ??
     CONTROL_POSITION.TOP;
+  const panelSplitRatio = useUIStore((state) => state.panel_split_ratio ?? 0.5);
 
   const renderCallControls = widgets.includes(DASHBOARD_ELEMENTS.CALL_CONTROLS);
 
@@ -54,9 +55,37 @@ export function Dashboard(): JSX.Element {
         {renderCallControls && callControlsPosition === CONTROL_POSITION.TOP && (
           <CallControlsWidget />
         )}
-        <div className="flex flex-grow max-h-full overflow-hidden items-center justify-center flex-row-reverse">
-          {showLeft && LeftPanelComponent && <LeftPanelComponent />}
-          {showRight && RightPanelComponent && <RightPanelComponent />}
+        <div className="flex w-full flex-grow h-full max-h-full overflow-hidden items-stretch justify-start gap-[6px] px-0">
+          {showLeft && LeftPanelComponent && (
+            <div
+              className="h-full flex min-w-0"
+              style={
+                showRight
+                  ? {
+                      flex: `0 0 ${panelSplitRatio * 100}%`,
+                      maxWidth: `${panelSplitRatio * 100}%`,
+                    }
+                  : { flex: "1 1 0%", maxWidth: "100%" }
+              }
+            >
+              <LeftPanelComponent />
+            </div>
+          )}
+          {showRight && RightPanelComponent && (
+            <div
+              className="h-full flex min-w-0"
+              style={
+                showLeft
+                  ? {
+                      flex: `1 1 0%`,
+                      maxWidth: `${(1 - panelSplitRatio) * 100}%`,
+                    }
+                  : { flex: "1 1 0%", maxWidth: "100%" }
+              }
+            >
+              <RightPanelComponent />
+            </div>
+          )}
         </div>
         {renderCallControls && callControlsPosition === CONTROL_POSITION.BOTTOM && (
           <CallControlsWidget />

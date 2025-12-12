@@ -1,9 +1,9 @@
 {
-  "meta_version": "0.2.0",
+  "meta_version": "0.11.8",
   "meta_type": "app",
   "repository": "https://github.com/Riprod/Deskthing-Apps",
-  "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjcuMTQgOTYuMzYiPjxkZWZzPjxzdHlsZT48L3N0eWxlPjwvZGVmcz48Zz48ZyBpZD0iRGlzY29yZF9Mb2dvcyIgZGF0YS1uYW1lPSJEaXNjb3JkIExvZ29zIj48ZyBpZD0iRGlzY29yZF9Mb2dvXy1fTGFyZ2VfLV9XaGl0ZSIgZGF0YS1uYW1lPSJEaXNjb3JkIExvZ28gLSBMYXJnZSAtIFdoaXRlIj48cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xMDcuNyw4LjA3QTEwNS4xNSwxMDUuMTUsMCwwLDAsODEuNDcsMGE3Mi4wNiw3Mi4wNiwwLDAsMC0zLjM2LDYuODNBOTcuNjgsOTcuNjgsMCwwLDAsNDksNi44Myw3Mi4zNyw3Mi4zNywwLDAsMCw0NS42NCwwLDEwNS44OSwxMDUuODksMCwwLDAsMTkuMzksOC4wOUMyLjc5LDMyLjY1LTEuNzEsNTYuNi41NCw4MC4yMWgwQTEwNS43MywxMDUuNzMsMCwwLDAsMzIuNzEsOTYuMzYsNzcuNyw3Ny43LDAsMCwwLDM5LjYsODUuMjVhNjguNDIsNjguNDIsMCwwLDEtMTAuODUtNS4xOGMuOTEtLjY2LDEuOC0xLjM0LDIuNjYtMmE3NS41Nyw3NS41NywwLDAsMCw2NC4zMiwwYy44Ny43MSwxLjc2LDEuMzksMi42NiwyYTY4LjY4LDY4LjY4LDAsMCwxLTEwLjg3LDUuMTksNzcsNzcsMCwwLDAsNi44OSwxMS4xQTEwNS4yNSwxMDUuMjUsMCwwLDAsMTI2LjYsODAuMjJoMEMxMjkuMjQsNTIuODQsMTIyLjA5LDI5LjExLDEwNy43LDguMDdaTTQyLjQ1LDY1LjY5QzM2LjE4LDY1LjY5LDMxLDYwLDMxLDUzczUtMTIuNzQsMTEuNDMtMTIuNzRTNTQsNDYsNTMuODksNTMsNDguODQsNjUuNjksNDIuNDUsNjUuNjlabTQyLjI0LDBDNzguNDEsNjUuNjksNzMuMjUsNjAsNzMuMjUsNTNzNS0xMi43NCwxMS40NC0xMi43NFM5Ni4yMyw0Niw5Ni4xMiw1Myw5MS4wOCw2NS42OSw4NC42OSw2NS42OVoiLz48L2c+PC9nPjwvZz48L3N2Zz4K",
-  "size": 663677,
+  "icon": "",
+  "size": 668570,
   "appManifest": {
     "id": "discord-xl-controls",
     "isWebApp": true,
@@ -32,9 +32,9 @@
     "updateUrl": "https://github.com/Riprod/Deskthing-Apps/releases/download/discord-xl-controls/discord-v0.2.0.zip"
   },
   "updateUrl": "https://github.com/Riprod/Deskthing-Apps/releases/latest/download/discord-v0.2.0.zip",
-  "hash": "782db1ca152864398eab5b8757a37ae9381a38501b0e01823d3d223ff36c982b249f8c8a2d3ee4f872b283bac69c102cc55f6513346bc137d5ec89b884108be9",
+  "hash": "c616a1789a1eaad8c94571460e52398b6a523a12769a7e02aa35b1744e7ed6e0b09d0d11ae7b3965ed42f6ad6f4686f29e80e78cdc41e44abe38e27d7a24ba2e",
   "hashAlgorithm": "sha512",
-  "updatedAt": 1762742895411,
-  "createdAt": 1762742895411,
+  "updatedAt": 1765501901654,
+  "createdAt": 1765501901654,
   "downloads": 0
 }

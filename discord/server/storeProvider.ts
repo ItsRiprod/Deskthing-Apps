@@ -35,6 +35,11 @@ export class StoreProvider {
     this.notificationStatus = new NotificationStatusManager(this.rpc, this.guildList);
     this.richPresence = new RichPresence(this.rpc);
     this.deskthingStore = new DeskthingStore(this.callStatus, this.chatStatus, this.guildList, this.notificationStatus, this.callControls);
+
+    // Keep call status in sync with explicit disconnects
+    this.callControls.on("disconnected", () => {
+      this.callStatus.clearStatus();
+    });
   }
 
   

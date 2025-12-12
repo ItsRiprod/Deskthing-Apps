@@ -12,6 +12,14 @@ import { CallParticipant } from "../../../shared/types/discord";
 import { getEncodedImage, ImageType } from "../utils/imageFetch";
 import { EventEmitter } from "node:events";
 
+const rpcLog = (...args: any[]) => {
+  if ((DeskThing as any)?.debug) {
+    (DeskThing as any).debug(...args);
+  } else {
+    console.log(...args);
+  }
+};
+
 type RPCEventTypes = {
   [RPCEvents.READY]: { user: User | undefined };
   [RPCEvents.ERROR]: { code: number; message: string };
@@ -147,6 +155,12 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
             this.rpcClient.user.id
           ),
           username: this.rpcClient.user.username || this.rpcClient.user.id,
+          displayName:
+            // Prefer per-guild display name if available on the user object.
+            (this.rpcClient.user as any)?.nick ||
+            (this.rpcClient.user as any)?.global_name ||
+            this.rpcClient.user.username ||
+            this.rpcClient.user.id,
           isDeafened: voiceSettings.deaf,
           isMuted: voiceSettings.deaf || voiceSettings.mute,
           isSpeaking: false,
@@ -458,8 +472,14 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
   async selectVoiceChannel(channelId: string | undefined): Promise<void> {
     try {
       this.ensureConnected();
-      console.log(`Selecting voice channel: ${channelId}`);
-      await this.rpcClient!.selectVoiceChannel(channelId as string);
+      rpcLog(`Selecting voice channel: ${channelId}`);
+      // Discord RPC expects null to clear; undefined is ignored. Always pass null when falsy.
+      const target = channelId || null;
+      await this.rpcClient!.selectVoiceChannel(target as any);
+      if (!target) {
+        // Proactively emit a clear event so downstream state resets immediately.
+        this.emit(RPCEvents.VOICE_CHANNEL_SELECT, { channel_id: null, guild_id: null });
+      }
     } catch (error) {
       console.error(`Error selecting voice channel: ${error}`);
       throw error;

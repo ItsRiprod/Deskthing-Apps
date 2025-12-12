@@ -94,7 +94,14 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
       );
     }
 
-    const content = this.formatContentWithDisplayNames(message);
+    const mediaUrls = this.collectMediaUrls(message);
+    const resolvedContent = this.formatContentWithDisplayNames(message);
+    const trimmed = resolvedContent.trim();
+    const isSingleUrl =
+      trimmed.startsWith("http") && trimmed.split(/\s+/).length === 1;
+    const isPlaceholder = /^attachments?$/i.test(trimmed);
+    const content =
+      mediaUrls.length && (isSingleUrl || isPlaceholder) ? "" : resolvedContent;
 
     const newNotification: Notification = {
       id: message.id,
@@ -106,6 +113,7 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
         profileUrl,
       },
       content,
+      mediaUrls,
       timestamp: Date.parse(message.timestamp),
       read: false,
       channelName: context?.channelName,
@@ -141,10 +149,42 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
       ])
     );
 
-    return message.content.replace(/<@!?(\d+)>/g, (match, userId) => {
+    return (message.content || "").replace(/<@!?(\d+)>/g, (match, userId) => {
       const displayName = mentionMap.get(userId);
       return displayName ? `@${displayName}` : match;
     });
+  }
+
+  private collectMediaUrls(message: MessageObject): string[] {
+    const urls: string[] = [];
+    const attachments = message.attachments ?? [];
+    attachments.forEach((att) => {
+      const isImage =
+        (att.content_type?.startsWith("image/") ?? false) ||
+        att.filename?.toLowerCase().match(/\.(png|jpg|jpeg|gif|webp)$/);
+      if (isImage && att.url) {
+        urls.push(att.url);
+      }
+    });
+
+    const embeds = message.embeds ?? [];
+    embeds.forEach((embed) => {
+      const url = embed.image?.url || embed.thumbnail?.url;
+      if (url) urls.push(url);
+    });
+
+    const trimmed = (message.content || "").trim();
+    const urlOnly =
+      trimmed &&
+      trimmed.split(/\s+/).length === 1 &&
+      trimmed.match(
+        /(https?:\/\/\S+\.(?:png|jpe?g|gif|webp)(\?\S*)?$)|(https?:\/\/tenor\.com\/\S+)/i
+      );
+    if (urlOnly) {
+      urls.push(trimmed);
+    }
+
+    return urls;
   }
 
   public async addNewNotification(notification: NotificationCreate) {

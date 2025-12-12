@@ -64,6 +64,13 @@ export const useControlStore = create<ControlStore>(() => ({
   disconnect: () => {
     DeskThing.debug('Disconnecting');
     DeskThing.triggerAction({ id: DISCORD_ACTIONS.DISCONNECT, source: APP_ID });
+    // Optimistically clear local call state so UI reflects the disconnect immediately
+    useCallStore.getState().setCallStatus({
+      channelId: null,
+      participants: [],
+      isConnected: false,
+      timestamp: Date.now(),
+    });
   },
   reauthorize: () => {
     DeskThing.debug('Reauthorizing');

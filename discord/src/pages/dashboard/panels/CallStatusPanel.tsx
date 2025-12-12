@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { ParticipantBox } from "@src/components/ParticipantBox";
 import { useCallStore } from "@src/stores/callStore";
@@ -6,16 +6,23 @@ import { useChatStore } from "@src/stores/chatStore";
 import { PanelWrapper } from "./PanelWrapper";
 import ObserverWrapper from "@src/components/ObserverWrapper";
 import { useUIStore } from "@src/stores/uiStore";
-import { ChannelStatus } from "@shared/types/discord";
+import { ChannelStatus, AppSettingIDs } from "@shared/types/discord";
 
 export const CallStatusPanel = () => {
   const callStatus = useCallStore((state) => state.callStatus);
-  const panelDimensions = useUIStore((state) => state.dimensions.panel);
+  const refreshCallStatus = useCallStore((state) => state.refreshCallStatus);
   const guildList = useChatStore((state) => state.guildList);
   const selectedChannelId = useChatStore((state) => state.selectedChannelId);
   const refreshGuildList = useChatStore((state) => state.getGuildList);
   const participants = callStatus?.participants ?? [];
   const isInCall = !!callStatus?.isConnected;
+  const panelDimensions = useUIStore((s) => s.dimensions.panel);
+  const settings = useUIStore((s) => s.settings);
+  const showRefreshButton =
+    settings?.[AppSettingIDs.CALL_REFRESH_BUTTON]?.value ?? false;
+  const [refreshing, setRefreshing] = useState(false);
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
 
   const { guildName, channelName, resolvedGuildId } = useMemo(() => {
     const guildChannels =
@@ -37,7 +44,7 @@ export const CallStatusPanel = () => {
         (callStatus?.channel as any)?.guild_name ??
         resolvedGuildId ??
         "Unknown Server"
-      : "Direct Message";
+      : null;
 
     return {
       guildName: resolvedGuildName,
@@ -59,63 +66,92 @@ export const CallStatusPanel = () => {
     }
   }, [resolvedGuildId, guildList, refreshGuildList]);
 
-  const { participantTileStyle, layoutStyles } = useMemo(() => {
-    const minTileSize = 72;
-    const gap = 24; // gap-6
-    const horizontalPadding = 48; // approximate padding from p-4/md:p-6
-    const verticalPadding = 48;
-    const headerHeight = 64; // approximate height of the header block including padding/border
+  useLayoutEffect(() => {
+    if (headerRef.current) {
+      setHeaderHeight(headerRef.current.offsetHeight);
+    } else {
+      setHeaderHeight(0);
+    }
+  }, [isInCall, participants.length]);
 
-    const count = participants.length || 1;
-    const columns = Math.min(count, Math.max(1, Math.ceil(Math.sqrt(count))));
-    const rows = Math.max(1, Math.ceil(count / columns));
+  const participantCount = participants.length;
 
-    const availableWidth = Math.max(panelDimensions.width - horizontalPadding, minTileSize);
-    const availableHeight = Math.max(
-      panelDimensions.height - verticalPadding - headerHeight,
-      minTileSize,
-    );
+  // Layout logic: choose as many columns as fit with a minimum tile size, and wrap to new rows.
+  const minCell = 90;
+  const maxCell = 150;
+  const gap = 12;
+  const paddingX = 24;
+  const paddingY = 24;
 
-    const sizeByWidth = Math.floor((availableWidth - gap * (columns - 1)) / columns);
-    const sizeByHeight = Math.floor((availableHeight - gap * (rows - 1)) / rows);
+  const widthForGrid = Math.max(panelDimensions.width - paddingX * 2, minCell);
+  const estColumns = Math.max(
+    1,
+    Math.floor((widthForGrid + gap) / (minCell + gap))
+  );
+  const columns = Math.max(1, Math.min(estColumns, Math.max(1, participantCount)));
+  const rows = Math.max(1, Math.ceil(participantCount / columns));
 
-    const computedSize = Math.max(minTileSize, Math.min(sizeByWidth, sizeByHeight));
+  const availableWidth = Math.max(
+    widthForGrid - gap * (columns - 1),
+    minCell
+  );
+  const availableHeight = Math.max(
+    panelDimensions.height - headerHeight - paddingY * 2 - gap * (rows - 1),
+    minCell
+  );
 
-    const availableTileHeight = Math.max(
-      minTileSize,
-      Math.floor((availableHeight - gap * (rows - 1)) / rows),
-    );
+  const idealSize = Math.min(availableWidth / columns, availableHeight / rows);
+  const cellSize = Math.min(Math.max(idealSize, minCell), maxCell);
+  const allowScroll = participantCount > rows * columns;
 
-    const normalizedSize = Math.max(
-      minTileSize,
-      Math.min(computedSize, availableTileHeight),
-    );
-
-    const tileStyle: CSSProperties = {
-      width: normalizedSize,
-      height: normalizedSize,
-    };
-
-    const wrapperStyle: CSSProperties = {
-      gridTemplateColumns: `repeat(${columns}, minmax(${normalizedSize}px, 1fr))`,
-      gridAutoRows: normalizedSize,
-      gap,
-    };
-
-    return { participantTileStyle: tileStyle, layoutStyles: wrapperStyle };
-  }, [panelDimensions.height, panelDimensions.width, participants.length]);
+  const gridStyles: CSSProperties = {
+    gridTemplateColumns: `repeat(${columns}, minmax(${cellSize}px, 1fr))`,
+    gridAutoRows: `${cellSize}px`,
+    gap,
+    padding: "16px 18px",
+    alignContent: "center",
+    justifyItems: "center",
+    overflowY: allowScroll ? "auto" : "hidden",
+  };
 
   return (
-    <div className="relative z-0 flex w-full justify-center px-4">
-      <PanelWrapper scrollable={false}>
+    <div className="relative z-0 flex w-full h-full">
+      <PanelWrapper scrollable={allowScroll}>
         <div className="w-full h-full flex flex-col">
           {isInCall && (
-            <div className="px-4 md:px-6 pt-3 md:pt-4 pb-2 border-b border-neutral-800">
-              <div className="flex items-center gap-2 text-sm text-neutral-200">
-                <span className="font-semibold text-neutral-100">{guildName}</span>
-                <span className="text-neutral-500">|</span>
-                <span className="text-neutral-300">{channelName}</span>
+            <div
+              ref={headerRef}
+              className="px-4 md:px-6 pt-3 md:pt-4 pb-2 border-b border-neutral-800 flex items-center justify-between gap-3"
+            >
+              <div className="flex items-center gap-2 text-sm text-neutral-200 min-w-0">
+                {guildName ? (
+                  <>
+                    <span className="font-semibold text-neutral-100">{guildName}</span>
+                    <span className="text-neutral-500">|</span>
+                    <span className="text-neutral-300">{channelName}</span>
+                  </>
+                ) : (
+                  <span className="text-neutral-300">{channelName}</span>
+                )}
               </div>
+              {showRefreshButton && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (refreshing) return;
+                    setRefreshing(true);
+                    refreshCallStatus();
+                    setTimeout(() => setRefreshing(false), 1200);
+                  }}
+                  className={`shrink-0 text-xs font-semibold px-3 py-1 rounded-md border transition-colors ${
+                    refreshing
+                      ? "text-neutral-300 bg-neutral-700 border-neutral-600 cursor-wait"
+                      : "text-neutral-100 bg-neutral-800/80 hover:bg-neutral-700 border-neutral-700"
+                  }`}
+                >
+                  {refreshing ? "Refreshing..." : "Refresh"}
+                </button>
+              )}
             </div>
           )}
           <div className="flex-1">
@@ -142,14 +178,14 @@ export const CallStatusPanel = () => {
               </div>
             ) : participants.length > 0 ? (
               <div
-                style={layoutStyles}
-                className="grid items-center justify-items-center p-4 md:p-6"
+                className="grid items-center justify-items-center w-full h-full"
+                style={gridStyles}
               >
                 {participants.map((participant) => (
                   <ObserverWrapper
                     key={participant.id}
-                    className="p-2 flex items-center justify-center"
-                    style={participantTileStyle}
+                    className="flex items-center justify-center w-full h-full"
+                    style={{ width: "100%", height: "100%" }}
                   >
                     <ParticipantBox participant={participant} />
                   </ObserverWrapper>

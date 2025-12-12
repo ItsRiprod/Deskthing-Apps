@@ -45,8 +45,13 @@ export interface CallParticipant {
 export interface ChatMessage {
   id: string;
   content: string;
+  mediaUrls?: string[];
   author: {
     id: string;
+    /**
+     * Preferred display name (Discord display name or nick). Falls back to username.
+     */
+    displayName?: string;
     username: string;
     profileUrl?: string;
   };
@@ -75,6 +80,7 @@ export interface Notification {
     profileUrl?: string;
   };
   content: string;
+   mediaUrls?: string[];
   timestamp: number;
   read: boolean;
 }
@@ -140,8 +146,13 @@ export enum AppSettingIDs {
   SPEAKING_COLOR = "speaking_color",
   CLOCK_OPTIONS = "clock_options",
   SONG_OPTIONS = "song_options",
+  PANEL_SPLIT_RATIO = "panel_split_ratio",
   CONTROLS_SIZE = "controls_size",
   CONTROLS_POSITION = "controls_position",
+  CHAT_USERNAME_FONT_SIZE = "chat_username_font_size",
+  CHAT_TIMESTAMP_FONT_SIZE = "chat_timestamp_font_size",
+  CHAT_MESSAGE_FONT_SIZE = "chat_message_font_size",
+  CALL_REFRESH_BUTTON = "call_refresh_button",
 }
 
 export enum PANEL_ELEMENTS {
@@ -243,6 +254,17 @@ type SelectControlPosition = SettingsSelect & {
   options: { value: CONTROL_POSITION; label: string }[];
 };
 
+type PanelSplitSetting = SettingsNumber & {
+  id: AppSettingIDs.PANEL_SPLIT_RATIO;
+};
+
+type ChatFontSizeSetting = SettingsNumber & {
+  id:
+    | AppSettingIDs.CHAT_USERNAME_FONT_SIZE
+    | AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE
+    | AppSettingIDs.CHAT_MESSAGE_FONT_SIZE;
+};
+
 export type DiscordSettings = {
   [AppSettingIDs.CLIENT_ID]: SettingsString & { id: AppSettingIDs.CLIENT_ID };
   [AppSettingIDs.CLIENT_SECRET]: SettingsString & { id: AppSettingIDs.CLIENT_SECRET };
@@ -263,4 +285,8 @@ export type DiscordSettings = {
   [AppSettingIDs.SONG_OPTIONS]: SelectSongOptions & { id: AppSettingIDs.SONG_OPTIONS };
   [AppSettingIDs.CONTROLS_SIZE]?: SelectControlSize & { id: AppSettingIDs.CONTROLS_SIZE };
   [AppSettingIDs.CONTROLS_POSITION]?: SelectControlPosition & { id: AppSettingIDs.CONTROLS_POSITION };
+  [AppSettingIDs.PANEL_SPLIT_RATIO]?: PanelSplitSetting & { id: AppSettingIDs.PANEL_SPLIT_RATIO };
+  [AppSettingIDs.CHAT_USERNAME_FONT_SIZE]?: ChatFontSizeSetting & { id: AppSettingIDs.CHAT_USERNAME_FONT_SIZE };
+  [AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE]?: ChatFontSizeSetting & { id: AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE };
+  [AppSettingIDs.CHAT_MESSAGE_FONT_SIZE]?: ChatFontSizeSetting & { id: AppSettingIDs.CHAT_MESSAGE_FONT_SIZE };
 };

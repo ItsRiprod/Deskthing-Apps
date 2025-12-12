@@ -41,6 +41,7 @@ type UIStore = {
   clock_options: CLOCK_OPTIONS
   notification_toasts_enabled: boolean
   notification_toast_duration_seconds: number
+  panel_split_ratio: number
 
   dimensions: {
     width: number;
@@ -81,6 +82,11 @@ const defaultClockOption = CLOCK_OPTIONS.DISABLED;
 const defaultSongControls = SONG_CONTROLS.BOTTOM;
 const defaultToastEnabled = true;
 const defaultToastDuration = 10;
+const defaultPanelSplitRatio = 0.5; // normalized fraction used internally
+const defaultPanelSplitSettingValue = 50; // percent displayed in settings
+const defaultChatUsernameFont = 17;
+const defaultChatTimestampFont = 17;
+const defaultChatMessageFont = 19;
 
 const getInitialDimensions = (): Dimensions => {
   if (typeof window === "undefined") {
@@ -130,8 +136,12 @@ const hashSettings = (settings: AppSettings | DiscordSettings | undefined) => {
     clock_options: settings[AppSettingIDs.CLOCK_OPTIONS]?.value,
     leftPanel: settings[AppSettingIDs.LEFT_DASHBOARD_PANEL]?.value,
     rightPanel: settings[AppSettingIDs.RIGHT_DASHBOARD_PANEL]?.value,
+    panel_split_ratio: settings[AppSettingIDs.PANEL_SPLIT_RATIO]?.value,
     controls_size: settings[AppSettingIDs.CONTROLS_SIZE]?.value,
     controls_position: settings[AppSettingIDs.CONTROLS_POSITION]?.value,
+    chat_username_font_size: settings[AppSettingIDs.CHAT_USERNAME_FONT_SIZE]?.value,
+    chat_timestamp_font_size: settings[AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE]?.value,
+    chat_message_font_size: settings[AppSettingIDs.CHAT_MESSAGE_FONT_SIZE]?.value,
     widgets: settings[AppSettingIDs.DASHBOARD_ELEMENTS]?.value,
     song_controls: settings[AppSettingIDs.SONG_OPTIONS]?.value,
     notification_toasts_enabled: settings[AppSettingIDs.NOTIFICATION_TOASTS]?.value,
@@ -154,6 +164,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   clock_options: CLOCK_OPTIONS.DISABLED,
   notification_toasts_enabled: defaultToastEnabled,
   notification_toast_duration_seconds: defaultToastDuration,
+  panel_split_ratio: defaultPanelSplitRatio,
   dimensions: getInitialDimensions(),
 
   initialize: () => {
@@ -212,12 +223,24 @@ export const useUIStore = create<UIStore>((set, get) => ({
           [AppSettingIDs.SONG_OPTIONS]:
             settings[AppSettingIDs.SONG_OPTIONS] ??
             { value: get().song_controls ?? defaultSongControls, id: AppSettingIDs.SONG_OPTIONS },
+          [AppSettingIDs.PANEL_SPLIT_RATIO]:
+            settings[AppSettingIDs.PANEL_SPLIT_RATIO] ??
+            { value: defaultPanelSplitSettingValue, id: AppSettingIDs.PANEL_SPLIT_RATIO },
           [AppSettingIDs.CONTROLS_SIZE]:
             settings[AppSettingIDs.CONTROLS_SIZE] ??
             { value: defaultControlSize, id: AppSettingIDs.CONTROLS_SIZE },
           [AppSettingIDs.CONTROLS_POSITION]:
             settings[AppSettingIDs.CONTROLS_POSITION] ??
             { value: defaultControlPosition, id: AppSettingIDs.CONTROLS_POSITION },
+          [AppSettingIDs.CHAT_USERNAME_FONT_SIZE]:
+            settings[AppSettingIDs.CHAT_USERNAME_FONT_SIZE] ??
+            { value: defaultChatUsernameFont, id: AppSettingIDs.CHAT_USERNAME_FONT_SIZE },
+          [AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE]:
+            settings[AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE] ??
+            { value: defaultChatTimestampFont, id: AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE },
+          [AppSettingIDs.CHAT_MESSAGE_FONT_SIZE]:
+            settings[AppSettingIDs.CHAT_MESSAGE_FONT_SIZE] ??
+            { value: defaultChatMessageFont, id: AppSettingIDs.CHAT_MESSAGE_FONT_SIZE },
           [AppSettingIDs.NOTIFICATION_TOASTS]:
             settings[AppSettingIDs.NOTIFICATION_TOASTS] ??
             {
@@ -253,6 +276,15 @@ export const useUIStore = create<UIStore>((set, get) => ({
           rightPanel: safeSettings[AppSettingIDs.RIGHT_DASHBOARD_PANEL].value,
           widgets: safeSettings[AppSettingIDs.DASHBOARD_ELEMENTS].value,
           song_controls: safeSettings[AppSettingIDs.SONG_OPTIONS].value,
+          panel_split_ratio: Math.min(
+            Math.max(
+              (safeSettings[AppSettingIDs.PANEL_SPLIT_RATIO].value as number) > 1
+                ? (safeSettings[AppSettingIDs.PANEL_SPLIT_RATIO].value as number) / 100
+                : (safeSettings[AppSettingIDs.PANEL_SPLIT_RATIO].value as number),
+              0.2,
+            ),
+            0.8,
+          ),
           notification_toasts_enabled: safeSettings[AppSettingIDs.NOTIFICATION_TOASTS].value,
           notification_toast_duration_seconds:
             safeSettings[AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS].value,

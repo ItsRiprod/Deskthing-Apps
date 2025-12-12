@@ -20,6 +20,17 @@ import {
 
 const DeskThing = createDeskThing<ToServerTypes, ToClientTypes>();
 
+const fontSizeSetting = (id: AppSettingIDs, label: string, value: number) => ({
+  id,
+  type: SETTING_TYPES.NUMBER,
+  version: "0.2.0",
+  description: `${label} font size (px)`,
+  label,
+  value,
+  min: 10,
+  max: 28,
+});
+
 export const setupSettings = () => {
   const discordSettings: DiscordSettings = {
     [AppSettingIDs.CLIENT_ID]: {
@@ -369,6 +380,40 @@ export const setupSettings = () => {
           isValue: PANEL_ELEMENTS.SONG,
         },
       ]
+    },
+    [AppSettingIDs.PANEL_SPLIT_RATIO]: {
+      id: AppSettingIDs.PANEL_SPLIT_RATIO,
+      type: SETTING_TYPES.NUMBER,
+      version: "0.2.1",
+      description: "How much space the left panel takes (only applies while both panels are shown)",
+      label: "Panel Split Ratio (%)",
+      value: 50,
+      min: 20,
+      max: 80,
+      step: 1,
+    },
+    [AppSettingIDs.CHAT_USERNAME_FONT_SIZE]: fontSizeSetting(
+      AppSettingIDs.CHAT_USERNAME_FONT_SIZE,
+      "Chat Username Font Size",
+      17,
+    ),
+    [AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE]: fontSizeSetting(
+      AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE,
+      "Chat Timestamp Font Size",
+      17,
+    ),
+    [AppSettingIDs.CHAT_MESSAGE_FONT_SIZE]: fontSizeSetting(
+      AppSettingIDs.CHAT_MESSAGE_FONT_SIZE,
+      "Chat Message Font Size",
+      19,
+    ),
+    [AppSettingIDs.CALL_REFRESH_BUTTON]: {
+      id: AppSettingIDs.CALL_REFRESH_BUTTON,
+      type: SETTING_TYPES.BOOLEAN,
+      version: "0.2.1",
+      description: "Show manual refresh button on the call participants panel",
+      label: "Show Call Refresh Button",
+      value: false,
     },
   };
   DeskThing.initSettings(discordSettings);

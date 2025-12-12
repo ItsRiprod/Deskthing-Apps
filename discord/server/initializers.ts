@@ -131,6 +131,12 @@ DeskThing.on(DiscordEvents.SET, async (socketData) => {
         chatStore.selectTextChannel(socketData.payload.channelId);
       }
       break;
+    case "refreshCall":
+      {
+        const callStore = StoreProvider.getCallStatus();
+        callStore.refreshCurrentChannel("manual-refresh");
+      }
+      break;
     case "notificationToasts":
       {
         try {

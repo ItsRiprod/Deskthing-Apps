@@ -20,6 +20,10 @@ export default function NotificationOverlay({
     return DeskThing.useProxy(notification.author.profileUrl);
   }, [notification.author.profileUrl]);
 
+  const mediaUrls = useMemo(() => {
+    return (notification.mediaUrls || []).map((url) => DeskThing.useProxy(url));
+  }, [notification.mediaUrls]);
+
   useEffect(() => {
     setIsVisible(true);
   }, [notification.id]);
@@ -61,17 +65,31 @@ export default function NotificationOverlay({
         <div className="grow">
           <p className="text-sm font-semibold text-white">{notification.author.username}</p>
           <h4 className="mt-1 text-base font-semibold leading-tight">{notification.title}</h4>
-          <p
-            className="mt-2 text-base font-normal text-white/80"
-            style={{
-              display: '-webkit-box',
-              WebkitLineClamp: 3,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}
-          >
-            {notification.content}
-          </p>
+          {notification.content ? (
+            <p
+              className="mt-2 text-base font-normal text-white/80"
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {notification.content}
+            </p>
+          ) : null}
+          {mediaUrls.length > 0 && (
+            <div className="mt-3 flex flex-col gap-2">
+              {mediaUrls.map((url, idx) => (
+                <img
+                  key={`${notification.id}-media-${idx}`}
+                  src={url}
+                  className="w-full max-h-48 rounded-lg border border-white/10 bg-neutral-800 object-contain"
+                  alt="attachment"
+                />
+              ))}
+            </div>
+          )}
           {(notification.guildName || notification.channelName) && (
             <p className="mt-2 text-xs text-white/50">
               {notification.guildName ?? ''}

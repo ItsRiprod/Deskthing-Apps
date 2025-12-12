@@ -371,6 +371,13 @@ export const useCallStore = create<CallStoreState>((set, get) => {
     },
 
     refreshCallStatus: () => {
+      // Tell the server to force refresh the current voice channel.
+      DeskThing.send({
+        type: DiscordEvents.SET,
+        request: "refreshCall",
+        payload: {},
+      });
+      // Also request the latest call snapshot after refresh completes.
       DeskThing.fetch(
         { type: DiscordEvents.GET, request: "call" },
         { type: DiscordEvents.CALL, request: "set" },
