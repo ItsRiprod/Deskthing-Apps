@@ -32,18 +32,18 @@ export const MessageStatusBox = ({ message }: MessageStatusProps) => {
     message.author.id ||
     "Unknown";
 
-  const timeZone = useMemo(
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone,
-    []
-  );
+  const timeZone = useMemo(() => {
+    if (typeof Intl === "undefined" || !Intl.DateTimeFormat) return undefined;
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }, []);
+
   const timestampLabel = useMemo(() => {
     const date = new Date(message.timestamp);
     if (isNaN(date.getTime())) return "";
-    return new Intl.DateTimeFormat(undefined, {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone,
-    }).format(date);
+    // Avoid Intl on low-capability devices; fall back to toLocaleTimeString.
+    const opts: any = { hour: "2-digit", minute: "2-digit" };
+    if (timeZone) opts.timeZone = timeZone;
+    return date.toLocaleTimeString(undefined, opts);
   }, [message.timestamp, timeZone]);
 
   return (

@@ -99,9 +99,15 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
     const trimmed = resolvedContent.trim();
     const isSingleUrl =
       trimmed.startsWith("http") && trimmed.split(/\s+/).length === 1;
-    const isPlaceholder = /^attachments?$/i.test(trimmed);
+    const isPlaceholder = /^attachments?(?:\s*:\s*.*)?$/i.test(trimmed);
+    const looksLikeAttachmentLine =
+      mediaUrls.length > 0 && trimmed.toLowerCase().includes("attachment");
     const content =
-      mediaUrls.length && (isSingleUrl || isPlaceholder) ? "" : resolvedContent;
+      isPlaceholder ||
+      looksLikeAttachmentLine ||
+      (mediaUrls.length && (isSingleUrl || isPlaceholder))
+        ? ""
+        : resolvedContent;
 
     const newNotification: Notification = {
       id: message.id,
@@ -142,14 +148,41 @@ export class NotificationStatusManager extends EventEmitter<notificationStatusEv
   }
 
   private formatContentWithDisplayNames(message: MessageObject): string {
-    const mentionMap = new Map(
-      (message.mentions ?? []).map((mention) => [
-        mention.id,
-        mention.global_name ?? mention.username,
-      ])
-    );
+    const mentionMap = new Map<string, string>();
+    // Mentions array
+    (message.mentions ?? []).forEach((mention: any) => {
+      const member: any = (mention as any)?.member ?? {};
+      const memberUser: any = member.user ?? {};
+      const display =
+        member.nick ||
+        member.display_name ||
+        memberUser.global_name ||
+        memberUser.username ||
+        mention.global_name ||
+        mention.username;
+      if (display) mentionMap.set(mention.id, display);
+    });
+    // Resolved members/users
+    const resolvedMembers: Record<string, any> = (message as any)?.resolved?.members ?? {};
+    const resolvedUsers: Record<string, any> = (message as any)?.resolved?.users ?? {};
+    Object.entries(resolvedMembers).forEach(([id, member]) => {
+      const m: any = member;
+      const u: any = m.user ?? resolvedUsers[id] ?? {};
+      const display =
+        m.nick ||
+        m.display_name ||
+        u.global_name ||
+        u.username;
+      if (display && !mentionMap.has(id)) mentionMap.set(id, display);
+    });
+    Object.entries(resolvedUsers).forEach(([id, user]) => {
+      const u: any = user;
+      const display = u.global_name || u.username;
+      if (display && !mentionMap.has(id)) mentionMap.set(id, display);
+    });
 
-    return (message.content || "").replace(/<@!?(\d+)>/g, (match, userId) => {
+    return (message.content || "").replace(/<@([!&]?)(\d+)>/g, (match, prefix, userId) => {
+      if (prefix === "&") return match; // keep role mentions untouched
       const displayName = mentionMap.get(userId);
       return displayName ? `@${displayName}` : match;
     });

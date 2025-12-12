@@ -5,7 +5,7 @@
     ""
   ],
   "label": "Discord",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "Discord for DeskThing by Riprod",
   "author": "Riprod",
   "platforms": [
@@ -23,5 +23,5 @@
     "server": ">=0.11.13",
     "client": ">=0.11.2"
   },
-  "updateUrl": "https://github.com/Riprod/Deskthing-Apps/releases/download/discord-xl-controls/discord-v0.2.0.zip"
+  "updateUrl": "https://github.com/Riprod/Deskthing-Apps/releases/download/discord-xl-controls/discord-v0.2.2.zip"
 }

@@ -16,12 +16,17 @@ const resolveDisplayName = (message: MessageObject) => {
   const member: any = (message as any).member ?? {};
   const resolvedMember: any =
     (message as any)?.resolved?.members?.[author.id ?? ""] ?? {};
+  const resolvedUser: any = (message as any)?.resolved?.users?.[author.id ?? ""] ?? {};
 
   return (
     member.nick ||
     member.display_name ||
     resolvedMember.nick ||
     resolvedMember.display_name ||
+    resolvedMember?.user?.global_name ||
+    resolvedMember?.user?.username ||
+    resolvedUser?.global_name ||
+    resolvedUser?.username ||
     resolvedMember.global_name ||
     author.global_name ||
     (author as any)?.display_name ||
@@ -36,9 +41,20 @@ const mentionDisplayName = (userId: string, message: MessageObject) => {
     (message as any)?.resolved?.members?.[userId] ?? {};
   const resolvedUser: any = (message as any)?.resolved?.users?.[userId] ?? {};
   const mentionEntry = (message.mentions ?? []).find((m) => m.id === userId);
+  const mentionMember: any = (mentionEntry as any)?.member ?? {};
+  const mentionMemberUser: any = (mentionMember as any)?.user ?? {};
+  const resolvedMemberUser: any = (resolvedMember as any)?.user ?? {};
   const display =
+    mentionMember.nick ||
+    mentionMember.display_name ||
+    mentionMemberUser.global_name ||
+    mentionMemberUser.username ||
     resolvedMember.nick ||
     resolvedMember.display_name ||
+    resolvedMemberUser.global_name ||
+    resolvedMemberUser.username ||
+    mentionEntry?.nick ||
+    mentionEntry?.display_name ||
     mentionEntry?.global_name ||
     mentionEntry?.username ||
     resolvedUser?.global_name ||
@@ -48,7 +64,11 @@ const mentionDisplayName = (userId: string, message: MessageObject) => {
 
 const replaceMentions = (content: string, message: MessageObject) => {
   if (!content) return "";
-  return content.replace(/<@!?(\d+)>/g, (_, id) => mentionDisplayName(id, message));
+  return content.replace(/<@([!&]?)(\d+)>/g, (full, prefix, id) => {
+    // Leave role mentions untouched
+    if (prefix === "&") return full;
+    return mentionDisplayName(id, message);
+  });
 };
 
 type chatStatusEvents = {
@@ -197,9 +217,15 @@ export class ChatStatusManager extends EventEmitter<chatStatusEvents> {
     const trimmed = replacedContent.trim();
     const isSingleUrl =
       trimmed.startsWith("http") && trimmed.split(/\s+/).length === 1;
-    const isPlaceholder = /^attachments?$/i.test(trimmed);
+    const isPlaceholder = /^attachments?(?:\s*:\s*.*)?$/i.test(trimmed);
+    const looksLikeAttachmentLine =
+      mediaUrls.length > 0 && trimmed.toLowerCase().includes("attachment");
     const content =
-      mediaUrls.length && (isSingleUrl || isPlaceholder) ? "" : replacedContent;
+      isPlaceholder ||
+      looksLikeAttachmentLine ||
+      (mediaUrls.length && (isSingleUrl || isPlaceholder))
+        ? ""
+        : replacedContent;
 
     const chatMessage: ChatMessage = {
       id: message.id,

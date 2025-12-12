@@ -3,7 +3,7 @@
   "meta_type": "app",
   "repository": "https://github.com/Riprod/Deskthing-Apps",
   "icon": "",
-  "size": 668570,
+  "size": 669233,
   "appManifest": {
     "id": "discord-xl-controls",
     "isWebApp": true,
@@ -11,7 +11,7 @@
       ""
     ],
     "label": "Discord",
-    "version": "0.2.0",
+    "version": "0.2.2",
     "description": "Discord for DeskThing by Riprod",
     "author": "Riprod",
     "platforms": [
@@ -29,12 +29,12 @@
       "server": ">=0.11.13",
       "client": ">=0.11.2"
     },
-    "updateUrl": "https://github.com/Riprod/Deskthing-Apps/releases/download/discord-xl-controls/discord-v0.2.0.zip"
+    "updateUrl": "https://github.com/Riprod/Deskthing-Apps/releases/download/discord-xl-controls/discord-v0.2.2.zip"
   },
-  "updateUrl": "https://github.com/Riprod/Deskthing-Apps/releases/latest/download/discord-v0.2.0.zip",
-  "hash": "c616a1789a1eaad8c94571460e52398b6a523a12769a7e02aa35b1744e7ed6e0b09d0d11ae7b3965ed42f6ad6f4686f29e80e78cdc41e44abe38e27d7a24ba2e",
+  "updateUrl": "https://github.com/Riprod/Deskthing-Apps/releases/latest/download/discord-v0.2.2.zip",
+  "hash": "db65557bdd046c42a938fac18f4c1dd40fd484b34dc44c70ed593d986cd0191eb0b733a0db095ed0a897050eec78861635e8b63b49d0421a3a3108ec59f8b6ce",
   "hashAlgorithm": "sha512",
-  "updatedAt": 1765501901654,
-  "createdAt": 1765501901654,
+  "updatedAt": 1765516229068,
+  "createdAt": 1765516229068,
   "downloads": 0
 }
