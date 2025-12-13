@@ -1,15 +1,15 @@
 import { DeskThing } from "@deskthing/server";
 import { DESKTHING_EVENTS, Action } from "@deskthing/types";
 import StoreProvider from "./storeProvider";
-import { AppSettingIDs } from "../shared/types/discord"
 import { DISCORD_ACTIONS } from "../shared/types/discord"
+import { MessageObject, MessageType } from "./discord/types/discordApiTypes";
 
 // Organize actions by category
 const voiceActions: Action[] = [
   {
     name: "Mute",
     description: "Toggles the mute status of the current user",
-    id: "mute",
+    id: DISCORD_ACTIONS.MUTE,
     icon: "mic", // or mic_off
     value: "toggle",
     value_options: ["mute", "unmute", "toggle"],
@@ -21,7 +21,7 @@ const voiceActions: Action[] = [
   {
     name: "Deafen",
     description: "Toggles the deaf state of the current user",
-    id: "deafen",
+    id: DISCORD_ACTIONS.DEAFEN,
     icon: "deafen", // or deafen_off
     value: "toggle",
     value_options: ["deafen", "undeafen", "toggle"],
@@ -33,13 +33,35 @@ const voiceActions: Action[] = [
   {
     name: "Disconnect",
     description: "Disconnects the user from the call",
-    id: "disconnect",
+    id: DISCORD_ACTIONS.DISCONNECT,
     icon: "disconnect",
     version: "0.11.2",
     tag: "basic",
     enabled: true,
   },
 ];
+
+const createTestNotificationMessage = (body?: string): MessageObject => ({
+  id: `deskthing-test-${Date.now()}`,
+  channel_id: "deskthing-test-channel",
+  author: {
+    id: "deskthing-test-user",
+    username: "DeskThing Tester",
+    discriminator: "0000",
+    avatar: null,
+  },
+  content: body?.trim() || "This is a test notification from DeskThing.",
+  timestamp: new Date().toISOString(),
+  edited_timestamp: null,
+  tts: false,
+  mention_everyone: false,
+  mentions: [],
+  mention_roles: [],
+  attachments: [],
+  embeds: [],
+  pinned: false,
+  type: MessageType.DEFAULT,
+});
 
 const notificationActions: Action[] = [
   {
@@ -61,6 +83,15 @@ const notificationActions: Action[] = [
     version: "0.11.2",
     tag: "basic",
     enabled: false,
+  },
+  {
+    name: "Send Test Notification",
+    description: "Creates a mock Discord notification so you can preview the toast UI",
+    id: DISCORD_ACTIONS.SEND_TEST_NOTIFICATION,
+    icon: "notification", // placeholder icon until a bell icon exists
+    version: "0.11.2",
+    tag: "basic",
+    enabled: true,
   },
 ];
 
@@ -99,11 +130,11 @@ export const setupActions = () => {
   ])
 };
 
-type actionHandler = (value: string | undefined) => void;
+type actionHandler = (value: string | undefined) => Promise<void>;
 
 const actionHandlers: Record<string, actionHandler> = {
   // Voice
-  [DISCORD_ACTIONS.MUTE]: (value) => {
+  [DISCORD_ACTIONS.MUTE]: async (value) => {
     switch (value) {
       case "mute":
         return StoreProvider.getCallControls().mute();
@@ -114,7 +145,7 @@ const actionHandlers: Record<string, actionHandler> = {
         return StoreProvider.getCallControls().toggleMute();
     }
   },
-  [DISCORD_ACTIONS.DEAFEN]: (value) => {
+  [DISCORD_ACTIONS.DEAFEN]: async (value) => {
     switch (value) {
       case "deafen":
         return StoreProvider.getCallControls().deafen();
@@ -125,13 +156,13 @@ const actionHandlers: Record<string, actionHandler> = {
         return StoreProvider.getCallControls().toggleDeafen();
     }
   },
-  [DISCORD_ACTIONS.DISCONNECT]: () => {
+  [DISCORD_ACTIONS.DISCONNECT]: async () => {
     return StoreProvider.getCallControls().disconnect();
   },
 
   // Utility
   [DISCORD_ACTIONS.REAUTH]: async () => {
-    StoreProvider.getAuth().authenticate();
+    await StoreProvider.getAuth().authenticate();
   },
 
   [DISCORD_ACTIONS.REPRESENCE]: async () => {
@@ -155,14 +186,24 @@ const actionHandlers: Record<string, actionHandler> = {
   [DISCORD_ACTIONS.MARK_ALL_NOTIFICATIONS_AS_READ]: () => {
     return StoreProvider.getNotificationStatus().markAllNotificationsAsRead();
   },
+  [DISCORD_ACTIONS.SEND_TEST_NOTIFICATION]: async (value) => {
+    const notificationStore = StoreProvider.getNotificationStatus();
+    const message = createTestNotificationMessage(value);
+    await notificationStore.addNewNotificationMessage(message, "Test Notification");
+  },
 };
 
-DeskThing.on(DESKTHING_EVENTS.ACTION, (actionData) => {
+DeskThing.on(DESKTHING_EVENTS.ACTION, async (actionData) => {
   const { id, value } = actionData.payload;
   const handler = actionHandlers[id];
 
   if (handler) {
     console.log(`Received ${id} action`);
-    handler(value);
+    try {
+      await handler(value);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Error handling ${id}: ${message}`);
+    }
   }
 });

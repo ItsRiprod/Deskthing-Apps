@@ -1,11 +1,12 @@
-import { useCallStore } from "@src/stores/callStore"
-import { useControlStore } from "@src/stores/controlStore"
-import { ControlWrapper } from "./ControlWrapper"
-import { IconMicDiscord, IconMicOffDiscord } from "@src/assets/icons"
+import { IconMicDiscord, IconMicOffDiscord } from "@src/assets/icons";
+import { useCallStore } from "@src/stores/callStore";
+import { useControlStore } from "@src/stores/controlStore";
+import { ControlWrapper } from "./ControlWrapper";
 
 export const MuteButton = () => {
-  const toggleMute = useControlStore((state) => state.toggleMute)
-  const isMuted = useCallStore((state) => state.callStatus?.user?.isMuted) || false
+  const toggleMute = useControlStore((state) => state.toggleMute);
+  const isMuted = useCallStore((state) => state.callStatus?.user?.isMuted ?? false);
+  const isLoading = useCallStore((state) => state.isLoading && !state.callStatus);
 
   return (
     <ControlWrapper
@@ -13,6 +14,7 @@ export const MuteButton = () => {
       iconDisabled={<IconMicOffDiscord className="w-full h-full text-red-500 fill-red-500" />}
       onClick={toggleMute}
       isEnabled={!isMuted}
+      isLoading={isLoading}
     />
-  )
-}
+  );
+};

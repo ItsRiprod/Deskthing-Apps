@@ -10,7 +10,7 @@ export const StoreInitializer: React.FC = () => {
   const playerStore = usePlayerStore();
   const notificationStore = useNotificationStore();
   const gameStore = useGameStore();
-  const uiStore = useUIStore()
+  const uiStore = useUIStore();
   useEffect(() => {
     if (!notificationStore.initialized) {
       notificationStore.init();
@@ -31,7 +31,13 @@ export const StoreInitializer: React.FC = () => {
       uiStore.init();
     }
 
-    
+    return () => {
+      void notificationStore.unmount();
+      void gameStore.unmount();
+      void lobbyStore.unmount();
+      void playerStore.unmount();
+      void uiStore.unmount();
+    };
   }, []);
 
   return null;

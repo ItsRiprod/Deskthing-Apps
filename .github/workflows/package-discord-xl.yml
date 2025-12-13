@@ -1,0 +1,92 @@
+name: Package Discord XL Controls
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'discord/**'
+      - '.github/workflows/package-discord-xl.yml'
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Optional release tag override (defaults to discord-xl-controls)'
+        required: false
+        default: ''
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: discord/package-lock.json
+
+      - name: Prepare release metadata
+        run: |
+          VERSION_TAG="${{ github.event.inputs.version_tag || '' }}"
+          echo "VERSION_TAG=${VERSION_TAG}" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: discord
+
+      - name: Package Discord XL Controls
+        run: npm run build
+        working-directory: discord
+
+      - name: Verify packaged manifest exists
+        run: |
+          PACKAGE_FILE=$(ls discord/dist/*.zip | head -n 1)
+          echo "Checking manifest inside $PACKAGE_FILE"
+          unzip -l "$PACKAGE_FILE" | grep -q "manifest.json" || { echo "manifest.json not found in package"; exit 1; }
+
+      - name: Prepare artifacts for upload
+        run: |
+          mkdir -p artifacts/discord
+          cp discord/dist/*.zip artifacts/discord/
+          cp discord/dist/latest.json artifacts/discord/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: discord-xl-controls
+          if-no-files-found: error
+          path: artifacts/discord/*
+
+      - name: Publish release assets
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${VERSION_TAG:-}"
+          if [ -z "$TAG" ]; then
+            MANIFEST_VERSION=$(jq -r '.version' deskthing/manifest.json)
+            TAG="discord-xl-controls"
+            TITLE="Discord (XL Controls)"
+            NOTES="Automated package for Discord (XL Controls) version ${MANIFEST_VERSION}."
+          else
+            TITLE="Discord (XL Controls) ${TAG}"
+            NOTES="Automated package for Discord (XL Controls)."
+          fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Updating existing release $TAG"
+          else
+            echo "Creating release $TAG"
+            gh release create "$TAG" --title "$TITLE" --notes "$NOTES" --prerelease
+          fi
+
+          gh release upload "$TAG" dist/*.zip dist/latest.json --clobber
+        working-directory: discord

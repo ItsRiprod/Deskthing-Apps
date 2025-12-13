@@ -1,6 +1,6 @@
 import { ParticipantBox } from "@src/components/ParticipantBox";
 import { useCallStore } from "@src/stores/callStore";
-import { useRef, useEffect, useState, useMemo } from "react";
+import { useRef, useEffect, useState } from "react";
 
 export const MiniCallWidget = () => {
   const callStatus = useCallStore((state) => state.callStatus);
@@ -13,17 +13,20 @@ export const MiniCallWidget = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   const [lastSpeakerId, setLastSpeakerId] = useState<string | null>(null);
+  const participants = callStatus?.participants ?? [];
 
-  const currentSpeaker = useMemo(() => {
-    const talkingSpeaker = callStatus?.participants.find((p) => p.isSpeaking) || null;
-    if (talkingSpeaker) {
+  useEffect(() => {
+    if (!participants.length) return;
+
+    const talkingSpeaker = participants.find((p) => p.isSpeaking);
+    if (talkingSpeaker && talkingSpeaker.id !== lastSpeakerId) {
       setLastSpeakerId(talkingSpeaker.id);
-      return talkingSpeaker;
-    } else if (lastSpeakerId) {
-      return callStatus?.participants.find((p) => p.id === lastSpeakerId) || null;
     }
-    return null;
-  }, [callStatus]);
+  }, [participants, lastSpeakerId]);
+
+  const currentSpeaker =
+    participants.find((p) => p.isSpeaking) ||
+    (lastSpeakerId ? participants.find((p) => p.id === lastSpeakerId) || null : null);
 
 
   // Mouse drag handlers
@@ -87,7 +90,8 @@ export const MiniCallWidget = () => {
     };
   }, [dragging, offset]);
 
-  if (!currentSpeaker) return
+  if (!participants.length) return null;
+  if (!currentSpeaker) return null;
 
 
   return (
