@@ -1,0 +1,17 @@
+{
+  "version": "0.11.18",
+  "plugin_version": "0.11.0",
+  "source": "recording-notes",
+  "required": {},
+  "id": "configmic",
+  "entrypoints": {
+    "adb": {
+      "fileName": "index.ts",
+      "isRepeatable": false,
+      "persistent": true
+    }
+  },
+  "label": "Microphone Configuration",
+  "description": "Configures the microphone to allow the recording app to function",
+  "purpose": "installs mic package"
+}

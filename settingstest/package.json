@@ -1,11 +1,11 @@
 {
   "name": "settingstest",
   "private": true,
-  "version": "0.11.4",
+  "version": "0.11.5",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:wrapper\"",
+    "dev": "npx @deskthing/cli dev --vite",
     "build": "npx @deskthing/cli package",
     "build-server": "esbuild server/index.ts --bundle --platform=node --outfile=dist/index.js",
     "setup": "node setup.js",
@@ -16,21 +16,20 @@
     "build-workers": "esbuild server/workers/*.ts --bundle --platform=node --outdir=dist/workers --format=cjs"
   },
   "dependencies": {
-    "@deskthing/client": "^0.11.1",
-    "@deskthing/server": "^0.11.5",
+    "@deskthing/client": "^0.11.2",
+    "@deskthing/server": "^0.11.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@deskthing/cli": "^0.11.10",
-    "@deskthing/types": "^0.11.14",
+    "@deskthing/cli": "^0.11.15",
+    "@deskthing/types": "^0.11.18",
     "@eslint/js": "^9.9.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "archiver": "^7.0.1",
     "autoprefixer": "^10.4.19",
-    "concurrently": "^9.1.2",
     "esbuild": "^0.19.2",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
@@ -39,6 +38,6 @@
     "tsm": "^2.3.0",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
-    "vite": "^5.4.19"
+    "vite": "^5.4.21"
   }
 }

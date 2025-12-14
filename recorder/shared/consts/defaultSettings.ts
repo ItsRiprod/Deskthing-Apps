@@ -1,5 +1,5 @@
 import { SETTING_TYPES } from "@deskthing/types";
-import { RawRecorderSettingsType, RECORDER_SETTING_IDS } from "../../shared/types";
+import { RawRecorderSettingsType, RECORDER_SETTING_IDS } from "../types";
 
 export const DefaultRecorderSettings: RawRecorderSettingsType = {
   [RECORDER_SETTING_IDS.AUDIO_FORMAT]: {
@@ -43,16 +43,31 @@ export const DefaultRecorderSettings: RawRecorderSettingsType = {
     options: [
       { label: '16-bit', value: '16' },
       { label: '24-bit', value: '24' },
+      { label: '32-bit', value: '32' },
     ],
-    description: 'The number of bits used for each audio sample.'
+    description: 'The number of bits used for each audio sample (The audio quality).'
   },
   [RECORDER_SETTING_IDS.CHUNK_DURATION]: {
     id: RECORDER_SETTING_IDS.CHUNK_DURATION,
     label: 'Chunk Duration (seconds)',
     type: SETTING_TYPES.NUMBER,
-    value: 5,
+    value: 1,
     min: 0.5,
-    max: 60,
+    max: 10,
     description: 'The duration of each audio chunk in seconds.'
+  },
+  [RECORDER_SETTING_IDS.SAVE_LOCATION]: {
+    id: RECORDER_SETTING_IDS.SAVE_LOCATION,
+    label: 'Save Location',
+    type: SETTING_TYPES.FILE,
+    value: './recordings',
+    placeholder: 'Select folder to save recordings',
+    fileTypes: [
+      {
+        name: 'Folders',
+        extensions: []
+      }
+    ],
+    description: 'The folder where audio recordings will be saved.'
   },
 }

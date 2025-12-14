@@ -17,6 +17,7 @@
     "@deskthing/microphone": "^0.11.0",
     "@deskthing/server": "latest",
     "autoprefixer": "^10.4.21",
+    "lucide-react": "^0.548.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^5.0.8"

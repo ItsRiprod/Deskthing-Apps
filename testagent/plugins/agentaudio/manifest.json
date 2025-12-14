@@ -12,5 +12,6 @@
   },
   "label": "Agent Mic Configuration",
   "description": "A required plugin for microphone integration to function correctly. You only need to configure this once per device",
-  "purpose": "Enabled microphone functionality"
+  "purpose": "Enabled microphone functionality",
+  "source": "testagent"
 }

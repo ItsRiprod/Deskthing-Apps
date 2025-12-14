@@ -1,13 +1,16 @@
 import React, { useEffect } from "react";
 import { MicrophoneComponent } from "./components/Microphone";
 import { useMicrophoneStore } from "./stores/MicrophoneStore";
+import { useRecordingStore } from "./stores/RecordingStore";
 
 const App: React.FC = () => {
-  const init = useMicrophoneStore((s) => s.init);
+  const initMic = useMicrophoneStore((s) => s.init);
+  const initRec = useRecordingStore((s) => s.init);
 
   useEffect(() => {
-    init().catch(() => {});
-  }, [init]);
+    initMic().catch(() => {});
+    initRec().catch(() => {});
+  }, [initMic, initRec]);
 
   return (
     <div className="min-h-screen min-w-screen bg-gradient-to-br from-black via-slate-900 to-gray-900 text-white">

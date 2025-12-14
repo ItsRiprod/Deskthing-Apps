@@ -16,3 +16,6 @@
 /Legacy/mediawincs/DeskThingMedia/obj
 /Legacy/CommunityApps
 /discord/dist-legacy
+/discord/bin/build
+/discord/bin/lib/discord_social_sdk
+discord/bin/scripts/setupEnv.sh

@@ -168,6 +168,17 @@ export const initializeSettings = async (): Promise<void> => {
         }
       ]
     },
+    [ClockSettingIDs.BACKGROUND_BRIGHTNESS]: {
+      id: ClockSettingIDs.BACKGROUND_BRIGHTNESS,
+      version: '0.11.3', // set version so it updates if someone improperly downloaded this 
+      type: SETTING_TYPES.RANGE,
+      label: 'Background Brightness',
+      description: 'Adjust the brightness of the background.',
+      value: 1,
+      min: 0,
+      max: 1,
+      step: 0.01
+    },
     [ClockSettingIDs.CLOCK_POSITION]: {
       id: ClockSettingIDs.CLOCK_POSITION,
       type: SETTING_TYPES.SELECT,

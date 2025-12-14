@@ -358,7 +358,7 @@ export const SettingsPanel: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-4 border-t border-slate-700 flex justify-end space-x-2">
+        <div className="p-4 border-t border-slate-700 flex space-x-2">
           <button
             className="px-3 py-1 bg-slate-700 text-slate-100 rounded"
             onClick={closeWithAnimation}

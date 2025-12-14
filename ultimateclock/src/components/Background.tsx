@@ -9,28 +9,31 @@ export const BackgroundComponent = () => {
   const backgroundColor = useSettingStore((state) => state.settings?.[ClockSettingIDs.BACKGROUND_COLOR] || "#000000");
   const mode = useSettingStore((state) => state.settings?.[ClockSettingIDs.BACKGROUND] || "color");
   const blur = useSettingStore((state) => state.settings?.[ClockSettingIDs.BACKGROUND_BLUR] || 0);
+  const brightness = useSettingStore((state) => state.settings?.[ClockSettingIDs.BACKGROUND_BRIGHTNESS] || 1);
 
   let style: React.CSSProperties = {};
 
   if (mode === "color") {
     style = {
       backgroundColor: backgroundColor,
+      filter: `brightness(${brightness})`,
+      WebkitFilter: `brightness(${brightness})`, // For Safari compatibility
     };
   } else if (mode === "picture") {
     style = {
       backgroundImage: `url(${backgroundUrl})`,
       backgroundSize: "cover",
       backgroundPosition: "center",
-      filter: `blur(${blur}px)`,
-      WebkitFilter: `blur(${blur}px)`, // For Safari compatibility
+      filter: `blur(${blur}px) brightness(${brightness})`,
+      WebkitFilter: `blur(${blur}px) brightness(${brightness})`, // For Safari compatibility
     };
   } else if (mode === "thumbnail") {
     style = {
       backgroundImage: `url(${thumbnailUrl})`,
       backgroundSize: "cover",
       backgroundPosition: "center",
-      filter: `blur(${blur}px)`,
-      WebkitFilter: `blur(${blur}px)`, // For Safari compatibility
+      filter: `blur(${blur}px) brightness(${brightness})`,
+      WebkitFilter: `blur(${blur}px) brightness(${brightness})`, // For Safari compatibility
     };
   }
 

@@ -16,6 +16,7 @@ export enum ClockSettingIDs {
     BACKGROUND_BLUR = 'background_blur',
     BACKGROUND_IMAGE = 'background_image',
     BACKGROUND_COLOR = 'background_color',
+    BACKGROUND_BRIGHTNESS = 'background_dim',
     MILITARY_TIME = 'military_time',
     CLOCK_POSITION = 'clock_position',
     CLOCK_SIZE = 'clock_size',
@@ -47,6 +48,7 @@ export type ClockSettings = {
   [ClockSettingIDs.BACKGROUND_BLUR]: SettingsNumber & { id: ClockSettingIDs.BACKGROUND_BLUR };
   [ClockSettingIDs.BACKGROUND_IMAGE]: SettingsFile & { id: ClockSettingIDs.BACKGROUND_IMAGE };
   [ClockSettingIDs.BACKGROUND_COLOR]: SettingsColor & { id: ClockSettingIDs.BACKGROUND_COLOR };
+  [ClockSettingIDs.BACKGROUND_BRIGHTNESS]: SettingsRange & { id: ClockSettingIDs.BACKGROUND_BRIGHTNESS };
   [ClockSettingIDs.MILITARY_TIME]: SettingsBoolean & { id: ClockSettingIDs.MILITARY_TIME };
   [ClockSettingIDs.CLOCK_POSITION]: SettingsSelect & { id: ClockSettingIDs.CLOCK_POSITION };
   [ClockSettingIDs.CLOCK_SIZE]: SettingsNumber & { id: ClockSettingIDs.CLOCK_SIZE };
