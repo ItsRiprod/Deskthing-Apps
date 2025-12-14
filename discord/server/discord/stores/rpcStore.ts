@@ -12,6 +12,14 @@ import { CallParticipant } from "../../../shared/types/discord";
 import { getEncodedImage, ImageType } from "../utils/imageFetch";
 import { EventEmitter } from "node:events";
 
+const rpcLog = (...args: any[]) => {
+  if ((DeskThing as any)?.debug) {
+    (DeskThing as any).debug(...args);
+  } else {
+    console.log(...args);
+  }
+};
+
 type RPCEventTypes = {
   [RPCEvents.READY]: { user: User | undefined };
   [RPCEvents.ERROR]: { code: number; message: string };
@@ -63,6 +71,8 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
   private eventHandlers: Record<string, Set<EventCallback>> = {};
   public user: CallParticipant | undefined = undefined;
   private loggingInID: string | undefined;
+  private readyPromise: Promise<void> | null = null;
+  private resolveReady: (() => void) | null = null;
 
   constructor() {
     super();
@@ -110,6 +120,30 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
   }
 
   updateUser = async (): Promise<CallParticipant | undefined> => {
+    const waitForReady = async () => {
+      if (this.rpcClient?.user) {
+        return;
+      }
+
+      try {
+        if (this.readyPromise) {
+          await Promise.race([
+            this.readyPromise,
+            new Promise((resolve) => setTimeout(resolve, 1500)),
+          ]);
+        }
+      } catch (error) {
+        console.warn(`Error waiting for RPC ready event: ${error}`);
+      }
+
+      const timeoutMs = 1500;
+      const intervalMs = 100;
+      const start = Date.now();
+      while (!this.rpcClient?.user && Date.now() - start < timeoutMs) {
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      }
+    };
+
     const update = async () => {
       if (this.rpcClient?.user) {
         const voiceSettings = await this.rpcClient.getVoiceSettings();
@@ -121,6 +155,12 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
             this.rpcClient.user.id
           ),
           username: this.rpcClient.user.username || this.rpcClient.user.id,
+          displayName:
+            // Prefer per-guild display name if available on the user object.
+            (this.rpcClient.user as any)?.nick ||
+            (this.rpcClient.user as any)?.global_name ||
+            this.rpcClient.user.username ||
+            this.rpcClient.user.id,
           isDeafened: voiceSettings.deaf,
           isMuted: voiceSettings.deaf || voiceSettings.mute,
           isSpeaking: false,
@@ -128,18 +168,14 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
         return this.user;
       }
     };
-    if (this.rpcClient?.user) {
-      try {
-        return await update();
-      } catch (error) {
-        console.warn(`Error updating user: ${error}`);
-      }
-    } else {
-      // Wait a second before trying again
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    try {
+      await waitForReady();
       if (this.rpcClient?.user) {
         return await update();
       }
+    } catch (error) {
+      console.warn(`Error updating user: ${error}`);
     }
   };
 
@@ -161,6 +197,9 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
     }
 
     try {
+      this.readyPromise = new Promise<void>((resolve) => {
+        this.resolveReady = resolve;
+      });
       const client = new Client({ transport: "ipc" });
       console.log("Created new Discord RPC client");
 
@@ -170,6 +209,7 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
           this._isConnected = true;
           this.emit(RPCEvents.READY, { user: client.user });
           console.log("Connected to Discord RPC");
+          this.resolveReady?.();
           resolve();
         });
 
@@ -189,6 +229,8 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
           this._isConnected = false;
           console.log("Discord RPC disconnected");
           this.rpcClient = null;
+          this.readyPromise = null;
+          this.resolveReady = null;
         });
 
         client.login({ clientId }).catch(reject);
@@ -198,6 +240,8 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
     } catch (error) {
       this._isConnected = false;
       console.error(`Failed to connect to Discord RPC: ${error}`);
+      this.readyPromise = null;
+      this.resolveReady = null;
       throw error;
     } finally {
       this.loggingInID = undefined;
@@ -211,6 +255,8 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
         this.rpcClient.destroy();
         this.rpcClient = null;
         this._isConnected = false;
+        this.readyPromise = null;
+        this.resolveReady = null;
         console.log("Disconnected from Discord RPC");
       } catch (error) {
         console.error(`Error disconnecting from Discord RPC: ${error}`);
@@ -249,7 +295,11 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
   }
 
   /** Subscribes to the RPC directly */
-  async subscribe(event: RPCEvents, channelId?: string): Promise<void> {
+  async subscribe(
+    event: RPCEvents,
+    channelId?: string,
+    attempt = 1
+  ): Promise<boolean> {
     try {
       if (!this.rpcClient) {
         console.error(`RPC client is not connected`);
@@ -258,7 +308,7 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
           channelId,
           unsubscribe: async () => true,
         };
-        return;
+        return false;
       }
       this.ensureConnected();
       if (this.subscriptions[event]) {
@@ -279,16 +329,38 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
           channelId,
         };
         console.error(`Failed to subscribe to ${event}. Timed out!`);
-        return;
+        if (attempt < 5) {
+          const nextAttempt = attempt + 1;
+          const delay = Math.min(5000, 500 * nextAttempt);
+          setTimeout(() => {
+            this.subscribe(event, channelId, nextAttempt).catch((error) =>
+              console.error(
+                `Retry ${nextAttempt} failed for ${event}: ${String(error)}`
+              )
+            );
+          }, delay);
+        }
+        return false;
       }
       await new Promise((resolve) => setTimeout(resolve, 300));
       this.subscriptions[event] = { ...subscription, channelId };
       console.log(
         `Subscribed to ${event}${channelId ? ` for channel ${channelId}` : ""}`
       );
+      return true;
     } catch (error) {
       this.subscriptions[event] = { unsubscribe: async () => true, channelId };
       console.error(`Error subscribing to ${event}: ${error}`);
+      if (attempt < 5) {
+        const nextAttempt = attempt + 1;
+        const delay = Math.min(5000, 500 * nextAttempt);
+        setTimeout(() => {
+          this.subscribe(event, channelId, nextAttempt).catch((err) =>
+            console.error(`Retry ${nextAttempt} failed for ${event}: ${String(err)}`)
+          );
+        }, delay);
+        return false;
+      }
       throw error
     }
   }
@@ -400,8 +472,14 @@ export class DiscordRPCStore extends EventEmitter<RPCEmitterTypes> {
   async selectVoiceChannel(channelId: string | undefined): Promise<void> {
     try {
       this.ensureConnected();
-      console.log(`Selecting voice channel: ${channelId}`);
-      await this.rpcClient!.selectVoiceChannel(channelId as string);
+      rpcLog(`Selecting voice channel: ${channelId}`);
+      // Discord RPC expects null to clear; undefined is ignored. Always pass null when falsy.
+      const target = channelId || null;
+      await this.rpcClient!.selectVoiceChannel(target as any);
+      if (!target) {
+        // Proactively emit a clear event so downstream state resets immediately.
+        this.emit(RPCEvents.VOICE_CHANNEL_SELECT, { channel_id: null, guild_id: null });
+      }
     } catch (error) {
       console.error(`Error selecting voice channel: ${error}`);
       throw error;

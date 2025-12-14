@@ -8,11 +8,14 @@ export function validateDiscordSettings(obj: AppSettings): asserts obj is Discor
     AppSettingIDs.LEFT_DASHBOARD_PANEL,
     AppSettingIDs.RIGHT_DASHBOARD_PANEL,
     AppSettingIDs.DASHBOARD_ELEMENTS,
+    AppSettingIDs.NOTIFICATION_TOASTS,
+    AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS,
   ];
 
   for (const id of requiredIds) {
     if (!(id in obj)) {
-      throw new Error(`Missing setting: ${id}`);
+      // Soft warning; defaults will be applied by uiStore.
+      console.warn(`Missing setting: ${id}`);
     }
   }
 }

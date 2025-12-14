@@ -2,7 +2,17 @@ import { create } from "zustand";
 import { createDeskThing } from "@deskthing/client";
 import { DiscordEvents, ToClientTypes, ToServerTypes } from "@shared/types/transit";
 import { AppSettings, DEVICE_CLIENT } from "@deskthing/types";
-import { AppSettingIDs, CLOCK_OPTIONS, DASHBOARD_ELEMENTS, DiscordSettings, PANEL_ELEMENTS, SONG_CONTROLS } from "@shared/types/discord";
+import {
+  AppSettingIDs,
+  CLOCK_OPTIONS,
+  CONTROL_POSITION,
+  CONTROL_SIZE,
+  DASHBOARD_ELEMENTS,
+  DiscordSettings,
+  PANEL_ELEMENTS,
+  SONG_CONTROLS,
+} from "@shared/types/discord";
+import { XL_CONTROLS_ENABLED, getControlLayout } from "@src/constants/xlControls";
 import { validateDiscordSettings } from "@src/utils/settingValidator";
 
 export type Page = "chat" | "browsing" | "call" | "dashboard";
@@ -29,6 +39,9 @@ type UIStore = {
   song_controls: SONG_CONTROLS;
   widgets: DASHBOARD_ELEMENTS[]
   clock_options: CLOCK_OPTIONS
+  notification_toasts_enabled: boolean
+  notification_toast_duration_seconds: number
+  panel_split_ratio: number
 
   dimensions: {
     width: number;
@@ -57,6 +70,87 @@ type UIStore = {
 
 const DeskThing = createDeskThing<ToClientTypes, ToServerTypes>();
 
+const defaultWidgets: DASHBOARD_ELEMENTS[] = [];
+const defaultControlSize = CONTROL_SIZE.MEDIUM;
+const defaultControlPosition = CONTROL_POSITION.TOP;
+const baseControlHeight = XL_CONTROLS_ENABLED
+  ? getControlLayout(defaultControlSize).totalHeight
+  : 75;
+const defaultLeftPanel = PANEL_ELEMENTS.GUILD_LIST;
+const defaultRightPanel = PANEL_ELEMENTS.BLANK;
+const defaultClockOption = CLOCK_OPTIONS.DISABLED;
+const defaultSongControls = SONG_CONTROLS.BOTTOM;
+const defaultToastEnabled = true;
+const defaultToastDuration = 10;
+const defaultPanelSplitRatio = 0.5; // normalized fraction used internally
+const defaultPanelSplitSettingValue = 50; // percent displayed in settings
+const defaultChatUsernameFont = 17;
+const defaultChatTimestampFont = 17;
+const defaultChatMessageFont = 19;
+
+const getInitialDimensions = (): Dimensions => {
+  if (typeof window === "undefined") {
+    return {
+      width: 0,
+      height: 0,
+      panel: {
+        width: 0,
+        height: 0,
+      },
+      controls: {
+        width: 0,
+        height: 0,
+      },
+    };
+  }
+
+  const defaultControlsHeight = defaultWidgets.includes(
+    DASHBOARD_ELEMENTS.CALL_CONTROLS,
+  )
+    ? baseControlHeight
+    : 0;
+
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+
+  return {
+    width,
+    height,
+    panel: {
+      width: width / 2,
+      height: Math.max(height - defaultControlsHeight, 0),
+    },
+    controls: {
+      width,
+      height: defaultControlsHeight,
+    },
+  };
+};
+
+let lastSettingsHash = "";
+
+const hashSettings = (settings: AppSettings | DiscordSettings | undefined) => {
+  if (!settings) return "";
+  // Only hash the fields we actually read to avoid noisy updates.
+  const relevant = {
+    clock_options: settings[AppSettingIDs.CLOCK_OPTIONS]?.value,
+    leftPanel: settings[AppSettingIDs.LEFT_DASHBOARD_PANEL]?.value,
+    rightPanel: settings[AppSettingIDs.RIGHT_DASHBOARD_PANEL]?.value,
+    panel_split_ratio: settings[AppSettingIDs.PANEL_SPLIT_RATIO]?.value,
+    controls_size: settings[AppSettingIDs.CONTROLS_SIZE]?.value,
+    controls_position: settings[AppSettingIDs.CONTROLS_POSITION]?.value,
+    chat_username_font_size: settings[AppSettingIDs.CHAT_USERNAME_FONT_SIZE]?.value,
+    chat_timestamp_font_size: settings[AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE]?.value,
+    chat_message_font_size: settings[AppSettingIDs.CHAT_MESSAGE_FONT_SIZE]?.value,
+    widgets: settings[AppSettingIDs.DASHBOARD_ELEMENTS]?.value,
+    song_controls: settings[AppSettingIDs.SONG_OPTIONS]?.value,
+    notification_toasts_enabled: settings[AppSettingIDs.NOTIFICATION_TOASTS]?.value,
+    notification_toast_duration_seconds:
+      settings[AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS]?.value,
+  };
+  return JSON.stringify(relevant);
+};
+
 export const useUIStore = create<UIStore>((set, get) => ({
   currentPage: "dashboard",
   initialized: false,
@@ -65,21 +159,13 @@ export const useUIStore = create<UIStore>((set, get) => ({
   settings: null,
   song_controls: SONG_CONTROLS.BOTTOM,
   leftPanel: PANEL_ELEMENTS.GUILD_LIST,
-  rightPanel: PANEL_ELEMENTS.CHAT,
-  widgets: [],
-  clock_options: CLOCK_OPTIONS.TOP_CENTER,
-  dimensions: {
-    width: window.innerWidth,
-    height: window.innerHeight,
-    panel: {
-      width: window.innerWidth / 2,
-      height: window.innerHeight - 75,
-    },
-    controls: {
-      width: window.innerWidth,
-      height: 75,
-    }
-  },
+  rightPanel: PANEL_ELEMENTS.BLANK,
+  widgets: [...defaultWidgets],
+  clock_options: CLOCK_OPTIONS.DISABLED,
+  notification_toasts_enabled: defaultToastEnabled,
+  notification_toast_duration_seconds: defaultToastDuration,
+  panel_split_ratio: defaultPanelSplitRatio,
+  dimensions: getInitialDimensions(),
 
   initialize: () => {
     if (get().initialized) return;
@@ -95,12 +181,12 @@ export const useUIStore = create<UIStore>((set, get) => ({
       request: 'settings'
     })
 
-    // Listen for settings updates
+    // Listen for settings updates (client channel)
     DeskThing.on(DEVICE_CLIENT.SETTINGS, (event) => {
-      get().setSettings(event.payload)
+      get().setSettings(event.payload);
     });
 
-    // Listen for settings updates
+    // Listen for time updates
     DeskThing.on(DEVICE_CLIENT.TIME, (event) => {
       if (typeof event.payload == 'string') {
         set({ currentTime: event.payload });
@@ -114,17 +200,97 @@ export const useUIStore = create<UIStore>((set, get) => ({
       }
     });
 
-    DeskThing.on(DiscordEvents.SETTINGS, (event) => {
-      get().setSettings(event.payload)
-    });
   },
 
   setSettings: (settings: AppSettings | DiscordSettings | undefined) => {
     try {
 
       if (settings) {
-        validateDiscordSettings(settings);
-        set({ clock_options: settings[AppSettingIDs.CLOCK_OPTIONS].value, isLoading: false, leftPanel: settings[AppSettingIDs.LEFT_DASHBOARD_PANEL].value, rightPanel: settings[AppSettingIDs.RIGHT_DASHBOARD_PANEL].value, widgets: settings[AppSettingIDs.DASHBOARD_ELEMENTS].value, song_controls: settings[AppSettingIDs.SONG_OPTIONS].value, settings: settings as DiscordSettings });
+        // Build a safe settings object by filling missing fields with current state or defaults.
+        const safeSettings = {
+          [AppSettingIDs.CLOCK_OPTIONS]:
+            settings[AppSettingIDs.CLOCK_OPTIONS] ??
+            { value: get().clock_options, id: AppSettingIDs.CLOCK_OPTIONS },
+          [AppSettingIDs.LEFT_DASHBOARD_PANEL]:
+            settings[AppSettingIDs.LEFT_DASHBOARD_PANEL] ??
+            { value: get().leftPanel ?? defaultLeftPanel, id: AppSettingIDs.LEFT_DASHBOARD_PANEL },
+          [AppSettingIDs.RIGHT_DASHBOARD_PANEL]:
+            settings[AppSettingIDs.RIGHT_DASHBOARD_PANEL] ??
+            { value: get().rightPanel ?? defaultRightPanel, id: AppSettingIDs.RIGHT_DASHBOARD_PANEL },
+          [AppSettingIDs.DASHBOARD_ELEMENTS]:
+            settings[AppSettingIDs.DASHBOARD_ELEMENTS] ??
+            { value: get().widgets ?? defaultWidgets, id: AppSettingIDs.DASHBOARD_ELEMENTS },
+          [AppSettingIDs.SONG_OPTIONS]:
+            settings[AppSettingIDs.SONG_OPTIONS] ??
+            { value: get().song_controls ?? defaultSongControls, id: AppSettingIDs.SONG_OPTIONS },
+          [AppSettingIDs.PANEL_SPLIT_RATIO]:
+            settings[AppSettingIDs.PANEL_SPLIT_RATIO] ??
+            { value: defaultPanelSplitSettingValue, id: AppSettingIDs.PANEL_SPLIT_RATIO },
+          [AppSettingIDs.CONTROLS_SIZE]:
+            settings[AppSettingIDs.CONTROLS_SIZE] ??
+            { value: defaultControlSize, id: AppSettingIDs.CONTROLS_SIZE },
+          [AppSettingIDs.CONTROLS_POSITION]:
+            settings[AppSettingIDs.CONTROLS_POSITION] ??
+            { value: defaultControlPosition, id: AppSettingIDs.CONTROLS_POSITION },
+          [AppSettingIDs.CHAT_USERNAME_FONT_SIZE]:
+            settings[AppSettingIDs.CHAT_USERNAME_FONT_SIZE] ??
+            { value: defaultChatUsernameFont, id: AppSettingIDs.CHAT_USERNAME_FONT_SIZE },
+          [AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE]:
+            settings[AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE] ??
+            { value: defaultChatTimestampFont, id: AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE },
+          [AppSettingIDs.CHAT_MESSAGE_FONT_SIZE]:
+            settings[AppSettingIDs.CHAT_MESSAGE_FONT_SIZE] ??
+            { value: defaultChatMessageFont, id: AppSettingIDs.CHAT_MESSAGE_FONT_SIZE },
+          [AppSettingIDs.NOTIFICATION_TOASTS]:
+            settings[AppSettingIDs.NOTIFICATION_TOASTS] ??
+            {
+              value: get().notification_toasts_enabled ?? defaultToastEnabled,
+              id: AppSettingIDs.NOTIFICATION_TOASTS,
+            },
+          [AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS]:
+            settings[AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS] ??
+            {
+              value:
+                get().notification_toast_duration_seconds ?? defaultToastDuration,
+              id: AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS,
+            },
+          // Pass through any additional settings untouched.
+          ...settings,
+        } as DiscordSettings;
+
+        // Skip if nothing changed.
+        const nextHash = hashSettings(safeSettings);
+        if (nextHash === lastSettingsHash) return;
+
+        // Validate only after defaults applied so missing fields don't throw.
+        try {
+          validateDiscordSettings(safeSettings);
+        } catch (err) {
+          console.warn("Settings validation warning (filled defaults):", err);
+        }
+
+        set({
+          clock_options: safeSettings[AppSettingIDs.CLOCK_OPTIONS].value,
+          isLoading: false,
+          leftPanel: safeSettings[AppSettingIDs.LEFT_DASHBOARD_PANEL].value,
+          rightPanel: safeSettings[AppSettingIDs.RIGHT_DASHBOARD_PANEL].value,
+          widgets: safeSettings[AppSettingIDs.DASHBOARD_ELEMENTS].value,
+          song_controls: safeSettings[AppSettingIDs.SONG_OPTIONS].value,
+          panel_split_ratio: Math.min(
+            Math.max(
+              (safeSettings[AppSettingIDs.PANEL_SPLIT_RATIO].value as number) > 1
+                ? (safeSettings[AppSettingIDs.PANEL_SPLIT_RATIO].value as number) / 100
+                : (safeSettings[AppSettingIDs.PANEL_SPLIT_RATIO].value as number),
+              0.2,
+            ),
+            0.8,
+          ),
+          notification_toasts_enabled: safeSettings[AppSettingIDs.NOTIFICATION_TOASTS].value,
+          notification_toast_duration_seconds:
+            safeSettings[AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS].value,
+          settings: safeSettings as DiscordSettings,
+        });
+        lastSettingsHash = nextHash;
       }
     } catch (error) {
       console.error("Error validating settings:", error);
