@@ -127,6 +127,12 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
   },
 
   markNotificationAsRead: (notificationId) => {
+    DeskThing.send({
+      type: DiscordEvents.SET,
+      request: "notificationRead",
+      payload: { notificationId },
+    });
+
     set((state) => ({
       notificationStatus: state.notificationStatus
         ? {
@@ -140,6 +146,8 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
   },
 
   markAllNotificationsAsRead: () => {
+    DeskThing.send({ type: DiscordEvents.SET, request: "notificationsReadAll" });
+
     set((state) => ({
       notificationStatus: state.notificationStatus
         ? {

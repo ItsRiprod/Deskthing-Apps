@@ -4,6 +4,8 @@ import {
   AppSettingIDs,
   CLOCK_OPTIONS,
   CONTROL_OPTIONS,
+  CONTROL_POSITION,
+  CONTROL_SIZE,
   DASHBOARD_ELEMENTS,
   DiscordSettings,
   PANEL_ELEMENTS,
@@ -17,6 +19,17 @@ import {
 } from "../shared/types/transit";
 
 const DeskThing = createDeskThing<ToServerTypes, ToClientTypes>();
+
+const fontSizeSetting = (id: AppSettingIDs, label: string, value: number) => ({
+  id,
+  type: SETTING_TYPES.NUMBER,
+  version: "0.2.0",
+  description: `${label} font size (px)`,
+  label,
+  value,
+  min: 10,
+  max: 28,
+});
 
 export const setupSettings = () => {
   const discordSettings: DiscordSettings = {
@@ -127,7 +140,7 @@ export const setupSettings = () => {
       version: "0.11.6",
       description: "What elements to show on the dashboard?",
       label: "Right Panel",
-      value: PANEL_ELEMENTS.SONG,
+      value: PANEL_ELEMENTS.BLANK,
       options: [
         {
           value: PANEL_ELEMENTS.CALL_STATUS,
@@ -158,7 +171,6 @@ export const setupSettings = () => {
       description: "What elements to show on the dashboard?",
       label: "Dashboard Elements",
       value: [
-        DASHBOARD_ELEMENTS.NOTIFICATIONS,
         DASHBOARD_ELEMENTS.CALL_CONTROLS,
       ],
       options: [
@@ -198,11 +210,29 @@ export const setupSettings = () => {
         },
       ],
     },
+    [AppSettingIDs.NOTIFICATION_TOASTS]: {
+      id: AppSettingIDs.NOTIFICATION_TOASTS,
+      type: SETTING_TYPES.BOOLEAN,
+      version: "0.11.10",
+      description: "Show Discord notifications as DeskThing toasts",
+      label: "Notification Toasts",
+      value: true,
+    },
+    [AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS]: {
+      id: AppSettingIDs.NOTIFICATION_TOAST_DURATION_SECONDS,
+      type: SETTING_TYPES.NUMBER,
+      version: "0.11.14",
+      description: "How long notification toasts stay visible (in seconds)",
+      label: "Notification Toast Duration",
+      value: 10,
+      min: 1,
+      max: 60,
+    },
     [AppSettingIDs.CONTROLS_ORDER]: {
       id: AppSettingIDs.CONTROLS_ORDER,
       type: SETTING_TYPES.RANKED,
       version: "0.11.4",
-      description: "The order of the call controls",
+      description: "The order of the call controls (appears only while you're in a call)",
       label: "Call Controls Order",
       value: [CONTROL_OPTIONS.MUTE, CONTROL_OPTIONS.DEAFEN, CONTROL_OPTIONS.DISCONNECT],
       options: [
@@ -218,6 +248,43 @@ export const setupSettings = () => {
           value: CONTROL_OPTIONS.DISCONNECT,
           label: "Disconnect",
         }
+      ],
+      dependsOn: [
+        {
+          settingId: AppSettingIDs.DASHBOARD_ELEMENTS,
+          isValue: DASHBOARD_ELEMENTS.CALL_CONTROLS,
+        }
+      ],
+    },
+    [AppSettingIDs.CONTROLS_SIZE]: {
+      id: AppSettingIDs.CONTROLS_SIZE,
+      type: SETTING_TYPES.SELECT,
+      version: "0.2.0",
+      description: "Size of the call controls widget (only appears while you're in a call)",
+      label: "Call Controls Size",
+      value: CONTROL_SIZE.MEDIUM,
+      options: [
+        { value: CONTROL_SIZE.SMALL, label: "Small" },
+        { value: CONTROL_SIZE.MEDIUM, label: "Medium" },
+        { value: CONTROL_SIZE.LARGE, label: "Large" },
+      ],
+      dependsOn: [
+        {
+          settingId: AppSettingIDs.DASHBOARD_ELEMENTS,
+          isValue: DASHBOARD_ELEMENTS.CALL_CONTROLS,
+        }
+      ],
+    },
+    [AppSettingIDs.CONTROLS_POSITION]: {
+      id: AppSettingIDs.CONTROLS_POSITION,
+      type: SETTING_TYPES.SELECT,
+      version: "0.2.0",
+      description: "Position of the call controls widget (only appears while you're in a call)",
+      label: "Call Controls Position",
+      value: CONTROL_POSITION.TOP,
+      options: [
+        { value: CONTROL_POSITION.TOP, label: "Top" },
+        { value: CONTROL_POSITION.BOTTOM, label: "Bottom" },
       ],
       dependsOn: [
         {
@@ -254,7 +321,7 @@ export const setupSettings = () => {
       version: "0.11.4",
       description: "The position of the clock widget",
       label: "Clock Widget Position",
-      value: CLOCK_OPTIONS.TOP_CENTER,
+      value: CLOCK_OPTIONS.DISABLED,
       options: [
         {
           value: CLOCK_OPTIONS.TOP_LEFT,
@@ -313,6 +380,40 @@ export const setupSettings = () => {
           isValue: PANEL_ELEMENTS.SONG,
         },
       ]
+    },
+    [AppSettingIDs.PANEL_SPLIT_RATIO]: {
+      id: AppSettingIDs.PANEL_SPLIT_RATIO,
+      type: SETTING_TYPES.NUMBER,
+      version: "0.2.1",
+      description: "How much space the left panel takes (only applies while both panels are shown)",
+      label: "Panel Split Ratio (%)",
+      value: 50,
+      min: 20,
+      max: 80,
+      step: 1,
+    },
+    [AppSettingIDs.CHAT_USERNAME_FONT_SIZE]: fontSizeSetting(
+      AppSettingIDs.CHAT_USERNAME_FONT_SIZE,
+      "Chat Username Font Size",
+      17,
+    ),
+    [AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE]: fontSizeSetting(
+      AppSettingIDs.CHAT_TIMESTAMP_FONT_SIZE,
+      "Chat Timestamp Font Size",
+      17,
+    ),
+    [AppSettingIDs.CHAT_MESSAGE_FONT_SIZE]: fontSizeSetting(
+      AppSettingIDs.CHAT_MESSAGE_FONT_SIZE,
+      "Chat Message Font Size",
+      19,
+    ),
+    [AppSettingIDs.CALL_REFRESH_BUTTON]: {
+      id: AppSettingIDs.CALL_REFRESH_BUTTON,
+      type: SETTING_TYPES.BOOLEAN,
+      version: "0.2.1",
+      description: "Show manual refresh button on the call participants panel",
+      label: "Show Call Refresh Button",
+      value: false,
     },
   };
   DeskThing.initSettings(discordSettings);

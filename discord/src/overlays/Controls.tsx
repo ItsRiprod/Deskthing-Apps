@@ -8,15 +8,19 @@ import {
 } from "../assets/icons";
 import { useCallStore } from "@src/stores/callStore";
 import { useControlStore } from "@src/stores/controlStore";
+import { useInitializeCallStore } from "@src/hooks/useInitializeCallStore";
 
 export default function Controls(): JSX.Element {
+  useInitializeCallStore();
   const isMuted = useCallStore(
     (state) => state.callStatus?.user?.isMuted ?? false
   );
   const isDeafened = useCallStore(
     (state) => state.callStatus?.user?.isDeafened ?? false
   );
-  const { toggleMute, toggleDeafen, disconnect } = useControlStore();
+  const toggleMute = useControlStore((state) => state.toggleMute);
+  const toggleDeafen = useControlStore((state) => state.toggleDeafen);
+  const disconnect = useControlStore((state) => state.disconnect);
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center p-4">

@@ -1,7 +1,7 @@
 import { ChannelStatusBox } from "@src/components/ChannelStatusBox";
 import { GuildStatusBox } from "@src/components/GuildStatusBox";
 import { useChatStore } from "@src/stores/chatStore";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PanelWrapper } from "./PanelWrapper";
 import ObserverWrapper from "@src/components/ObserverWrapper";
 
@@ -13,33 +13,47 @@ export const GuildListPanel = () => {
   const clearSelectedGuild = useChatStore((state) => state.clearSelectedGuild);
   const isLoading = useChatStore((state) => state.isLoading);
   const [loadingPrompt, setLoadingPrompt] = useState<boolean>(false);
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const loadingPromptTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectedGuildName = useMemo(() => {
     const guild = guildList?.guilds.find((g) => g.id === selectedGuild);
     return guild ? guild.name : "Select a Guild";
   }, [guildList, selectedGuild]);
 
-  const startLoadingPromptTimeout = () => {
+  const resetLoadingPromptTimeout = useCallback(() => {
     setLoadingPrompt(false);
 
-    if (timeoutId) {
-      clearTimeout(timeoutId);
+    if (loadingPromptTimeout.current) {
+      clearTimeout(loadingPromptTimeout.current);
     }
 
-    const newTimeoutId = setTimeout(() => {
+    loadingPromptTimeout.current = setTimeout(() => {
       setLoadingPrompt(true);
-    }, 5000); // Show loading prompt after 5 seconds of loading
-    setTimeoutId(newTimeoutId);
-  };
+    }, 5000);
+  }, []);
 
-  if (!timeoutId) {
-    startLoadingPromptTimeout();
-  }
+  useEffect(() => {
+    if (isLoading) {
+      resetLoadingPromptTimeout();
+    } else {
+      setLoadingPrompt(false);
+      if (loadingPromptTimeout.current) {
+        clearTimeout(loadingPromptTimeout.current);
+        loadingPromptTimeout.current = null;
+      }
+    }
+
+    return () => {
+      if (loadingPromptTimeout.current) {
+        clearTimeout(loadingPromptTimeout.current);
+        loadingPromptTimeout.current = null;
+      }
+    };
+  }, [isLoading, resetLoadingPromptTimeout]);
 
   const handleFetchGuildList = async () => {
     try {
-      startLoadingPromptTimeout();
+      resetLoadingPromptTimeout();
       await fetchGuildList();
     } catch (error) {
       console.error("Failed to fetch guild list:", error);

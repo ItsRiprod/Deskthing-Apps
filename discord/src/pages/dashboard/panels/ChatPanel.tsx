@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useChatStore } from "@src/stores/chatStore";
 import { GuildListPanel } from "./GuildListPanel";
 import { MessageStatusBox } from "@src/components/MessageStatusBox";
@@ -13,7 +13,6 @@ export const ChatPanel = () => {
     (state) => state.setSelectedChannelID
   );
   const autoscroll = useUIStore((state) => state.settings?.[AppSettingIDs.SCROLL_TO_BOTTOM].value)
-  const [showBackButton, setShowBackButton] = useState(true);
   // Ref for the messages container
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -24,10 +23,6 @@ export const ChatPanel = () => {
     }
   }, [chat?.messages]);
 
-  useEffect(() => {
-    setShowBackButton(false);
-  }, []);
-
   if (!chat || chat.messages.length === 0) return <GuildListPanel />;
 
   const clearSelectedChannel = () => {
@@ -36,20 +31,11 @@ export const ChatPanel = () => {
 
   return (
     <PanelWrapper>
-      <div
-        className="flex items-end w-full h-full bg-cover justify-center"
-        onMouseOver={() => setShowBackButton(true)}
-        onMouseOut={() => setShowBackButton(false)}
-        onMouseLeave={() => setShowBackButton(false)}
-      >
-        {/* Absolute Back Button */}
+      <div className="flex items-end w-full h-full bg-cover justify-center relative">
+        {/* Persistent Back Button */}
         <button
           onClick={clearSelectedChannel}
-          className={`${
-            showBackButton
-              ? "opacity-100 duration-200"
-              : "opacity-0 duration-1000"
-          } absolute top-4 left-4 flex items-center px-4 py-2 bg-neutral-800 text-white rounded-lg shadow transition hover:bg-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-400 z-10`}
+          className="absolute top-4 left-4 flex items-center px-4 py-2 bg-neutral-800 text-white rounded-lg shadow transition hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-blue-400 z-10"
         >
           <svg
             className="w-5 h-5"
@@ -64,7 +50,7 @@ export const ChatPanel = () => {
               d="M15 19l-7-7 7-7"
             />
           </svg>
-          <span>Back to Channels</span>
+          <span className="ml-2 text-sm font-semibold">Back to Channels</span>
         </button>
         <div
           className="flex flex-col items-start max-w-full overflow-hidden justify-start w-full h-full overflow-y-auto"

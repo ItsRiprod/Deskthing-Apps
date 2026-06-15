@@ -28,13 +28,18 @@ export class StoreProvider {
     this.rpc = new DiscordRPCStore();
     this.tokenStorage = new TokenStorage();
     this.auth = new DiscordAuth(this.rpc, this.tokenStorage);
-    this.callControls = new CallControls(this.rpc);
+    this.callControls = new CallControls(this.rpc, this.auth);
     this.callStatus = new CallStatusManager(this.rpc);
     this.guildList = new GuildListManager(this.rpc);
     this.chatStatus = new ChatStatusManager(this.rpc, this.guildList);
-    this.notificationStatus = new NotificationStatusManager(this.rpc);
+    this.notificationStatus = new NotificationStatusManager(this.rpc, this.guildList);
     this.richPresence = new RichPresence(this.rpc);
     this.deskthingStore = new DeskthingStore(this.callStatus, this.chatStatus, this.guildList, this.notificationStatus, this.callControls);
+
+    // Keep call status in sync with explicit disconnects
+    this.callControls.on("disconnected", () => {
+      this.callStatus.clearStatus();
+    });
   }
 
   
