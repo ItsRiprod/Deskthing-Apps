@@ -107,7 +107,10 @@ export const initializeSettings = async (): Promise<void> => {
         {
           label: 'GeistVF (Default)',
           value: 'GeistVF.ttf'
-        }
+        },
+        { label: 'GeistMonoVF', value: 'GeistMonoVF.ttf' },
+        { label: 'HelveticaNeue', value: 'HelveticaNeue.ttf' },
+        { label: 'THEBOLDFONT', value: 'THEBOLDFONT.ttf' }
       ]
     },
     [ClockSettingIDs.BACKGROUND]: {
@@ -218,12 +221,42 @@ export const initializeSettings = async (): Promise<void> => {
     [ClockSettingIDs.WIDGETS]: {
       id: ClockSettingIDs.WIDGETS,
       type: SETTING_TYPES.MULTISELECT,
-      label: 'Widgets',
+      label: 'Enabled Widgets',
       value: [ClockWidgets.DATE],
       options: [
         { label: 'Stopwatch', value: ClockWidgets.STOPWATCH },
         { label: 'Countdown', value: ClockWidgets.COUNTDOWN },
         { label: 'Date', value: ClockWidgets.DATE }
+      ]
+    },
+    [ClockSettingIDs.DATE_POS_X]: {
+      id: ClockSettingIDs.DATE_POS_X,
+      type: SETTING_TYPES.NUMBER,
+      label: 'Date X Offset',
+      value: 0,
+      min: -500,
+      max: 500,
+      step: 1,
+      dependsOn: [
+        {
+          settingId: ClockSettingIDs.WIDGETS,
+          isValue: 'date'
+        }
+      ]
+    },
+    [ClockSettingIDs.DATE_POS_Y]: {
+      id: ClockSettingIDs.DATE_POS_Y,
+      type: SETTING_TYPES.NUMBER,
+      label: 'Date Y Offset',
+      value: 0,
+      min: -500,
+      max: 500,
+      step: 1,
+      dependsOn: [
+        {
+          settingId: ClockSettingIDs.WIDGETS,
+          isValue: 'date'
+        }
       ]
     },
     [ClockSettingIDs.DATE_FORMAT]: {
@@ -234,7 +267,9 @@ export const initializeSettings = async (): Promise<void> => {
       options: [
         { label: 'MM/DD/YYYY', value: 'MM/DD/YYYY' },
         { label: 'DD/MM/YYYY', value: 'DD/MM/YYYY' },
-        { label: 'YYYY-MM-DD', value: 'YYYY-MM-DD' }
+        { label: 'YYYY-MM-DD', value: 'YYYY-MM-DD' },
+        { label: 'MMMM DD YYYY', value: 'MMMM DD YYYY' },
+        { label: 'MMM DD YYYY', value: 'MMM DD YYYY' }
       ],
       dependsOn: [
         {

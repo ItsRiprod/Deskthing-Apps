@@ -24,6 +24,8 @@ export enum ClockSettingIDs {
     CLOCK_OPACITY = 'clock_transparency',
     CLOCK_POS_X = 'clock_pos_x',
     CLOCK_POS_Y = 'clock_pos_y',
+    DATE_POS_X = 'date_pos_x',
+    DATE_POS_Y = 'date_pos_y',
     WIDGETS = 'widgets',
     DATE_FORMAT = 'date_format',
     CLOCK_ORDERING = 'clock_ordering',
@@ -56,7 +58,8 @@ export type ClockSettings = {
   [ClockSettingIDs.CLOCK_OPACITY]: SettingsRange & { id: ClockSettingIDs.CLOCK_OPACITY };
   [ClockSettingIDs.CLOCK_POS_X]: SettingsNumber & { id: ClockSettingIDs.CLOCK_POS_X };
   [ClockSettingIDs.CLOCK_POS_Y]: SettingsNumber & { id: ClockSettingIDs.CLOCK_POS_Y };
-
+  [ClockSettingIDs.DATE_POS_X]: SettingsNumber & { id: ClockSettingIDs.DATE_POS_X };
+  [ClockSettingIDs.DATE_POS_Y]: SettingsNumber & { id: ClockSettingIDs.DATE_POS_Y };
   // widget settings enable/disable dynamically based on the widget selected 
   [ClockSettingIDs.WIDGETS]: SettingsMultiSelect & { id: ClockSettingIDs.WIDGETS };
   [ClockSettingIDs.DATE_FORMAT]: SettingsSelect & { id: ClockSettingIDs.DATE_FORMAT };
