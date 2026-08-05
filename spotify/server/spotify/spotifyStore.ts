@@ -75,8 +75,10 @@ export class SpotifyStore {
     const now = Date.now();
     const cacheTime = options.cacheTime ?? this.cacheExpiration;
 
-    // First check if the current request is in the queue
-    if (this.requestQueue[cacheKey]) {
+    // First check if the current request is in the queue. A forced refresh
+    // must not join it: the caller is asking precisely because it believes the
+    // in-flight answer is about to be out of date.
+    if (this.requestQueue[cacheKey] && !options.forceRefresh) {
       // Check the timestamp to ensure it hasn't expired
       if (this.requestQueue[cacheKey].timestamp + cacheTime > now) {
         console.debug(
@@ -299,6 +301,26 @@ export class SpotifyStore {
         promise: requestPromise,
         timestamp: now,
       };
+
+      // "Already in queue" has to mean "still in flight". Leaving the entry
+      // behind after the request settles turned this into a second, hidden
+      // cache — one that ignores forceRefresh and hands every later caller the
+      // resolved promise carrying the OLD payload for a further 3 seconds.
+      //
+      // That is what made a track boundary cost two poll cycles instead of
+      // one: the refresh at the boundary asks a beat too early and gets the
+      // track that just finished, its retries are answered from this stale
+      // promise, and the next scheduled poll lands in the same window and is
+      // answered from it too — so an entire cycle reports "no change" without
+      // ever reaching Spotify.
+      //
+      // requestCache below is the real cache and still coalesces ordinary
+      // rapid GETs, so nothing loses its de-duplication.
+      void requestPromise.finally(() => {
+        if (this.requestQueue[cacheKey]?.promise === requestPromise) {
+          delete this.requestQueue[cacheKey];
+        }
+      });
     }
 
     return requestPromise;
@@ -348,12 +370,15 @@ export class SpotifyStore {
     return this.responseCodeMap[code] || "Unknown Error";
   }
 
-  async getCurrentPlayback({ signal }: { signal?: AbortSignal } = {}): Promise<
+  async getCurrentPlayback({
+    signal,
+    forceRefresh,
+  }: { signal?: AbortSignal; forceRefresh?: boolean } = {}): Promise<
     PlayerResponse | undefined
   > {
     console.debug("SpotifyStore: getCurrentPlayback");
     const url = `${this.BASE_URL}?additional_types=episode`;
-    return this.makeRequest("get", url, undefined, { signal });
+    return this.makeRequest("get", url, undefined, { signal, forceRefresh });
   }
 
   async getPlaylists(start = 0, limit = 20): Promise<PlaylistsResponse | undefined> {

@@ -39,7 +39,10 @@ DeskThing.on(SongEvent.GET, async (data) => {
       musicStore.returnSongData();
       break;
     case AUDIO_REQUESTS.REFRESH:
-      await musicStore.checkForRefresh();
+      // A truthy payload means the server knows playback just changed — a
+      // track boundary or a skip — and needs an answer from Spotify rather
+      // than a coalesced one describing the track we are trying to leave.
+      await musicStore.checkForRefresh({ forceRefresh: Boolean(data.payload) });
       break;
   }
 });

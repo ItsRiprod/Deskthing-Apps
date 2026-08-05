@@ -37,6 +37,8 @@ export class SongStore extends EventEmitter<songStoreEvents> {
    */
   private likedMemo: { id: string; value: boolean; timestamp: number } | null = null;
   private static readonly LIKED_MEMO_TTL_MS = 5 * 60 * 1000;
+  /** How long to sit on a failed lookup before trying that track again. */
+  private static readonly LIKED_MEMO_FAILURE_TTL_MS = 60 * 1000;
 
   constructor(spotifyApi: SpotifyStore, deviceStore: DeviceStore) {
     super();
@@ -44,9 +46,9 @@ export class SongStore extends EventEmitter<songStoreEvents> {
     this.deviceStore = deviceStore;
   }
 
-  async getCurrentPlayback({ signal }: { signal?: AbortSignal } = {}): Promise<PlayerResponse | undefined> {
+  async getCurrentPlayback({ signal, forceRefresh }: { signal?: AbortSignal; forceRefresh?: boolean } = {}): Promise<PlayerResponse | undefined> {
     try {
-      const currentPlayback = await this.spotifyApi.getCurrentPlayback({ signal });
+      const currentPlayback = await this.spotifyApi.getCurrentPlayback({ signal, forceRefresh });
       if (!currentPlayback) return undefined;
 
       this.deviceStore.addDevicesFromPlayback(currentPlayback);
@@ -73,9 +75,23 @@ export class SongStore extends EventEmitter<songStoreEvents> {
         return this.likedMemo.value;
       }
       const isLiked = await this.spotifyApi.checkLiked(id);
-      // A gated/failed request resolves undefined — keep the previous memo and
-      // report unknown-as-false rather than caching a wrong answer.
-      if (!Array.isArray(isLiked)) return this.likedMemo?.value ?? false;
+      // A gated/failed request resolves undefined — keep the previous answer
+      // and report unknown-as-false rather than caching a wrong one.
+      //
+      // Remember the failure for a short while even so. This endpoint can fail
+      // persistently (a 403 when the token lacks user-library-read, which no
+      // amount of retrying fixes), and without a negative memo every single
+      // emit re-issues a call that cannot succeed — the exact traffic the memo
+      // exists to remove, and pressure we can't afford next to a rate limit.
+      if (!Array.isArray(isLiked)) {
+        const known = this.likedMemo?.id === id ? this.likedMemo.value : false;
+        this.likedMemo = {
+          id,
+          value: known,
+          timestamp: Date.now() - SongStore.LIKED_MEMO_TTL_MS + SongStore.LIKED_MEMO_FAILURE_TTL_MS
+        };
+        return known;
+      }
       this.likedMemo = { id, value: isLiked[0] == true, timestamp: Date.now() };
       this.emit("iconUpdate", {
         id: "like_song",
@@ -89,7 +105,13 @@ export class SongStore extends EventEmitter<songStoreEvents> {
     }
   }
 
-  async checkForRefresh() {
+  /**
+   * @param forceRefresh Skip request coalescing and ask Spotify directly. Set
+   * this when the caller has reason to believe playback just changed — at a
+   * track boundary, or right after a skip — where a coalesced answer is the
+   * previous track by definition.
+   */
+  async checkForRefresh({ forceRefresh }: { forceRefresh?: boolean } = {}) {
     if (this.is_refreshing.state && Date.now() - this.is_refreshing.timestamp < 5000) {
       console.debug(
         `SongStore: checkForRefresh - already refreshing, skipping...`
@@ -104,7 +126,7 @@ export class SongStore extends EventEmitter<songStoreEvents> {
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
       try {
-        const playback = await this.getCurrentPlayback({ signal: controller.signal });
+        const playback = await this.getCurrentPlayback({ signal: controller.signal, forceRefresh });
 
         // Clear timeout as request completed
         clearTimeout(timeoutId);
