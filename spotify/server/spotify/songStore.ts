@@ -28,6 +28,15 @@ export class SongStore extends EventEmitter<songStoreEvents> {
     shuffleState: false,
   };
   private is_refreshing: { state: boolean; timestamp: number } = { state: false, timestamp: 0 };
+  /**
+   * Liked-state memo. The refresh cycle treats any progress advance as a state
+   * change, so without this the /me/tracks/contains call fires on EVERY poll —
+   * a third of all API traffic, and the endpoint that historically absorbed the
+   * rate-limit bans. A track's liked state only changes from this app via
+   * likeSong (which invalidates it), so a short TTL is safe.
+   */
+  private likedMemo: { id: string; value: boolean; timestamp: number } | null = null;
+  private static readonly LIKED_MEMO_TTL_MS = 5 * 60 * 1000;
 
   constructor(spotifyApi: SpotifyStore, deviceStore: DeviceStore) {
     super();
@@ -56,7 +65,18 @@ export class SongStore extends EventEmitter<songStoreEvents> {
   async checkLiked(id: string): Promise<boolean> {
     try {
       if (!id) return false;
+      if (
+        this.likedMemo &&
+        this.likedMemo.id === id &&
+        Date.now() - this.likedMemo.timestamp < SongStore.LIKED_MEMO_TTL_MS
+      ) {
+        return this.likedMemo.value;
+      }
       const isLiked = await this.spotifyApi.checkLiked(id);
+      // A gated/failed request resolves undefined — keep the previous memo and
+      // report unknown-as-false rather than caching a wrong answer.
+      if (!Array.isArray(isLiked)) return this.likedMemo?.value ?? false;
+      this.likedMemo = { id, value: isLiked[0] == true, timestamp: Date.now() };
       this.emit("iconUpdate", {
         id: "like_song",
         state: isLiked[0] == true ? "liked" : "",
@@ -355,12 +375,14 @@ export class SongStore extends EventEmitter<songStoreEvents> {
         console.log("Disliking the current song");
         await this.spotifyApi.likeSong(songId, false);
         console.log("Successfully unliked song: " + songId);
+        this.likedMemo = { id: songId, value: false, timestamp: Date.now() };
         this.emit("iconUpdate", { id: "like_song", state: "" });
         return;
       } else {
         console.log("Liking the current song", isLiked);
         await this.spotifyApi.likeSong(songId, true);
         console.log("Successfully liked song: " + songId);
+        this.likedMemo = { id: songId, value: true, timestamp: Date.now() };
         this.emit("iconUpdate", { id: "like_song", state: "liked" });
       }
     } catch (error) {
