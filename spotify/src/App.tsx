@@ -1,27 +1,28 @@
 import React from "react";
 import Player from "./Pages/Player";
-import { PanelManager } from "./panels/PanelManager";
 import { ControlProvider } from "./providers/ControlProvider";
 import { MusicProvider } from "./providers/MusicProvider";
 import { QueueProvider } from "./providers/QueueProvider";
 import { SettingsProvider } from "./providers/SettingsProvider";
 import { UIProvider } from "./providers/UIProvider";
-import { PlaylistProvider } from "./providers/PlaylistProvider";
+
+// Playlists live in a zustand store (src/stores/playlistStore.ts), not a
+// provider — every consumer reaches for usePlaylistStore directly. The
+// PlaylistProvider this file used to wrap was deleted in that migration but the
+// import stayed, so the app has not compiled since.
 
 const App: React.FC = () => {
   return (
     <div className="max-w-screen max-h-screen">
       <SettingsProvider>
         <MusicProvider>
-          <PlaylistProvider>
-            <QueueProvider>
-              <ControlProvider>
-                <UIProvider>
-                  <Player />
-                </UIProvider>
-              </ControlProvider>
-            </QueueProvider>
-          </PlaylistProvider>
+          <QueueProvider>
+            <ControlProvider>
+              <UIProvider>
+                <Player />
+              </UIProvider>
+            </ControlProvider>
+          </QueueProvider>
         </MusicProvider>
       </SettingsProvider>
     </div>
