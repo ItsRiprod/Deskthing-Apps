@@ -16,7 +16,10 @@ export class QueueStore extends EventEmitter<queueStoreEvents> {
   private rawQueueData: QueueResponse | undefined;
   private queueData: SongQueue | undefined;
   private lastFetchTime: number = 0;
-  private readonly CACHE_DURATION = 10000; // Cache expires after 10 seconds
+  // Longer than the 15s poll interval on purpose: a 10s TTL under a 15s poll
+  // guaranteed every cycle was a live API call. Queue edits from this app
+  // bypass the cache anyway, so the only cost is a slightly stale Up Next.
+  private readonly CACHE_DURATION = 45000;
 
   constructor(spotifyApi: SpotifyStore) {
     super();
