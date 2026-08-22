@@ -98,6 +98,27 @@ export class ActionStore {
         });
       }
       console.debug('Resuming current song');
+
+      const settings = await DeskThing.getSettings();
+      const outputDevice = settings?.[SpotifySettingIDs.OUTPUT_DEVICE]?.value;
+      const transferPlaybackOnError =
+        settings?.[SpotifySettingIDs.TRANSFER_PLAYBACK_ON_ERROR]?.value;
+
+      if (
+        transferPlaybackOnError === true &&
+        typeof outputDevice === "string" &&
+        outputDevice !== "default"
+      ) {
+        const playback = await this.spotifyApi.getCurrentPlayback();
+
+        if (!playback) {
+          console.debug(
+            `Transferring playback to configured output device: ${outputDevice}`
+          );
+          return this.spotifyApi.transferPlayback(outputDevice);
+        }
+      }
+
       return this.spotifyApi.play();
     } catch (error) {
       console.error("Error playing:", error);
